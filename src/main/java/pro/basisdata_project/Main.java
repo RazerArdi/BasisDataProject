@@ -30,7 +30,6 @@ public class Main extends Application {
     }
 
     public void showMainScene() {
-        // Assuming Beranda is another scene layout class
         Beranda mainPage = new Beranda();
         Scene mainScene = new Scene(mainPage, 600, 700);
         primaryStage.setScene(mainScene);
