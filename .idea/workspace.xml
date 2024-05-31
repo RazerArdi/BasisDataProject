@@ -4,12 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e0f60364-e204-47a5-ba62-a0924b2f2608" name="Changes" comment="Login">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Beranda.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Beranda.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Main.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/pro/basisdata_project/hello-view.fxml" beforeDir="false" />
-    </list>
+    <list default="true" id="e0f60364-e204-47a5-ba62-a0924b2f2608" name="Changes" comment="Beranda Updated" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -87,11 +82,39 @@
       <option name="project" value="LOCAL" />
       <updated>1717007243945</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Beranda Updated">
+      <option name="closed" value="true" />
+      <created>1717180860335</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1717180860335</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Beranda Updated">
+      <option name="closed" value="true" />
+      <created>1717181104914</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1717181104914</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Login" />
-    <option name="LAST_COMMIT_MESSAGE" value="Login" />
+    <MESSAGE value="Beranda Updated" />
+    <option name="LAST_COMMIT_MESSAGE" value="Beranda Updated" />
   </component>
 </project>
