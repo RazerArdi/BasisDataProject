@@ -14,11 +14,14 @@ public class Main extends Application {
     public void start(Stage stage) {
         this.primaryStage = stage;
 
-        InputStream iconStream = Main.class.getResourceAsStream("Database.jpg");
-        if (iconStream == null) {
-            System.err.println("Unable to find target file");
-        } else {
-            stage.getIcons().add(new Image(iconStream));
+        try (InputStream iconStream = Main.class.getResourceAsStream("Database.jpg")) {
+            if (iconStream == null) {
+                System.err.println("Unable to find target file");
+            } else {
+                stage.getIcons().add(new Image(iconStream));
+            }
+        } catch (Exception e) {
+            System.err.println("Error loading icon: " + e.getMessage());
         }
 
         stage.setTitle("SYSTEM");
@@ -29,9 +32,9 @@ public class Main extends Application {
         stage.show();
     }
 
-    public void showMainScene() {
-        Beranda mainPage = new Beranda();
-        Scene mainScene = new Scene(mainPage, 600, 700);
+    public void showMainScene(String accountName, Scene loginScene) {
+        MainPage mainPage = new MainPage(accountName, primaryStage, loginScene);
+        Scene mainScene = new Scene(mainPage, 900, 700);
         primaryStage.setScene(mainScene);
     }
 
@@ -39,3 +42,4 @@ public class Main extends Application {
         launch();
     }
 }
+

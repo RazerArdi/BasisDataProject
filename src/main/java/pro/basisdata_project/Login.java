@@ -160,17 +160,20 @@ public class Login {
             String storedEmail = parts[2];
             String storedUsername = parts[1];
             String storedPassword = parts[3];
+            String storedName = parts[1]; // Assuming name is the first part in your data
 
             if ((storedEmail.equals(emailOrUsername) || storedUsername.equals(emailOrUsername)) && storedPassword.equals(password)) {
                 showSuccessDialog("Login successful!");
 
-                mainApp.showMainScene();  // Call method in Main class to show the main scene
+                mainApp.showMainScene(storedName, loginScene);
+                // Call method in Main class to show the main scene
                 return;
             }
         }
 
         showErrorDialog("Invalid email/username or password.");
     }
+
 
     private void handleRegistration(Stage stage, String fullName, String username, String email, String password, String confirmPassword) {
         if (fullName.isEmpty() || username.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
