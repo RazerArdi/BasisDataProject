@@ -1,19 +1,14 @@
 package pro.basisdata_project;
 
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Optional;
 
 public class Equipments {
 
@@ -21,14 +16,14 @@ public class Equipments {
     private String name;
     private String type;
     private String status;
-    private int missionId;
+    private int platformId;
 
-    public Equipments(int equipmentId, String name, String type, String status, int missionId) {
+    public Equipments(int equipmentId, String name, String type, String status, int platformId) {
         this.equipmentId = equipmentId;
         this.name = name;
         this.type = type;
         this.status = status;
-        this.missionId = missionId;
+        this.platformId = platformId;
     }
 
     public int getEquipmentId() {
@@ -47,41 +42,20 @@ public class Equipments {
         return status;
     }
 
-    public int getMissionId() {
-        return missionId;
-    }
 
     public static VBox getEquipmentsUI() {
-        VBox mainLayout = new VBox();
-        mainLayout.setPadding(new Insets(10));
-        mainLayout.setSpacing(10);
+        VBox vbox = new VBox();
+        vbox.setPadding(new Insets(10));
+        vbox.setSpacing(10);
 
-        TableView<Equipments> tableView = new TableView<>();
-        ObservableList<Equipments> data = FXCollections.observableArrayList();
+        Label analysisIdLabel = new Label("Analysis ID:");
+        TextField analysisIdText = new TextField();
+        Button searchAnalysisIdButton = new Button("Search Analysis ID");
 
-        // Define table columns
-        TableColumn<Equipments, Integer> equipmentIdCol = new TableColumn<>("Equipment ID");
-        equipmentIdCol.setCellValueFactory(new PropertyValueFactory<>("equipmentId"));
-
-        TableColumn<Equipments, String> nameCol = new TableColumn<>("Name");
-        nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
-
-        TableColumn<Equipments, String> typeCol = new TableColumn<>("Type");
-        typeCol.setCellValueFactory(new PropertyValueFactory<>("type"));
-
-        TableColumn<Equipments, String> statusCol = new TableColumn<>("Status");
-        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
-
-        TableColumn<Equipments, Integer> missionIdCol = new TableColumn<>("Mission ID");
-        missionIdCol.setCellValueFactory(new PropertyValueFactory<>("missionId"));
-
-        tableView.getColumns().addAll(equipmentIdCol, nameCol, typeCol, statusCol, missionIdCol);
-        tableView.setItems(data);
-
-        // Form for input
-        VBox formLayout = new VBox();
-        formLayout.setPadding(new Insets(10));
-        formLayout.setSpacing(10);
+        searchAnalysisIdButton.setOnAction(e -> {
+            Optional<String> result = showSearchDialog();
+            result.ifPresent(analysisIdText::setText);
+        });
 
         Label equipmentIdLabel = new Label("Equipment ID:");
         TextField equipmentIdText = new TextField();
@@ -91,61 +65,56 @@ public class Equipments {
         TextField typeText = new TextField();
         Label statusLabel = new Label("Status:");
         TextField statusText = new TextField();
-        Label missionIdLabel = new Label("Mission ID:");
-        TextField missionIdText = new TextField();
+        Label platformIdLabel = new Label("Platform ID:");
+        TextField platformIdText = new TextField();
 
-        Button insertButton = new Button("Insert Data");
-        insertButton.setOnAction(e -> {
+        TableView<Equipments> tableView = new TableView<>();
+        TableColumn<Equipments, Integer> equipmentIdCol = new TableColumn<>("Equipment ID");
+        equipmentIdCol.setCellValueFactory(new PropertyValueFactory<>("equipmentId"));
+        TableColumn<Equipments, String> nameCol = new TableColumn<>("Name");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+        TableColumn<Equipments, String> typeCol = new TableColumn<>("Type");
+        typeCol.setCellValueFactory(new PropertyValueFactory<>("type"));
+        TableColumn<Equipments, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+        TableColumn<Equipments, Integer> platformIdCol = new TableColumn<>("Platform ID");
+        platformIdCol.setCellValueFactory(new PropertyValueFactory<>("platformId"));
+
+        tableView.getColumns().addAll(equipmentIdCol, nameCol, typeCol, statusCol, platformIdCol);
+
+        vbox.getChildren().add(tableView);
+
+        Button createButton = new Button("Create");
+        createButton.setOnAction(e -> {
+            String analysisId = analysisIdText.getText();
             int equipmentId = Integer.parseInt(equipmentIdText.getText());
             String name = nameText.getText();
             String type = typeText.getText();
             String status = statusText.getText();
-            int missionId = Integer.parseInt(missionIdText.getText());
+            int platformId = Integer.parseInt(platformIdText.getText());
 
-            Equipments equipment = new Equipments(equipmentId, name, type, status, missionId);
-            data.add(equipment);
-            saveToDatabase(equipment);
-            clearForm(equipmentIdText, nameText, typeText, statusText, missionIdText);
+            Equipments equipment = new Equipments(equipmentId, name, type, status, platformId);
+            System.out.println("Equipment Created: " + equipment.getEquipmentId());
+
+            // Save to Database.txt
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
+                writer.write(String.format("Analysis ID,%s,Equipments,%d,%s,%s,%s,%d%n", analysisId, equipmentId, name, type, status, platformId));
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         });
 
-        formLayout.getChildren().addAll(equipmentIdLabel, equipmentIdText, nameLabel, nameText, typeLabel, typeText, statusLabel, statusText, missionIdLabel, missionIdText, insertButton);
+        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, equipmentIdLabel, equipmentIdText, nameLabel, nameText, typeLabel, typeText, statusLabel, statusText, platformIdLabel, platformIdText, createButton);
 
-        HBox contentLayout = new HBox(20, tableView, formLayout);
-        contentLayout.setAlignment(Pos.CENTER);
-        contentLayout.setPadding(new Insets(20));
-
-        mainLayout.getChildren().add(contentLayout);
-
-        return mainLayout;
+        return vbox;
     }
 
-    private static void saveToDatabase(Equipments equipment) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-            writer.write(String.format("Equipments,%d,%s,%s,%s,%d%n", equipment.getEquipmentId(), equipment.getName(), equipment.getType(), equipment.getStatus(), equipment.getMissionId()));
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-    }
+    private static Optional<String> showSearchDialog() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Search Analysis ID");
+        dialog.setHeaderText("Enter Analysis ID to search:");
+        dialog.setContentText("Analysis ID:");
 
-    private static void clearForm(TextField equipmentIdText, TextField nameText, TextField typeText, TextField statusText, TextField missionIdText) {
-        equipmentIdText.clear();
-        nameText.clear();
-        typeText.clear();
-        statusText.clear();
-        missionIdText.clear();
-    }
-
-    public static void main(String[] args) {
-        // Create a JavaFX application to display the UI
-        javafx.application.Application.launch(EquipmentsApp.class, args);
-    }
-
-    public static class EquipmentsApp extends javafx.application.Application {
-        @Override
-        public void start(Stage primaryStage) {
-            primaryStage.setTitle("Equipments Management");
-            primaryStage.setScene(new Scene(getEquipmentsUI(), 800, 600));
-            primaryStage.show();
-        }
+        return dialog.showAndWait();
     }
 }

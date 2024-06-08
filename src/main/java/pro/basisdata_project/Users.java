@@ -1,15 +1,14 @@
 package pro.basisdata_project;
 
 import javafx.geometry.Insets;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Optional;
 
 public class Users {
 
@@ -28,7 +27,6 @@ public class Users {
         this.lastLogin = lastLogin;
     }
 
-    // Getters and Setters
     public String getUserId() {
         return userId;
     }
@@ -75,6 +73,22 @@ public class Users {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
+        Label analysisIdLabel = new Label("Analysis ID:");
+        TextField analysisIdText = new TextField();
+        Button searchAnalysisIdButton = new Button("Search Analysis ID");
+
+        searchAnalysisIdButton.setOnAction(e -> {
+            Optional<String> result = showSearchDialog();
+            if (result.isPresent()) {
+                String analysisId = result.get();
+                if (isDataFound(analysisId)) {
+                    displayDataFound();
+                } else {
+                    analysisIdText.setText(analysisId);
+                }
+            }
+        });
+
         Label userIdLabel = new Label("User ID:");
         TextField userIdText = new TextField();
         Label nameLabel = new Label("Name:");
@@ -87,8 +101,27 @@ public class Users {
         accessLevelComboBox.setValue(1); // Default value
         Label lastLoginLabel = new Label("Time Registered (auto-generated):");
 
+        // Create TableView and columns
+        TableView<Users> tableView = new TableView<>();
+        TableColumn<Users, String> userIdCol = new TableColumn<>("User ID");
+        userIdCol.setCellValueFactory(new PropertyValueFactory<>("userId"));
+        TableColumn<Users, String> nameCol = new TableColumn<>("Name");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+        TableColumn<Users, String> roleCol = new TableColumn<>("Role");
+        roleCol.setCellValueFactory(new PropertyValueFactory<>("role"));
+        TableColumn<Users, Integer> accessLevelCol = new TableColumn<>("Access Level");
+        accessLevelCol.setCellValueFactory(new PropertyValueFactory<>("accessLevel"));
+        TableColumn<Users, Long> lastLoginCol = new TableColumn<>("Last Login");
+        lastLoginCol.setCellValueFactory(new PropertyValueFactory<>("lastLogin"));
+
+        tableView.getColumns().addAll(userIdCol, nameCol, roleCol, accessLevelCol, lastLoginCol);
+
+        // Add table view to the VBox
+        vbox.getChildren().add(tableView);
+
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
+            String analysisId = analysisIdText.getText();
             String userId = userIdText.getText();
             String name = nameText.getText();
             String role = roleText.getText();
@@ -100,14 +133,37 @@ public class Users {
 
             // Save to Database.txt
             try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("Users,%s,%s,%s,%d,%d%n", userId, name, role, accessLevel, lastLogin));
+                writer.write(String.format("Analysis ID,%s,Users,%s,%s,%s,%d,%d%n", analysisId, userId, name, role, accessLevel, lastLogin));
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
         });
 
-        vbox.getChildren().addAll(userIdLabel, userIdText, nameLabel, nameText, roleLabel, roleText, accessLevelLabel, accessLevelComboBox, lastLoginLabel, createButton);
+        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, userIdLabel, userIdText, nameLabel, nameText, roleLabel, roleText, accessLevelLabel, accessLevelComboBox, lastLoginLabel, createButton);
 
         return vbox;
+    }
+
+    private static Optional<String> showSearchDialog() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Search Analysis ID");
+        dialog.setHeaderText("Enter Analysis ID to search:");
+        dialog.setContentText("Analysis ID:");
+
+        return dialog.showAndWait();
+    }
+
+    private static boolean isDataFound(String analysisId) {
+        // Implement logic to check if data with the given analysisId exists in the database
+        return true; // For demonstration purposes, always return true
+    }
+
+    private static void displayDataFound() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Data Found");
+        alert.setHeaderText(null);
+        alert.setContentText("Data Found!");
+
+        alert.showAndWait();
     }
 }

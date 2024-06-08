@@ -1,15 +1,14 @@
 package pro.basisdata_project;
 
 import javafx.geometry.Insets;
-import javafx.scene.control.Button;
-import javafx.scene.control.ComboBox;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Optional;
 
 public class Platforms {
 
@@ -62,6 +61,15 @@ public class Platforms {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
+        Label analysisIdLabel = new Label("Analysis ID:");
+        TextField analysisIdText = new TextField();
+        Button searchAnalysisIdButton = new Button("Search Analysis ID");
+
+        searchAnalysisIdButton.setOnAction(e -> {
+            Optional<String> result = showSearchDialog();
+            result.ifPresent(analysisIdText::setText);
+        });
+
         Label platformIdLabel = new Label("Platform ID:");
         TextField platformIdText = new TextField();
         Label nameLabel = new Label("Name:");
@@ -73,30 +81,51 @@ public class Platforms {
         statusComboBox.getItems().addAll("active", "disabled", "passive");
         statusComboBox.setValue("active"); // Default value
 
+        TableView<Platforms> tableView = new TableView<>();
+        TableColumn<Platforms, Integer> platformIdCol = new TableColumn<>("Platform ID");
+        platformIdCol.setCellValueFactory(new PropertyValueFactory<>("platformId"));
+        TableColumn<Platforms, String> nameCol = new TableColumn<>("Name");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+        TableColumn<Platforms, String> typeCol = new TableColumn<>("Type");
+        typeCol.setCellValueFactory(new PropertyValueFactory<>("type"));
+        TableColumn<Platforms, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+
+        tableView.getColumns().addAll(platformIdCol, nameCol, typeCol, statusCol);
+
+        vbox.getChildren().add(tableView);
+
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            try {
-                int platformId = Integer.parseInt(platformIdText.getText());
-                String name = nameText.getText();
-                String type = typeText.getText();
-                String status = statusComboBox.getValue();
+            String analysisId = analysisIdText.getText();
+            int platformId = Integer.parseInt(platformIdText.getText());
+            String name = nameText.getText();
+            String type = typeText.getText();
+            String status = statusComboBox.getValue();
 
-                Platforms platform = new Platforms(platformId, name, type, status);
-                System.out.println("Platform Created: " + platform.getPlatformId());
+            Platforms platform = new Platforms(platformId, name, type, status);
+            System.out.println("Platform Created: " + platform.getPlatformId());
 
-                // Save to Database.txt
-                try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                    writer.write(String.format("Platforms,%d,%s,%s,%s%n", platformId, name, type, status));
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
-            } catch (NumberFormatException ex) {
-                System.err.println("Invalid input: Platform ID must be a number.");
+            // Save to Database.txt
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
+                writer.write(String.format("Analysis ID,%s,Platform,%d,%s,%s,%s%n", analysisId, platformId, name, type, status));
+            } catch (IOException ex) {
+                ex.printStackTrace();
             }
         });
 
-        vbox.getChildren().addAll(platformIdLabel, platformIdText, nameLabel, nameText, typeLabel, typeText, statusLabel, statusComboBox, createButton);
+        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, platformIdLabel, platformIdText, nameLabel, nameText, typeLabel, typeText, statusLabel, statusComboBox, createButton);
 
         return vbox;
     }
+
+    private static Optional<String> showSearchDialog() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Search Analysis ID");
+        dialog.setHeaderText("Enter Analysis ID to search:");
+        dialog.setContentText("Analysis ID:");
+
+        return dialog.showAndWait();
+    }
+
 }

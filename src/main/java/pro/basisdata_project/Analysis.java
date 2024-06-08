@@ -20,15 +20,11 @@ public class Analysis {
     private int analysisId;
     private String analysisType;
     private String results;
-    private String userId;
-    private int dataId;
 
-    public Analysis(int analysisId, String analysisType, String results, String userId, int dataId) {
+    public Analysis(int analysisId, String analysisType, String results) {
         this.analysisId = analysisId;
         this.analysisType = analysisType;
         this.results = results;
-        this.userId = userId;
-        this.dataId = dataId;
     }
 
     public int getAnalysisId() {
@@ -43,20 +39,14 @@ public class Analysis {
         return results;
     }
 
-    public String getUserId() {
-        return userId;
-    }
-
-    public int getDataId() {
-        return dataId;
-    }
-
     public static VBox getAnalysisUI() {
         VBox mainLayout = new VBox();
         mainLayout.setPadding(new Insets(10));
         mainLayout.setSpacing(10);
 
+        // Define table columns
         TableView<Analysis> tableView = new TableView<>();
+        tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY); // Add this line
         ObservableList<Analysis> data = FXCollections.observableArrayList();
 
         // Define table columns
@@ -69,14 +59,12 @@ public class Analysis {
         TableColumn<Analysis, String> resultsCol = new TableColumn<>("Results");
         resultsCol.setCellValueFactory(new PropertyValueFactory<>("results"));
 
-        TableColumn<Analysis, String> userIdCol = new TableColumn<>("User ID");
-        userIdCol.setCellValueFactory(new PropertyValueFactory<>("userId"));
+        resultsCol.setMinWidth(500); // Set minimum width
+        resultsCol.setMaxWidth(800); // Set maximum width
 
-        TableColumn<Analysis, Integer> dataIdCol = new TableColumn<>("Data ID");
-        dataIdCol.setCellValueFactory(new PropertyValueFactory<>("dataId"));
-
-        tableView.getColumns().addAll(analysisIdCol, analysisTypeCol, resultsCol, userIdCol, dataIdCol);
+        tableView.getColumns().addAll(analysisIdCol, analysisTypeCol, resultsCol);
         tableView.setItems(data);
+
 
         // Form for input
         VBox formLayout = new VBox();
@@ -86,29 +74,24 @@ public class Analysis {
         Label analysisIdLabel = new Label("Analysis ID:");
         TextField analysisIdText = new TextField();
         Label analysisTypeLabel = new Label("Analysis Type:");
-        TextField analysisTypeText = new TextField();
+        ChoiceBox<String> analysisTypeChoice = new ChoiceBox<>();
+        analysisTypeChoice.getItems().addAll("Diagnostic", "Predictive", "Prescriptive");
         Label resultsLabel = new Label("Results:");
         TextArea resultsText = new TextArea();
-        Label userIdLabel = new Label("User ID:");
-        TextField userIdText = new TextField();
-        Label dataIdLabel = new Label("Data ID:");
-        TextField dataIdText = new TextField();
 
         Button insertButton = new Button("Insert Data");
         insertButton.setOnAction(e -> {
             int analysisId = Integer.parseInt(analysisIdText.getText());
-            String analysisType = analysisTypeText.getText();
+            String analysisType = analysisTypeChoice.getValue();
             String results = resultsText.getText();
-            String userId = userIdText.getText();
-            int dataId = Integer.parseInt(dataIdText.getText());
 
-            Analysis analysis = new Analysis(analysisId, analysisType, results, userId, dataId);
+            Analysis analysis = new Analysis(analysisId, analysisType, results);
             data.add(analysis);
             saveToDatabase(analysis);
-            clearForm(analysisIdText, analysisTypeText, resultsText, userIdText, dataIdText);
+            clearForm(analysisIdText, analysisTypeChoice, resultsText);
         });
 
-        formLayout.getChildren().addAll(analysisIdLabel, analysisIdText, analysisTypeLabel, analysisTypeText, resultsLabel, resultsText, userIdLabel, userIdText, dataIdLabel, dataIdText, insertButton);
+        formLayout.getChildren().addAll(analysisIdLabel, analysisIdText, analysisTypeLabel, analysisTypeChoice, resultsLabel, resultsText, insertButton);
 
         HBox contentLayout = new HBox(20, tableView, formLayout);
         contentLayout.setAlignment(Pos.CENTER);
@@ -121,18 +104,16 @@ public class Analysis {
 
     private static void saveToDatabase(Analysis analysis) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-            writer.write(String.format("Analysis,%d,%s,%s,%s,%d%n", analysis.getAnalysisId(), analysis.getAnalysisType(), analysis.getResults(), analysis.getUserId(), analysis.getDataId()));
+            writer.write(String.format("Analysis,%d,%s,%s%n", analysis.getAnalysisId(), analysis.getAnalysisType(), analysis.getResults()));
         } catch (IOException ex) {
             ex.printStackTrace();
         }
     }
 
-    private static void clearForm(TextField analysisIdText, TextField analysisTypeText, TextArea resultsText, TextField userIdText, TextField dataIdText) {
+    private static void clearForm(TextField analysisIdText, ChoiceBox<String> analysisTypeChoice, TextArea resultsText) {
         analysisIdText.clear();
-        analysisTypeText.clear();
+        analysisTypeChoice.getSelectionModel().clearSelection();
         resultsText.clear();
-        userIdText.clear();
-        dataIdText.clear();
     }
 
     public static void main(String[] args) {

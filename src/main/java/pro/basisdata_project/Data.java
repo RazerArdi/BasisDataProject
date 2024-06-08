@@ -1,136 +1,153 @@
 package pro.basisdata_project;
 
-import javafx.application.Application;
-import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
-import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import javafx.stage.Stage;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Optional;
 
-public class Data extends Application {
-
+public class Data {
     private int dataId;
-    private String dataType;
-    private String content;
-    private int sensorId;
+    private String type;
+    private String description;
+    private String location;
+    private String format;
+    private int platformId;
 
-    public Data(int dataId, String dataType, String content, int sensorId) {
+    public Data(int dataId, String type, String description, String location, String format, int platformId) {
         this.dataId = dataId;
-        this.dataType = dataType;
-        this.content = content;
-        this.sensorId = sensorId;
+        this.type = type;
+        this.description = description;
+        this.location = location;
+        this.format = format;
+        this.platformId = platformId;
     }
 
     public int getDataId() {
         return dataId;
     }
 
-    public String getDataType() {
-        return dataType;
+    public String getType() {
+        return type;
     }
 
-    public String getContent() {
-        return content;
+    public String getDescription() {
+        return description;
     }
 
-    public int getSensorId() {
-        return sensorId;
+    public String getLocation() {
+        return location;
+    }
+
+    public String getFormat() {
+        return format;
+    }
+
+    public int getPlatformId() {
+        return platformId;
     }
 
     public static VBox getDataUI() {
-        VBox mainLayout = new VBox();
-        mainLayout.setPadding(new Insets(10));
-        mainLayout.setSpacing(10);
+        VBox vbox = new VBox();
+        vbox.setPadding(new Insets(10));
+        vbox.setSpacing(10);
+
+        Label analysisIdLabel = new Label("Analysis ID:");
+        TextField analysisIdText = new TextField();
+        Button searchAnalysisIdButton = new Button("Search Analysis ID");
+
+        searchAnalysisIdButton.setOnAction(e -> {
+            Optional<String> result = showSearchDialog();
+            if (result.isPresent()) {
+                String analysisId = result.get();
+                if (isDataFound(analysisId)) {
+                    displayDataFound();
+                } else {
+                    analysisIdText.setText(analysisId);
+                }
+            }
+        });
 
         TableView<Data> tableView = new TableView<>();
-        ObservableList<Data> data = FXCollections.observableArrayList();
-
-        // Define table columns
         TableColumn<Data, Integer> dataIdCol = new TableColumn<>("Data ID");
         dataIdCol.setCellValueFactory(new PropertyValueFactory<>("dataId"));
+        TableColumn<Data, String> typeCol = new TableColumn<>("Type");
+        typeCol.setCellValueFactory(new PropertyValueFactory<>("type"));
+        TableColumn<Data, String> descriptionCol = new TableColumn<>("Description");
+        descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
+        TableColumn<Data, String> locationCol = new TableColumn<>("Location");
+        locationCol.setCellValueFactory(new PropertyValueFactory<>("location"));
+        TableColumn<Data, String> formatCol = new TableColumn<>("Format");
+        formatCol.setCellValueFactory(new PropertyValueFactory<>("format"));
+        TableColumn<Data, Integer> platformIdCol = new TableColumn<>("Platform ID");
+        platformIdCol.setCellValueFactory(new PropertyValueFactory<>("platformId"));
 
-        TableColumn<Data, String> dataTypeCol = new TableColumn<>("Data Type");
-        dataTypeCol.setCellValueFactory(new PropertyValueFactory<>("dataType"));
-
-        TableColumn<Data, String> contentCol = new TableColumn<>("Content");
-        contentCol.setCellValueFactory(new PropertyValueFactory<>("content"));
-
-        TableColumn<Data, Integer> sensorIdCol = new TableColumn<>("Sensor ID");
-        sensorIdCol.setCellValueFactory(new PropertyValueFactory<>("sensorId"));
-
-        tableView.getColumns().addAll(dataIdCol, dataTypeCol, contentCol, sensorIdCol);
-        tableView.setItems(data);
-
-        // Form for input
-        VBox formLayout = new VBox();
-        formLayout.setPadding(new Insets(10));
-        formLayout.setSpacing(10);
+        tableView.getColumns().addAll(dataIdCol, typeCol, descriptionCol, locationCol, formatCol, platformIdCol);
+        vbox.getChildren().add(tableView);
 
         Label dataIdLabel = new Label("Data ID:");
         TextField dataIdText = new TextField();
-        Label dataTypeLabel = new Label("Data Type:");
-        TextField dataTypeText = new TextField();
-        Label contentLabel = new Label("Content:");
-        TextArea contentText = new TextArea();
-        Label sensorIdLabel = new Label("Sensor ID:");
-        TextField sensorIdText = new TextField();
+        Label typeLabel = new Label("Type:");
+        TextField typeText = new TextField();
+        Label descriptionLabel = new Label("Description:");
+        TextField descriptionText = new TextField();
+        Label locationLabel = new Label("Location:");
+        TextField locationText = new TextField();
+        Label formatLabel = new Label("Format:");
+        TextField formatText = new TextField();
+        Label platformIdLabel = new Label("Platform ID:");
+        TextField platformIdText = new TextField();
 
-        Button createButton = new Button("Insert Data");
+        Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
+            String analysisId = analysisIdText.getText();
             int dataId = Integer.parseInt(dataIdText.getText());
-            String dataType = dataTypeText.getText();
-            String content = contentText.getText();
-            int sensorId = Integer.parseInt(sensorIdText.getText());
+            String type = typeText.getText();
+            String description = descriptionText.getText();
+            String location = locationText.getText();
+            String format = formatText.getText();
+            int platformId = Integer.parseInt(platformIdText.getText());
 
-            Data dataEntry = new Data(dataId, dataType, content, sensorId);
-            data.add(dataEntry);
-            saveToDatabase(dataEntry);
-            clearForm(dataIdText, dataTypeText, contentText, sensorIdText);
+            Data data = new Data(dataId, type, description, location, format, platformId);
+            System.out.println("Data Created: " + data.getDataId());
+
+            // Save to Database.txt
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
+                writer.write(String.format("Analysis ID,%s,Data,%d,%s,%s,%s,%s,%d%n", analysisId, dataId, type, description, location, format, platformId));
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         });
 
-        formLayout.getChildren().addAll(dataIdLabel, dataIdText, dataTypeLabel, dataTypeText, contentLabel, contentText, sensorIdLabel, sensorIdText, createButton);
+        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, dataIdLabel, dataIdText, typeLabel, typeText, descriptionLabel, descriptionText, locationLabel, locationText, formatLabel, formatText, platformIdLabel, platformIdText, createButton);
 
-        HBox contentLayout = new HBox(20, tableView, formLayout);
-        contentLayout.setAlignment(Pos.CENTER);
-        contentLayout.setPadding(new Insets(20));
-
-        mainLayout.getChildren().add(contentLayout);
-
-        return mainLayout;
+        return vbox;
     }
 
-    private static void saveToDatabase(Data data) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-            writer.write(String.format("Data,%d,%s,%s,%d%n", data.getDataId(), data.getDataType(), data.getContent(), data.getSensorId()));
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
+    private static Optional<String> showSearchDialog() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Search Analysis ID");
+        dialog.setHeaderText("Enter Analysis ID to search:");
+        dialog.setContentText("Analysis ID:");
+
+        return dialog.showAndWait();
     }
 
-    private static void clearForm(TextField dataIdText, TextField dataTypeText, TextArea contentText, TextField sensorIdText) {
-        dataIdText.clear();
-        dataTypeText.clear();
-        contentText.clear();
-        sensorIdText.clear();
+    private static boolean isDataFound(String analysisId) {
+        // Implement logic to check if data with the given analysisId exists in the database
+        return true; // For demonstration purposes, always return true
     }
 
-    @Override
-    public void start(Stage primaryStage) {
-        primaryStage.setTitle("Data Management");
-        primaryStage.setScene(new Scene(getDataUI(), 800, 600));
-        primaryStage.show();
-    }
+    private static void displayDataFound() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Data Found");
+        alert.setHeaderText(null);
+        alert.setContentText("Data Found!");
 
-    public static void main(String[] args) {
-        launch(args);
+        alert.showAndWait();
     }
 }

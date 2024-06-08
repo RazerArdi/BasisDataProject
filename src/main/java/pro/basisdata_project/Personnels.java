@@ -2,6 +2,7 @@ package pro.basisdata_project;
 
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
 import java.io.BufferedWriter;
@@ -96,11 +97,20 @@ public class Personnels {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
+        Label analysisIdLabel = new Label("Analysis ID:");
+        TextField analysisIdText = new TextField();
+        Button searchAnalysisIdButton = new Button("Search Analysis ID");
+
+        searchAnalysisIdButton.setOnAction(e -> {
+            Optional<String> result = showSearchDialog();
+            result.ifPresent(analysisIdText::setText);
+        });
+
         Label personnelIdLabel = new Label("Personnel ID:");
         TextField personnelIdText = new TextField();
         Label nameLabel = new Label("Personnel Name:");
         TextField nameText = new TextField();
-        Label positionLabel = new Label("Position:");
+        Label PositionLabel = new Label("Position:");
         ChoiceBox<Position> rankChoice = new ChoiceBox<>();
         rankChoice.getItems().addAll(Position.values());
         Label specialityLabel = new Label("Speciality:");
@@ -112,15 +122,39 @@ public class Personnels {
         Label activeDateLabel = new Label("Active Date:");
         TextField activeDateText = new TextField();
 
-        // Handle the selection of the rank
+        TableView<Personnels> tableView = new TableView<>();
+        TableColumn<Personnels, String> personnelIdCol = new TableColumn<>("Personnel ID");
+        personnelIdCol.setCellValueFactory(new PropertyValueFactory<>("personnelId"));
+        TableColumn<Personnels, String> nameCol = new TableColumn<>("Name");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("personnelName"));
+        TableColumn<Personnels, Position> rankCol = new TableColumn<>("Position");
+        rankCol.setCellValueFactory(new PropertyValueFactory<>("rank"));
+        TableColumn<Personnels, String> specialityCol = new TableColumn<>("Speciality");
+        specialityCol.setCellValueFactory(new PropertyValueFactory<>("speciality"));
+        TableColumn<Personnels, String> assignmentCol = new TableColumn<>("Current Assignment");
+        assignmentCol.setCellValueFactory(new PropertyValueFactory<>("currentAssignment"));
+        TableColumn<Personnels, String> contactCol = new TableColumn<>("Contact Info");
+        contactCol.setCellValueFactory(new PropertyValueFactory<>("contactInfo"));
+        TableColumn<Personnels, String> activeDateCol = new TableColumn<>("Active Date");
+        activeDateCol.setCellValueFactory(new PropertyValueFactory<>("activeDate"));
+
+        tableView.getColumns().addAll(personnelIdCol, nameCol, rankCol, specialityCol, assignmentCol, contactCol, activeDateCol);
+
+        vbox.getChildren().add(tableView);
+
         rankChoice.getSelectionModel().selectedIndexProperty().addListener((observable, oldValue, newValue) -> {
-            Position selectedPosition = rankChoice.getItems().get(newValue.intValue());
-            VBox additionalFields = getAdditionalFieldsForPosition(selectedPosition, activeDateLabel, activeDateText);
-            vbox.getChildren().addAll(additionalFields.getChildren());
+            if (newValue.intValue() == Position.OFFICER.ordinal()) {
+                vbox.getChildren().add(createOfficerFields(activeDateLabel, activeDateText));
+            } else if (newValue.intValue() == Position.CIVILIAN_CONTRACTOR.ordinal()) {
+                vbox.getChildren().add(createCivilianContractorFields(activeDateLabel, activeDateText));
+            } else {
+                vbox.getChildren().removeAll(activeDateLabel, activeDateText);
+            }
         });
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
+            String analysisId = analysisIdText.getText();
             String personnelId = personnelIdText.getText();
             String personnelName = nameText.getText();
             Position rank = rankChoice.getValue();
@@ -134,58 +168,74 @@ public class Personnels {
 
             // Save to Database.txt
             try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("Personnel,%s,%s,%s,%s,%s,%s,%s%n", personnelId, personnelName, rank.name(), speciality, currentAssignment, contactInfo, activeDate));
+                writer.write(String.format("Analysis ID,%s,Personnels,%s,%s,%s,%s,%s,%s,%s%n", analysisId, personnelId, personnelName, rank.name(), speciality, currentAssignment, contactInfo, activeDate));
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
         });
 
-        vbox.getChildren().addAll(personnelIdLabel, personnelIdText, nameLabel, nameText, positionLabel, rankChoice, specialityLabel, specialityText, assignmentLabel, assignmentText, contactLabel, contactText, activeDateLabel, activeDateText, createButton);
+        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, personnelIdLabel, personnelIdText, nameLabel, nameText, PositionLabel, rankChoice, specialityLabel, specialityText, assignmentLabel, assignmentText, contactLabel, contactText, activeDateLabel, activeDateText, createButton);
 
         return vbox;
     }
 
-    private static VBox getAdditionalFieldsForPosition(Position position, Label activeDateLabel, TextField activeDateText) {
-        VBox additionalFields = new VBox();
-        additionalFields.setSpacing(10);
+    private static Optional<String> showSearchDialog() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Search Analysis ID");
+        dialog.setHeaderText("Enter Analysis ID to search:");
+        dialog.setContentText("Analysis ID:");
 
-        switch (position) {
-            case OFFICER:
-                additionalFields.getChildren().addAll(activeDateLabel, activeDateText);
-                Button editActiveDateButtonOfficer = new Button("Edit Active Date");
-                additionalFields.getChildren().add(editActiveDateButtonOfficer);
-                editActiveDateButtonOfficer.setOnAction(event -> {
-                    TextInputDialog dialog = new TextInputDialog(activeDateText.getText());
-                    dialog.setTitle("Edit Active Date");
-                    dialog.setHeaderText("Edit Active Date for Officer");
-                    dialog.setContentText("New Active Date:");
+        return dialog.showAndWait();
+    }
 
-                    Optional<String> result = dialog.showAndWait();
-                    result.ifPresent(newActiveDate -> activeDateText.setText(newActiveDate));
-                });
-                break;
+    private static VBox createOfficerFields(Label activeDateLabel, TextField activeDateText) {
+        VBox officerFields = new VBox();
+        officerFields.setSpacing(10);
+        officerFields.getChildren().addAll(activeDateLabel, activeDateText);
 
-            case CIVILIAN_CONTRACTOR:
-                additionalFields.getChildren().addAll(activeDateLabel, activeDateText);
-                Button editActiveDateButtonCivilian = new Button("Edit Active Date");
-                additionalFields.getChildren().add(editActiveDateButtonCivilian);
-                editActiveDateButtonCivilian.setOnAction(event -> {
-                    TextInputDialog dialog = new TextInputDialog(activeDateText.getText());
-                    dialog.setTitle("Edit Active Date");
-                    dialog.setHeaderText("Edit Active Date for Civilian/Contractor");
-                    dialog.setContentText("New Active Date:");
+        boolean isEditButtonAdded = false;
 
-                    Optional<String> result = dialog.showAndWait();
-                    result.ifPresent(newActiveDate -> activeDateText.setText(newActiveDate));
-                });
-                break;
+        Button editActiveDateButton = new Button("Edit Active Date");
 
-            case ENLISTED:
-                additionalFields.getChildren().addAll(activeDateLabel, activeDateText);
-                // No additional fields for enlisted personnel
-                break;
-        }
+        officerFields.getChildren().add(editActiveDateButton);
+        isEditButtonAdded = true;
 
-        return additionalFields;
+        editActiveDateButton.setOnAction(event -> {
+            TextInputDialog dialog = new TextInputDialog(activeDateText.getText());
+            dialog.setTitle("Edit Active Date");
+            dialog.setHeaderText("Edit Active Date for Officer");
+            dialog.setContentText("New Active Date:");
+
+            Optional<String> result = dialog.showAndWait();
+            result.ifPresent(newActiveDate -> activeDateText.setText(newActiveDate));
+        });
+
+        return officerFields;
+    }
+
+    private static VBox createCivilianContractorFields(Label activeDateLabel, TextField activeDateText) {
+        VBox civilianContractorFields = new VBox();
+        civilianContractorFields.setSpacing(10);
+        civilianContractorFields.getChildren().addAll(activeDateLabel, activeDateText);
+
+        boolean isEditButtonAdded = false;
+
+        Button editActiveDateButton = new Button("Edit Active Date");
+
+        civilianContractorFields.getChildren().add(editActiveDateButton);
+        isEditButtonAdded = true;
+
+        editActiveDateButton.setOnAction(event -> {
+            String personelType = "Civilian/Contractor"; // Tambahkan variabel personelType
+            TextInputDialog dialog = new TextInputDialog(activeDateText.getText());
+            dialog.setTitle("Edit Active Date");
+            dialog.setHeaderText("Edit Active Date for " + personelType);
+            dialog.setContentText("New Active Date:");
+
+            Optional<String> result = dialog.showAndWait();
+            result.ifPresent(newActiveDate -> activeDateText.setText(newActiveDate));
+        });
+
+        return civilianContractorFields;
     }
 }

@@ -1,14 +1,14 @@
 package pro.basisdata_project;
 
 import javafx.geometry.Insets;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Optional;
 
 public class Missions {
 
@@ -71,6 +71,15 @@ public class Missions {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
+        Label analysisIdLabel = new Label("Analysis ID:");
+        TextField analysisIdText = new TextField();
+        Button searchAnalysisIdButton = new Button("Search Analysis ID");
+
+        searchAnalysisIdButton.setOnAction(e -> {
+            Optional<String> result = showSearchDialog();
+            result.ifPresent(analysisIdText::setText);
+        });
+
         Label missionIdLabel = new Label("Mission ID:");
         TextField missionIdText = new TextField();
         Label nameLabel = new Label("Name:");
@@ -82,31 +91,53 @@ public class Missions {
         Label endDateLabel = new Label("End Date:");
         TextField endDateText = new TextField();
 
+        TableView<Missions> tableView = new TableView<>();
+        TableColumn<Missions, Integer> missionIdCol = new TableColumn<>("Mission ID");
+        missionIdCol.setCellValueFactory(new PropertyValueFactory<>("missionId"));
+        TableColumn<Missions, String> nameCol = new TableColumn<>("Name");
+        nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+        TableColumn<Missions, String> objectiveCol = new TableColumn<>("Objective");
+        objectiveCol.setCellValueFactory(new PropertyValueFactory<>("objective"));
+        TableColumn<Missions, String> startDateCol = new TableColumn<>("Start Date");
+        startDateCol.setCellValueFactory(new PropertyValueFactory<>("startDate"));
+        TableColumn<Missions, String> endDateCol = new TableColumn<>("End Date");
+        endDateCol.setCellValueFactory(new PropertyValueFactory<>("endDate"));
+
+        tableView.getColumns().addAll(missionIdCol, nameCol, objectiveCol, startDateCol, endDateCol);
+
+        vbox.getChildren().add(tableView);
+
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            try {
-                int missionId = Integer.parseInt(missionIdText.getText());
-                String name = nameText.getText();
-                String objective = objectiveText.getText();
-                String startDate = startDateText.getText();
-                String endDate = endDateText.getText();
+            String analysisId = analysisIdText.getText();
+            int missionId = Integer.parseInt(missionIdText.getText());
+            String name = nameText.getText();
+            String objective = objectiveText.getText();
+            String startDate = startDateText.getText();
+            String endDate = endDateText.getText();
 
-                Missions mission = new Missions(missionId, name, objective, startDate, endDate);
-                System.out.println("Mission Created: " + mission.getMissionId());
+            Missions mission = new Missions(missionId, name, objective, startDate, endDate);
+            System.out.println("Mission Created: " + mission.getMissionId());
 
-                // Save to Database.txt
-                try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                    writer.write(String.format("Missions,%d,%s,%s,%s,%s%n", missionId, name, objective, startDate, endDate));
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
-            } catch (NumberFormatException ex) {
-                System.err.println("Invalid input: " + ex.getMessage());
+            // Save to Database.txt
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
+                writer.write(String.format("Analysis ID,%s,Missions,%d,%s,%s,%s,%s%n", analysisId, missionId, name, objective, startDate, endDate));
+            } catch (IOException ex) {
+                ex.printStackTrace();
             }
         });
 
-        vbox.getChildren().addAll(missionIdLabel, missionIdText, nameLabel, nameText, objectiveLabel, objectiveText, startDateLabel, startDateText, endDateLabel, endDateText, createButton);
+        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, missionIdLabel, missionIdText, nameLabel, nameText, objectiveLabel, objectiveText, startDateLabel, startDateText, endDateLabel, endDateText, createButton);
 
         return vbox;
+    }
+
+    private static Optional<String> showSearchDialog() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Search Analysis ID");
+        dialog.setHeaderText("Enter Analysis ID to search:");
+        dialog.setContentText("Analysis ID:");
+
+        return dialog.showAndWait();
     }
 }

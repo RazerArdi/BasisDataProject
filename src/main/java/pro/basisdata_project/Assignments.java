@@ -15,6 +15,7 @@ import javafx.stage.Stage;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Optional;
 
 public class Assignments extends Application {
 
@@ -84,6 +85,15 @@ public class Assignments extends Application {
         formLayout.setPadding(new Insets(10));
         formLayout.setSpacing(10);
 
+        Label analysisIdLabel = new Label("Analysis ID:");
+        TextField analysisIdText = new TextField();
+        Button searchAnalysisIdButton = new Button("Search Analysis ID");
+
+        searchAnalysisIdButton.setOnAction(e -> {
+            Optional<String> result = showSearchDialog();
+            result.ifPresent(analysisIdText::setText);
+        });
+
         Label assignmentIdLabel = new Label("Assignment ID:");
         TextField assignmentIdText = new TextField();
         Label taskLabel = new Label("Task:");
@@ -97,6 +107,7 @@ public class Assignments extends Application {
 
         Button insertButton = new Button("Insert Data");
         insertButton.setOnAction(e -> {
+            String analysisId = analysisIdText.getText();
             int assignmentId = Integer.parseInt(assignmentIdText.getText());
             String task = taskText.getText();
             String description = descriptionText.getText();
@@ -105,11 +116,11 @@ public class Assignments extends Application {
 
             Assignments assignment = new Assignments(assignmentId, task, description, personnelId, missionId);
             data.add(assignment);
-            saveToDatabase(assignment);
-            clearForm(assignmentIdText, taskText, descriptionText, personnelIdText, missionIdText);
+            saveToDatabase(analysisId, assignment);
+            clearForm(analysisIdText, assignmentIdText, taskText, descriptionText, personnelIdText, missionIdText);
         });
 
-        formLayout.getChildren().addAll(assignmentIdLabel, assignmentIdText, taskLabel, taskText, descriptionLabel, descriptionText, personnelIdLabel, personnelIdText, missionIdLabel, missionIdText, insertButton);
+        formLayout.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, assignmentIdLabel, assignmentIdText, taskLabel, taskText, descriptionLabel, descriptionText, personnelIdLabel, personnelIdText, missionIdLabel, missionIdText, insertButton);
 
         HBox contentLayout = new HBox(20, tableView, formLayout);
         contentLayout.setAlignment(Pos.CENTER);
@@ -120,20 +131,30 @@ public class Assignments extends Application {
         return mainLayout;
     }
 
-    private static void saveToDatabase(Assignments assignment) {
+    private static void saveToDatabase(String analysisId, Assignments assignment) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-            writer.write(String.format("Assignments,%d,%s,%s,%d,%d%n", assignment.getAssignmentId(), assignment.getTask(), assignment.getDescription(), assignment.getPersonnelId(), assignment.getMissionId()));
+            writer.write(String.format("Analysis ID,%s,Assignments,%d,%s,%s,%d,%d%n", analysisId, assignment.getAssignmentId(), assignment.getTask(), assignment.getDescription(), assignment.getPersonnelId(), assignment.getMissionId()));
         } catch (IOException ex) {
             ex.printStackTrace();
         }
     }
 
-    private static void clearForm(TextField assignmentIdText, TextField taskText, TextArea descriptionText, TextField personnelIdText, TextField missionIdText) {
+    private static void clearForm(TextField analysisIdText, TextField assignmentIdText, TextField taskText, TextArea descriptionText, TextField personnelIdText, TextField missionIdText) {
+        analysisIdText.clear();
         assignmentIdText.clear();
         taskText.clear();
         descriptionText.clear();
         personnelIdText.clear();
         missionIdText.clear();
+    }
+
+    private static Optional<String> showSearchDialog() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Search Analysis ID");
+        dialog.setHeaderText("Enter Analysis ID to search:");
+        dialog.setContentText("Analysis ID:");
+
+        return dialog.showAndWait();
     }
 
     @Override

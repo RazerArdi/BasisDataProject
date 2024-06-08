@@ -31,13 +31,19 @@ public class Home {
         searchField.setPromptText("Search...");
 
         TableView<DataItem> tableView = new TableView<>();
-        TableColumn<DataItem, String> col1 = new TableColumn<>("Column 1");
-        TableColumn<DataItem, String> col2 = new TableColumn<>("Column 2");
+        TableColumn<DataItem, String> colAnalysisId = new TableColumn<>("Analysis ID");
+        TableColumn<DataItem, String> colDescription = new TableColumn<>("Description");
+        TableColumn<DataItem, String> colDate = new TableColumn<>("Date");
+        TableColumn<DataItem, String> colUserId = new TableColumn<>("User ID");
+        TableColumn<DataItem, String> colPlatformId = new TableColumn<>("Platform ID");
 
-        col1.setCellValueFactory(new PropertyValueFactory<>("data1"));
-        col2.setCellValueFactory(new PropertyValueFactory<>("data2"));
+        colAnalysisId.setCellValueFactory(new PropertyValueFactory<>("analysisId"));
+        colDescription.setCellValueFactory(new PropertyValueFactory<>("description"));
+        colDate.setCellValueFactory(new PropertyValueFactory<>("date"));
+        colUserId.setCellValueFactory(new PropertyValueFactory<>("userId"));
+        colPlatformId.setCellValueFactory(new PropertyValueFactory<>("platformId"));
 
-        tableView.getColumns().addAll(col1, col2);
+        tableView.getColumns().addAll(colAnalysisId, colDescription, colDate, colUserId, colPlatformId);
 
         Button loadDataButton = new Button("Load Data from Database");
         loadDataButton.setOnAction(event -> {
@@ -47,7 +53,11 @@ public class Home {
 
                 for (String line : lines) {
                     String[] parts = line.split(",");
-                    data.add(new DataItem(parts[0], parts[1])); // Misalnya, kolom pertama dan kedua adalah data1 dan data2
+                    if (parts.length >= 5) {
+                        data.add(new DataItem(parts[0], parts[1], parts[2], parts[3], parts[4]));
+                    } else {
+                        System.out.println("Invalid data format in line: " + line);
+                    }
                 }
 
                 FilteredList<DataItem> filteredData = new FilteredList<>(data);
@@ -62,8 +72,7 @@ public class Home {
 
                         String lowerCaseFilter = newValue.toLowerCase();
 
-                        return dataItem.getData1().toLowerCase().contains(lowerCaseFilter) ||
-                                dataItem.getData2().toLowerCase().contains(lowerCaseFilter);
+                        return dataItem.getDescription().toLowerCase().contains(lowerCaseFilter);
                     });
                 });
 
@@ -78,26 +87,46 @@ public class Home {
             }
         });
 
+
+
         homeContent.getChildren().addAll(loadDataButton);
 
         return homeContent;
     }
 
     public static class DataItem {
-        private final String data1;
-        private final String data2;
+        private final String analysisId;
+        private final String description;
+        private final String date;
+        private final String userId;
+        private final String platformId;
 
-        public DataItem(String data1, String data2) {
-            this.data1 = data1;
-            this.data2 = data2;
+        public DataItem(String analysisId, String description, String date, String userId, String platformId) {
+            this.analysisId = analysisId;
+            this.description = description;
+            this.date = date;
+            this.userId = userId;
+            this.platformId = platformId;
         }
 
-        public String getData1() {
-            return data1;
+        public String getAnalysisId() {
+            return analysisId;
         }
 
-        public String getData2() {
-            return data2;
+        public String getDescription() {
+            return description;
+        }
+
+        public String getDate() {
+            return date;
+        }
+
+        public String getUserId() {
+            return userId;
+        }
+
+        public String getPlatformId() {
+            return platformId;
         }
     }
 }

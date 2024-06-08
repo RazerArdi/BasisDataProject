@@ -4,11 +4,13 @@ import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TextInputDialog;
 import javafx.scene.layout.VBox;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Optional;
 
 public class Sensors {
 
@@ -71,6 +73,15 @@ public class Sensors {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
+        Label analysisIdLabel = new Label("Analysis ID:");
+        TextField analysisIdText = new TextField();
+        Button searchAnalysisIdButton = new Button("Search Analysis ID");
+
+        searchAnalysisIdButton.setOnAction(e -> {
+            Optional<String> result = showSearchDialog();
+            result.ifPresent(analysisIdText::setText);
+        });
+
         Label sensorIdLabel = new Label("Sensor ID:");
         TextField sensorIdText = new TextField();
         Label nameLabel = new Label("Name:");
@@ -84,29 +95,35 @@ public class Sensors {
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            try {
-                int sensorId = Integer.parseInt(sensorIdText.getText());
-                String name = nameText.getText();
-                String type = typeText.getText();
-                String status = statusText.getText();
-                int platformId = Integer.parseInt(platformIdText.getText());
+            String analysisId = analysisIdText.getText();
+            int sensorId = Integer.parseInt(sensorIdText.getText());
+            String name = nameText.getText();
+            String type = typeText.getText();
+            String status = statusText.getText();
+            int platformId = Integer.parseInt(platformIdText.getText());
 
-                Sensors sensor = new Sensors(sensorId, name, type, status, platformId);
-                System.out.println("Sensor Created: " + sensor.getSensorId());
+            Sensors sensor = new Sensors(sensorId, name, type, status, platformId);
+            System.out.println("Sensor Created: " + sensor.getSensorId());
 
-                // Save to Database.txt
-                try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                    writer.write(String.format("Sensors,%d,%s,%s,%s,%d%n", sensorId, name, type, status, platformId));
-                } catch (IOException ex) {
-                    ex.printStackTrace();
-                }
-            } catch (NumberFormatException ex) {
-                System.err.println("Invalid input: Sensor ID and Platform ID must be numbers.");
+            // Save to Database.txt
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
+                writer.write(String.format("Analysis ID,%s,Sensors,%d,%s,%s,%s,%d%n", analysisId, sensorId, name, type, status, platformId));
+            } catch (IOException ex) {
+                ex.printStackTrace();
             }
         });
 
-        vbox.getChildren().addAll(sensorIdLabel, sensorIdText, nameLabel, nameText, typeLabel, typeText, statusLabel, statusText, platformIdLabel, platformIdText, createButton);
+        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, sensorIdLabel, sensorIdText, nameLabel, nameText, typeLabel, typeText, statusLabel, statusText, platformIdLabel, platformIdText, createButton);
 
         return vbox;
+    }
+
+    private static Optional<String> showSearchDialog() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Search Analysis ID");
+        dialog.setHeaderText("Enter Analysis ID to search:");
+        dialog.setContentText("Analysis ID:");
+
+        return dialog.showAndWait();
     }
 }
