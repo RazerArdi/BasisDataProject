@@ -4,24 +4,21 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e0f60364-e204-47a5-ba62-a0924b2f2608" name="Changes" comment="Beranda Updated">
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Analysis.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Assignments.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/CommLog.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Data.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Equipments.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Home.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Maintenancelogs.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Missions.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Personnels.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Platforms.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sensors.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Users.java" afterDir="false" />
+    <list default="true" id="e0f60364-e204-47a5-ba62-a0924b2f2608" name="Changes" comment="Entitas Updated">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DataUser.txt" beforeDir="false" afterPath="$PROJECT_DIR$/DataUser.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Beranda.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MainPage.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Login.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Login.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Analysis.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Analysis.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Assignments.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Assignments.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/CommLog.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/CommLog.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Data.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Data.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Equipments.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Equipments.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Home.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Home.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MainPage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MainPage.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Maintenancelogs.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Maintenancelogs.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Missions.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Missions.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Personnels.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Personnels.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Platforms.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Platforms.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sensors.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sensors.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Users.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Users.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -162,7 +159,15 @@
       <option name="project" value="LOCAL" />
       <updated>1717181963951</updated>
     </task>
-    <option name="localTasksCounter" value="7" />
+    <task id="LOCAL-00007" summary="Entitas Updated">
+      <option name="closed" value="true" />
+      <created>1717440517923</created>
+      <option name="number" value="00007" />
+      <option name="presentableId" value="LOCAL-00007" />
+      <option name="project" value="LOCAL" />
+      <updated>1717440517923</updated>
+    </task>
+    <option name="localTasksCounter" value="8" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -179,6 +184,7 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Login" />
     <MESSAGE value="Beranda Updated" />
-    <option name="LAST_COMMIT_MESSAGE" value="Beranda Updated" />
+    <MESSAGE value="Entitas Updated" />
+    <option name="LAST_COMMIT_MESSAGE" value="Entitas Updated" />
   </component>
 </project>

@@ -3,32 +3,36 @@ package pro.basisdata_project;
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
-import javafx.geometry.Pos;
+
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class Maintenancelogs {
 
-    private int maintenanceLogId;
+    private int logId;
     private String description;
     private String date;
-    private String equipmentId;
-    private String personnelId;
+    private String userId;
+    private int platformId;
 
-    public Maintenancelogs(int maintenanceLogId, String description, String date, String equipmentId, String personnelId) {
-        this.maintenanceLogId = maintenanceLogId;
+    public Maintenancelogs(int logId, String description, String date, String userId, int platformId) {
+        this.logId = logId;
         this.description = description;
         this.date = date;
-        this.equipmentId = equipmentId;
-        this.personnelId = personnelId;
+        this.userId = userId;
+        this.platformId = platformId;
     }
 
-    public int getMaintenanceLogId() {
-        return maintenanceLogId;
+    public int getLogId() {
+        return logId;
     }
 
-    public void setMaintenanceLogId(int maintenanceLogId) {
-        this.maintenanceLogId = maintenanceLogId;
+    public void setLogId(int logId) {
+        this.logId = logId;
     }
 
     public String getDescription() {
@@ -47,20 +51,20 @@ public class Maintenancelogs {
         this.date = date;
     }
 
-    public String getEquipmentId() {
-        return equipmentId;
+    public String getUserId() {
+        return userId;
     }
 
-    public void setEquipmentId(String equipmentId) {
-        this.equipmentId = equipmentId;
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 
-    public String getPersonnelId() {
-        return personnelId;
+    public int getPlatformId() {
+        return platformId;
     }
 
-    public void setPersonnelId(String personnelId) {
-        this.personnelId = personnelId;
+    public void setPlatformId(int platformId) {
+        this.platformId = platformId;
     }
 
     public static VBox getMaintenancelogsUI() {
@@ -68,30 +72,37 @@ public class Maintenancelogs {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
-        Label maintenanceLogIdLabel = new Label("Maintenance Log ID:");
-        TextField maintenanceLogIdText = new TextField();
+        Label logIdLabel = new Label("Log ID:");
+        TextField logIdText = new TextField();
         Label descriptionLabel = new Label("Description:");
-        TextField descriptionText = new TextField();
+        TextArea descriptionText = new TextArea();
         Label dateLabel = new Label("Date:");
         TextField dateText = new TextField();
-        Label equipmentIdLabel = new Label("Equipment ID:");
-        TextField equipmentIdText = new TextField();
-        Label personnelIdLabel = new Label("Personnel ID:");
-        TextField personnelIdText = new TextField();
+        Label userIdLabel = new Label("User ID:");
+        TextField userIdText = new TextField();
+        Label platformIdLabel = new Label("Platform ID:");
+        TextField platformIdText = new TextField();
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            int maintenanceLogId = Integer.parseInt(maintenanceLogIdText.getText());
+            int logId = Integer.parseInt(logIdText.getText());
             String description = descriptionText.getText();
             String date = dateText.getText();
-            String equipmentId = equipmentIdText.getText();
-            String personnelId = personnelIdText.getText();
+            String userId = userIdText.getText();
+            int platformId = Integer.parseInt(platformIdText.getText());
 
-            Maintenancelogs maintenancelog = new Maintenancelogs(maintenanceLogId, description, date, equipmentId, personnelId);
-            System.out.println("Maintenance Log Created: " + maintenancelog.getMaintenanceLogId());
+            Maintenancelogs maintenancelog = new Maintenancelogs(logId, description, date, userId, platformId);
+            System.out.println("Maintenancelog Created: " + maintenancelog.getLogId());
+
+            // Save to Database.txt
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
+                writer.write(String.format("Maintenancelogs,%d,%s,%s,%s,%d%n", logId, description, date, userId, platformId));
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         });
 
-        vbox.getChildren().addAll(maintenanceLogIdLabel, maintenanceLogIdText, descriptionLabel, descriptionText, dateLabel, dateText, equipmentIdLabel, equipmentIdText, personnelIdLabel, personnelIdText, createButton);
+        vbox.getChildren().addAll(logIdLabel, logIdText, descriptionLabel, descriptionText, dateLabel, dateText, userIdLabel, userIdText, platformIdLabel, platformIdText, createButton);
 
         return vbox;
     }

@@ -1,98 +1,174 @@
 package pro.basisdata_project;
 
+import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.VBox;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
-public class CommLog {
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 
-    private int commLogId;
-    private String message;
-    private String timestamp;
-    private String senderId;
-    private String receiverId;
+public class CommLog extends Application {
 
-    public CommLog(int commLogId, String message, String timestamp, String senderId, String receiverId) {
-        this.commLogId = commLogId;
-        this.message = message;
-        this.timestamp = timestamp;
-        this.senderId = senderId;
-        this.receiverId = receiverId;
+    private int logId;
+    private String specialId;
+    private String task;
+    private String location;
+
+    public CommLog(int logId, String specialId, String task, String location) {
+        this.logId = logId;
+        this.specialId = specialId;
+        this.task = task;
+        this.location = location;
     }
 
-    public int getCommLogId() {
-        return commLogId;
+    public int getLogId() {
+        return logId;
     }
 
-    public void setCommLogId(int commLogId) {
-        this.commLogId = commLogId;
+    public String getSpecialId() {
+        return specialId;
     }
 
-    public String getMessage() {
-        return message;
+    public String getTask() {
+        return task;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public String getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(String timestamp) {
-        this.timestamp = timestamp;
-    }
-
-    public String getSenderId() {
-        return senderId;
-    }
-
-    public void setSenderId(String senderId) {
-        this.senderId = senderId;
-    }
-
-    public String getReceiverId() {
-        return receiverId;
-    }
-
-    public void setReceiverId(String receiverId) {
-        this.receiverId = receiverId;
+    public String getLocation() {
+        return location;
     }
 
     public static VBox getCommLogUI() {
-        VBox vbox = new VBox();
-        vbox.setPadding(new Insets(10));
-        vbox.setSpacing(10);
+        VBox mainLayout = new VBox();
+        mainLayout.setPadding(new Insets(10));
+        mainLayout.setSpacing(10);
 
-        Label commLogIdLabel = new Label("CommLog ID:");
-        TextField commLogIdText = new TextField();
-        Label messageLabel = new Label("Message:");
-        TextField messageText = new TextField();
-        Label timestampLabel = new Label("Timestamp:");
-        TextField timestampText = new TextField();
-        Label senderIdLabel = new Label("Sender ID:");
-        TextField senderIdText = new TextField();
-        Label receiverIdLabel = new Label("Receiver ID:");
-        TextField receiverIdText = new TextField();
+        TableView<CommLog> tableView = new TableView<>();
+        ObservableList<CommLog> data = FXCollections.observableArrayList();
 
-        Button createButton = new Button("Create");
-        createButton.setOnAction(e -> {
-            int commLogId = Integer.parseInt(commLogIdText.getText());
-            String message = messageText.getText();
-            String timestamp = timestampText.getText();
-            String senderId = senderIdText.getText();
-            String receiverId = receiverIdText.getText();
+        // Define table columns
+        TableColumn<CommLog, Integer> logIdCol = new TableColumn<>("Log ID");
+        logIdCol.setCellValueFactory(new PropertyValueFactory<>("logId"));
 
-            CommLog commLog = new CommLog(commLogId, message, timestamp, senderId, receiverId);
-            System.out.println("CommLog Created: " + commLog.getCommLogId());
+        TableColumn<CommLog, String> specialIdCol = new TableColumn<>("Special ID");
+        specialIdCol.setCellValueFactory(new PropertyValueFactory<>("specialId"));
+
+        TableColumn<CommLog, String> taskCol = new TableColumn<>("Task");
+        taskCol.setCellValueFactory(new PropertyValueFactory<>("task"));
+
+        TableColumn<CommLog, String> locationCol = new TableColumn<>("Location");
+        locationCol.setCellValueFactory(new PropertyValueFactory<>("location"));
+
+        tableView.getColumns().addAll(logIdCol, specialIdCol, taskCol, locationCol);
+        tableView.setItems(data);
+
+        // Form for input
+        VBox formLayout = new VBox();
+        formLayout.setPadding(new Insets(10));
+        formLayout.setSpacing(10);
+
+        Label domainLabel = new Label("Domain Type:");
+        ChoiceBox<String> domainChoiceBox = new ChoiceBox<>();
+        domainChoiceBox.getItems().addAll("Air", "Sea", "Land", "Space");
+        domainChoiceBox.setValue("Air");
+
+        Label logIdLabel = new Label("Log ID:");
+        TextField logIdText = new TextField();
+        Label specialIdLabel = new Label("Special ID:");
+        TextField specialIdText = new TextField();
+        Label taskLabel = new Label("Task:");
+        TextField taskText = new TextField();
+        Label locationLabel = new Label("Location:");
+        TextField locationText = new TextField();
+
+        VBox specificFields = new VBox();
+        specificFields.setSpacing(10);
+
+        domainChoiceBox.setOnAction(e -> {
+            String domainType = domainChoiceBox.getValue();
+            specificFields.getChildren().clear();
+
+            switch (domainType) {
+                case "Air":
+                    Label airIdLabel = new Label("Air ID:");
+                    TextField airIdText = new TextField();
+                    specificFields.getChildren().addAll(airIdLabel, airIdText);
+                    break;
+                case "Sea":
+                    Label seaPlatformIdLabel = new Label("Sea Platform ID:");
+                    TextField seaPlatformIdText = new TextField();
+                    specificFields.getChildren().addAll(seaPlatformIdLabel, seaPlatformIdText);
+                    break;
+                case "Land":
+                    Label landIdLabel = new Label("Land ID:");
+                    TextField landIdText = new TextField();
+                    specificFields.getChildren().addAll(landIdLabel, landIdText);
+                    break;
+                case "Space":
+                    Label spaceIdLabel = new Label("Space ID:");
+                    TextField spaceIdText = new TextField();
+                    specificFields.getChildren().addAll(spaceIdLabel, spaceIdText);
+                    break;
+                default:
+                    break;
+            }
         });
 
-        vbox.getChildren().addAll(commLogIdLabel, commLogIdText, messageLabel, messageText, timestampLabel, timestampText, senderIdLabel, senderIdText, receiverIdLabel, receiverIdText, createButton);
+        Button createButton = new Button("Insert Data");
+        createButton.setOnAction(e -> {
+            int logId = Integer.parseInt(logIdText.getText());
+            String specialId = specialIdText.getText();
+            String task = taskText.getText();
+            String location = locationText.getText();
 
-        return vbox;
+            CommLog commLog = new CommLog(logId, specialId, task, location);
+            data.add(commLog);
+            saveToDatabase(commLog);
+            clearForm(logIdText, specialIdText, taskText, locationText);
+        });
+
+        formLayout.getChildren().addAll(domainLabel, domainChoiceBox, logIdLabel, logIdText, specialIdLabel, specialIdText, taskLabel, taskText, locationLabel, locationText, specificFields, createButton);
+
+        HBox contentLayout = new HBox(20, tableView, formLayout);
+        contentLayout.setAlignment(Pos.CENTER);
+        contentLayout.setPadding(new Insets(20));
+
+        mainLayout.getChildren().add(contentLayout);
+
+        return mainLayout;
+    }
+
+    private static void saveToDatabase(CommLog commLog) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
+            writer.write(String.format("CommLog,%d,%s,%s,%s%n", commLog.getLogId(), commLog.getSpecialId(), commLog.getTask(), commLog.getLocation()));
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private static void clearForm(TextField logIdText, TextField specialIdText, TextField taskText, TextField locationText) {
+        logIdText.clear();
+        specialIdText.clear();
+        taskText.clear();
+        locationText.clear();
+    }
+
+    @Override
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("CommLog Management");
+        primaryStage.setScene(new Scene(getCommLogUI(), 800, 600));
+        primaryStage.show();
+    }
+
+    public static void main(String[] args) {
+        launch(args);
     }
 }

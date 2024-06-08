@@ -1,98 +1,149 @@
 package pro.basisdata_project;
 
+import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.VBox;
 import javafx.geometry.Pos;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
-public class Assignments {
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 
-    private String assignmentId;
-    private String role;
-    private String startDate;
-    private String endDate;
-    private String personnelId;
+public class Assignments extends Application {
 
-    public Assignments(String assignmentId, String role, String startDate, String endDate, String personnelId) {
+    private int assignmentId;
+    private String task;
+    private String description;
+    private int personnelId;
+    private int missionId;
+
+    public Assignments(int assignmentId, String task, String description, int personnelId, int missionId) {
         this.assignmentId = assignmentId;
-        this.role = role;
-        this.startDate = startDate;
-        this.endDate = endDate;
+        this.task = task;
+        this.description = description;
         this.personnelId = personnelId;
+        this.missionId = missionId;
     }
 
-    public String getAssignmentId() {
+    public int getAssignmentId() {
         return assignmentId;
     }
 
-    public void setAssignmentId(String assignmentId) {
-        this.assignmentId = assignmentId;
+    public String getTask() {
+        return task;
     }
 
-    public String getRole() {
-        return role;
+    public String getDescription() {
+        return description;
     }
 
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    public String getStartDate() {
-        return startDate;
-    }
-
-    public void setStartDate(String startDate) {
-        this.startDate = startDate;
-    }
-
-    public String getEndDate() {
-        return endDate;
-    }
-
-    public void setEndDate(String endDate) {
-        this.endDate = endDate;
-    }
-
-    public String getPersonnelId() {
+    public int getPersonnelId() {
         return personnelId;
     }
 
-    public void setPersonnelId(String personnelId) {
-        this.personnelId = personnelId;
+    public int getMissionId() {
+        return missionId;
     }
 
     public static VBox getAssignmentsUI() {
-        VBox vbox = new VBox();
-        vbox.setPadding(new Insets(10));
-        vbox.setSpacing(10);
+        VBox mainLayout = new VBox();
+        mainLayout.setPadding(new Insets(10));
+        mainLayout.setSpacing(10);
+
+        TableView<Assignments> tableView = new TableView<>();
+        ObservableList<Assignments> data = FXCollections.observableArrayList();
+
+        // Define table columns
+        TableColumn<Assignments, Integer> assignmentIdCol = new TableColumn<>("Assignment ID");
+        assignmentIdCol.setCellValueFactory(new PropertyValueFactory<>("assignmentId"));
+
+        TableColumn<Assignments, String> taskCol = new TableColumn<>("Task");
+        taskCol.setCellValueFactory(new PropertyValueFactory<>("task"));
+
+        TableColumn<Assignments, String> descriptionCol = new TableColumn<>("Description");
+        descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
+
+        TableColumn<Assignments, Integer> personnelIdCol = new TableColumn<>("Personnel ID");
+        personnelIdCol.setCellValueFactory(new PropertyValueFactory<>("personnelId"));
+
+        TableColumn<Assignments, Integer> missionIdCol = new TableColumn<>("Mission ID");
+        missionIdCol.setCellValueFactory(new PropertyValueFactory<>("missionId"));
+
+        tableView.getColumns().addAll(assignmentIdCol, taskCol, descriptionCol, personnelIdCol, missionIdCol);
+        tableView.setItems(data);
+
+        // Form for input
+        VBox formLayout = new VBox();
+        formLayout.setPadding(new Insets(10));
+        formLayout.setSpacing(10);
 
         Label assignmentIdLabel = new Label("Assignment ID:");
         TextField assignmentIdText = new TextField();
-        Label roleLabel = new Label("Role:");
-        TextField roleText = new TextField();
-        Label startDateLabel = new Label("Start Date:");
-        TextField startDateText = new TextField();
-        Label endDateLabel = new Label("End Date:");
-        TextField endDateText = new TextField();
+        Label taskLabel = new Label("Task:");
+        TextField taskText = new TextField();
+        Label descriptionLabel = new Label("Description:");
+        TextArea descriptionText = new TextArea();
         Label personnelIdLabel = new Label("Personnel ID:");
         TextField personnelIdText = new TextField();
+        Label missionIdLabel = new Label("Mission ID:");
+        TextField missionIdText = new TextField();
 
-        Button createButton = new Button("Create");
-        createButton.setOnAction(e -> {
-            String assignmentId = assignmentIdText.getText();
-            String role = roleText.getText();
-            String startDate = startDateText.getText();
-            String endDate = endDateText.getText();
-            String personnelId = personnelIdText.getText();
+        Button insertButton = new Button("Insert Data");
+        insertButton.setOnAction(e -> {
+            int assignmentId = Integer.parseInt(assignmentIdText.getText());
+            String task = taskText.getText();
+            String description = descriptionText.getText();
+            int personnelId = Integer.parseInt(personnelIdText.getText());
+            int missionId = Integer.parseInt(missionIdText.getText());
 
-            Assignments assignment = new Assignments(assignmentId, role, startDate, endDate, personnelId);
-            System.out.println("Assignment Created: " + assignment.getAssignmentId());
+            Assignments assignment = new Assignments(assignmentId, task, description, personnelId, missionId);
+            data.add(assignment);
+            saveToDatabase(assignment);
+            clearForm(assignmentIdText, taskText, descriptionText, personnelIdText, missionIdText);
         });
 
-        vbox.getChildren().addAll(assignmentIdLabel, assignmentIdText, roleLabel, roleText, startDateLabel, startDateText, endDateLabel, endDateText, personnelIdLabel, personnelIdText, createButton);
+        formLayout.getChildren().addAll(assignmentIdLabel, assignmentIdText, taskLabel, taskText, descriptionLabel, descriptionText, personnelIdLabel, personnelIdText, missionIdLabel, missionIdText, insertButton);
 
-        return vbox;
+        HBox contentLayout = new HBox(20, tableView, formLayout);
+        contentLayout.setAlignment(Pos.CENTER);
+        contentLayout.setPadding(new Insets(20));
+
+        mainLayout.getChildren().add(contentLayout);
+
+        return mainLayout;
+    }
+
+    private static void saveToDatabase(Assignments assignment) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
+            writer.write(String.format("Assignments,%d,%s,%s,%d,%d%n", assignment.getAssignmentId(), assignment.getTask(), assignment.getDescription(), assignment.getPersonnelId(), assignment.getMissionId()));
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private static void clearForm(TextField assignmentIdText, TextField taskText, TextArea descriptionText, TextField personnelIdText, TextField missionIdText) {
+        assignmentIdText.clear();
+        taskText.clear();
+        descriptionText.clear();
+        personnelIdText.clear();
+        missionIdText.clear();
+    }
+
+    @Override
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("Assignments Management");
+        primaryStage.setScene(new Scene(getAssignmentsUI(), 800, 600));
+        primaryStage.show();
+    }
+
+    public static void main(String[] args) {
+        launch(args);
     }
 }

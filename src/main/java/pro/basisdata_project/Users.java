@@ -2,11 +2,14 @@ package pro.basisdata_project;
 
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 
-import java.util.Date;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class Users {
 
@@ -79,23 +82,31 @@ public class Users {
         Label roleLabel = new Label("Role:");
         TextField roleText = new TextField();
         Label accessLevelLabel = new Label("Access Level:");
-        TextField accessLevelText = new TextField();
-        Label lastLoginLabel = new Label("Last Login:");
-        TextField lastLoginText = new TextField();
+        ComboBox<Integer> accessLevelComboBox = new ComboBox<>();
+        accessLevelComboBox.getItems().addAll(1, 2, 3, 4, 5);
+        accessLevelComboBox.setValue(1); // Default value
+        Label lastLoginLabel = new Label("Time Registered (auto-generated):");
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             String userId = userIdText.getText();
             String name = nameText.getText();
             String role = roleText.getText();
-            int accessLevel = Integer.parseInt(accessLevelText.getText());
-            long lastLogin = Date.parse(lastLoginText.getText());
+            int accessLevel = accessLevelComboBox.getValue();
+            long lastLogin = System.currentTimeMillis();
 
             Users user = new Users(userId, name, role, accessLevel, lastLogin);
             System.out.println("User Created: " + user.getName());
+
+            // Save to Database.txt
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
+                writer.write(String.format("Users,%s,%s,%s,%d,%d%n", userId, name, role, accessLevel, lastLogin));
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
         });
 
-        vbox.getChildren().addAll(userIdLabel, userIdText, nameLabel, nameText, roleLabel, roleText, accessLevelLabel, accessLevelText, lastLoginLabel, lastLoginText, createButton);
+        vbox.getChildren().addAll(userIdLabel, userIdText, nameLabel, nameText, roleLabel, roleText, accessLevelLabel, accessLevelComboBox, lastLoginLabel, createButton);
 
         return vbox;
     }

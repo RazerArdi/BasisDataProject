@@ -2,10 +2,14 @@ package pro.basisdata_project;
 
 import javafx.geometry.Insets;
 import javafx.scene.control.Button;
+import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
-import javafx.geometry.Pos;
+
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class Platforms {
 
@@ -65,20 +69,33 @@ public class Platforms {
         Label typeLabel = new Label("Type:");
         TextField typeText = new TextField();
         Label statusLabel = new Label("Status:");
-        TextField statusText = new TextField();
+        ComboBox<String> statusComboBox = new ComboBox<>();
+        statusComboBox.getItems().addAll("active", "disabled", "passive");
+        statusComboBox.setValue("active"); // Default value
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            int platformId = Integer.parseInt(platformIdText.getText());
-            String name = nameText.getText();
-            String type = typeText.getText();
-            String status = statusText.getText();
+            try {
+                int platformId = Integer.parseInt(platformIdText.getText());
+                String name = nameText.getText();
+                String type = typeText.getText();
+                String status = statusComboBox.getValue();
 
-            Platforms platform = new Platforms(platformId, name, type, status);
-            System.out.println("Platform Created: " + platform.getPlatformId());
+                Platforms platform = new Platforms(platformId, name, type, status);
+                System.out.println("Platform Created: " + platform.getPlatformId());
+
+                // Save to Database.txt
+                try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
+                    writer.write(String.format("Platforms,%d,%s,%s,%s%n", platformId, name, type, status));
+                } catch (IOException ex) {
+                    ex.printStackTrace();
+                }
+            } catch (NumberFormatException ex) {
+                System.err.println("Invalid input: Platform ID must be a number.");
+            }
         });
 
-        vbox.getChildren().addAll(platformIdLabel, platformIdText, nameLabel, nameText, typeLabel, typeText, statusLabel, statusText, createButton);
+        vbox.getChildren().addAll(platformIdLabel, platformIdText, nameLabel, nameText, typeLabel, typeText, statusLabel, statusComboBox, createButton);
 
         return vbox;
     }

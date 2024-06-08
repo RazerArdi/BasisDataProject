@@ -122,7 +122,7 @@ public class MainPage extends StackPane {
                         mainContent.getChildren().add(Assignments.getAssignmentsUI());
                         break;
                     case "Equipments":
-                        mainContent.getChildren().add(Equipments.getEquipmentUI());
+                        mainContent.getChildren().add(Equipments.getEquipmentsUI());
                         break;
                     case "Missions":
                         mainContent.getChildren().add(Missions.getMissionsUI());
@@ -136,6 +136,14 @@ public class MainPage extends StackPane {
                 }
             }
         });
+
+        homeButton.setOnAction(event -> {
+            mainContent.getChildren().clear();
+            Home home = new Home(); // Buat instance dari kelas Home
+            mainContent.getChildren().add(home.getHomeUI()); // Gunakan instance untuk memanggil metode getHomeUI()
+            featureList.getSelectionModel().clearSelection(); // Menghapus pemilihan dari ListView saat tombol HOME ditekan
+        });
+
 
         // Handling click event on accountLink (Hyperlink for account name)
         accountLink.setOnAction(e -> {

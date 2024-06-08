@@ -1,115 +1,136 @@
 package pro.basisdata_project;
 
+import javafx.application.Application;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
-import javafx.scene.layout.VBox;
 import javafx.geometry.Pos;
-import javafx.scene.control.TextArea;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
 
-public class Data {
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+
+public class Data extends Application {
 
     private int dataId;
-    private String timestamp;
     private String dataType;
-    private String rawData;
-    private String processedData;
+    private String content;
     private int sensorId;
 
-    // Constructor
-    public Data(int dataId, String timestamp, String dataType, String rawData, String processedData, int sensorId) {
+    public Data(int dataId, String dataType, String content, int sensorId) {
         this.dataId = dataId;
-        this.timestamp = timestamp;
         this.dataType = dataType;
-        this.rawData = rawData;
-        this.processedData = processedData;
+        this.content = content;
         this.sensorId = sensorId;
     }
 
-    // Getters and Setters
     public int getDataId() {
         return dataId;
-    }
-
-    public void setDataId(int dataId) {
-        this.dataId = dataId;
-    }
-
-    public String getTimestamp() {
-        return timestamp;
-    }
-
-    public void setTimestamp(String timestamp) {
-        this.timestamp = timestamp;
     }
 
     public String getDataType() {
         return dataType;
     }
 
-    public void setDataType(String dataType) {
-        this.dataType = dataType;
-    }
-
-    public String getRawData() {
-        return rawData;
-    }
-
-    public void setRawData(String rawData) {
-        this.rawData = rawData;
-    }
-
-    public String getProcessedData() {
-        return processedData;
-    }
-
-    public void setProcessedData(String processedData) {
-        this.processedData = processedData;
+    public String getContent() {
+        return content;
     }
 
     public int getSensorId() {
         return sensorId;
     }
 
-    public void setSensorId(int sensorId) {
-        this.sensorId = sensorId;
-    }
-
-    // Method to display the Data GUI
     public static VBox getDataUI() {
-        VBox vbox = new VBox();
-        vbox.setPadding(new Insets(10));
-        vbox.setSpacing(10);
+        VBox mainLayout = new VBox();
+        mainLayout.setPadding(new Insets(10));
+        mainLayout.setSpacing(10);
+
+        TableView<Data> tableView = new TableView<>();
+        ObservableList<Data> data = FXCollections.observableArrayList();
+
+        // Define table columns
+        TableColumn<Data, Integer> dataIdCol = new TableColumn<>("Data ID");
+        dataIdCol.setCellValueFactory(new PropertyValueFactory<>("dataId"));
+
+        TableColumn<Data, String> dataTypeCol = new TableColumn<>("Data Type");
+        dataTypeCol.setCellValueFactory(new PropertyValueFactory<>("dataType"));
+
+        TableColumn<Data, String> contentCol = new TableColumn<>("Content");
+        contentCol.setCellValueFactory(new PropertyValueFactory<>("content"));
+
+        TableColumn<Data, Integer> sensorIdCol = new TableColumn<>("Sensor ID");
+        sensorIdCol.setCellValueFactory(new PropertyValueFactory<>("sensorId"));
+
+        tableView.getColumns().addAll(dataIdCol, dataTypeCol, contentCol, sensorIdCol);
+        tableView.setItems(data);
+
+        // Form for input
+        VBox formLayout = new VBox();
+        formLayout.setPadding(new Insets(10));
+        formLayout.setSpacing(10);
 
         Label dataIdLabel = new Label("Data ID:");
         TextField dataIdText = new TextField();
-        Label timestampLabel = new Label("Timestamp:");
-        TextField timestampText = new TextField();
         Label dataTypeLabel = new Label("Data Type:");
         TextField dataTypeText = new TextField();
-        Label rawDataLabel = new Label("Raw Data:");
-        TextArea rawDataText = new TextArea();
-        Label processedDataLabel = new Label("Processed Data:");
-        TextArea processedDataText = new TextArea();
+        Label contentLabel = new Label("Content:");
+        TextArea contentText = new TextArea();
         Label sensorIdLabel = new Label("Sensor ID:");
         TextField sensorIdText = new TextField();
 
-        Button createButton = new Button("Create");
+        Button createButton = new Button("Insert Data");
         createButton.setOnAction(e -> {
             int dataId = Integer.parseInt(dataIdText.getText());
-            String timestamp = timestampText.getText();
             String dataType = dataTypeText.getText();
-            String rawData = rawDataText.getText();
-            String processedData = processedDataText.getText();
+            String content = contentText.getText();
             int sensorId = Integer.parseInt(sensorIdText.getText());
 
-            Data data = new Data(dataId, timestamp, dataType, rawData, processedData, sensorId);
-            System.out.println("Data Created: " + data.getDataId());
+            Data dataEntry = new Data(dataId, dataType, content, sensorId);
+            data.add(dataEntry);
+            saveToDatabase(dataEntry);
+            clearForm(dataIdText, dataTypeText, contentText, sensorIdText);
         });
 
-        vbox.getChildren().addAll(dataIdLabel, dataIdText, timestampLabel, timestampText, dataTypeLabel, dataTypeText, rawDataLabel, rawDataText, processedDataLabel, processedDataText, sensorIdLabel, sensorIdText, createButton);
+        formLayout.getChildren().addAll(dataIdLabel, dataIdText, dataTypeLabel, dataTypeText, contentLabel, contentText, sensorIdLabel, sensorIdText, createButton);
 
-        return vbox;
+        HBox contentLayout = new HBox(20, tableView, formLayout);
+        contentLayout.setAlignment(Pos.CENTER);
+        contentLayout.setPadding(new Insets(20));
+
+        mainLayout.getChildren().add(contentLayout);
+
+        return mainLayout;
+    }
+
+    private static void saveToDatabase(Data data) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
+            writer.write(String.format("Data,%d,%s,%s,%d%n", data.getDataId(), data.getDataType(), data.getContent(), data.getSensorId()));
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private static void clearForm(TextField dataIdText, TextField dataTypeText, TextArea contentText, TextField sensorIdText) {
+        dataIdText.clear();
+        dataTypeText.clear();
+        contentText.clear();
+        sensorIdText.clear();
+    }
+
+    @Override
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("Data Management");
+        primaryStage.setScene(new Scene(getDataUI(), 800, 600));
+        primaryStage.show();
+    }
+
+    public static void main(String[] args) {
+        launch(args);
     }
 }
