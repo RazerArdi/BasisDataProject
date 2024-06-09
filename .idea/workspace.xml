@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e0f60364-e204-47a5-ba62-a0924b2f2608" name="Changes" comment="Data Inputed">
+    <list default="true" id="e0f60364-e204-47a5-ba62-a0924b2f2608" name="Changes" comment="Data Inputed V2">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Analysis.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Analysis.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Assignments.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Assignments.java" afterDir="false" />
@@ -12,6 +12,7 @@
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Data.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Data.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Equipments.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Equipments.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Home.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Home.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MainPage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MainPage.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Maintenancelogs.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Maintenancelogs.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Missions.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Missions.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Personnels.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Personnels.java" afterDir="false" />
@@ -81,7 +82,7 @@
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;D:/BAYU/PemprogramanLanjutTB&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settings.ide.settings.new.ui&quot;
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
 }</component>
   <component name="RecentsManager">
@@ -174,7 +175,15 @@
       <option name="project" value="LOCAL" />
       <updated>1717839040802</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="Data Inputed V2">
+      <option name="closed" value="true" />
+      <created>1717867284355</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1717867284355</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -193,6 +202,7 @@
     <MESSAGE value="Beranda Updated" />
     <MESSAGE value="Entitas Updated" />
     <MESSAGE value="Data Inputed" />
-    <option name="LAST_COMMIT_MESSAGE" value="Data Inputed" />
+    <MESSAGE value="Data Inputed V2" />
+    <option name="LAST_COMMIT_MESSAGE" value="Data Inputed V2" />
   </component>
 </project>

@@ -1,5 +1,7 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -8,7 +10,9 @@ import javafx.scene.layout.VBox;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class Data {
     private int dataId;
@@ -73,6 +77,8 @@ public class Data {
         });
 
         TableView<Data> tableView = new TableView<>();
+        ObservableList<Data> data = FXCollections.observableArrayList();
+
         TableColumn<Data, Integer> dataIdCol = new TableColumn<>("Data ID");
         dataIdCol.setCellValueFactory(new PropertyValueFactory<>("dataId"));
         TableColumn<Data, String> typeCol = new TableColumn<>("Type");
@@ -87,7 +93,7 @@ public class Data {
         platformIdCol.setCellValueFactory(new PropertyValueFactory<>("platformId"));
 
         tableView.getColumns().addAll(dataIdCol, typeCol, descriptionCol, locationCol, formatCol, platformIdCol);
-        vbox.getChildren().add(tableView);
+        tableView.setItems(data);
 
         Label dataIdLabel = new Label("Data ID:");
         TextField dataIdText = new TextField();
@@ -112,8 +118,8 @@ public class Data {
             String format = formatText.getText();
             int platformId = Integer.parseInt(platformIdText.getText());
 
-            Data data = new Data(dataId, type, description, location, format, platformId);
-            System.out.println("Data Created: " + data.getDataId());
+            Data newData = new Data(dataId, type, description, location, format, platformId);
+            data.add(newData);
 
             // Save to Database.txt
             try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
@@ -123,9 +129,35 @@ public class Data {
             }
         });
 
-        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, dataIdLabel, dataIdText, typeLabel, typeText, descriptionLabel, descriptionText, locationLabel, locationText, formatLabel, formatText, platformIdLabel, platformIdText, createButton);
+        Button deleteButton = new Button("Delete Selected Data");
+        deleteButton.setOnAction(e -> {
+            Data selectedData = tableView.getSelectionModel().getSelectedItem();
+            if (selectedData != null) {
+                data.remove(selectedData);
+                deleteFromDatabase(selectedData);
+            }
+        });
+
+        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, dataIdLabel, dataIdText, typeLabel, typeText, descriptionLabel, descriptionText, locationLabel, locationText, formatLabel, formatText, platformIdLabel, platformIdText, createButton, deleteButton, tableView);
 
         return vbox;
+    }
+
+    private static void deleteFromDatabase(Data data) {
+        try {
+            List<String> lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get("Database.txt"));
+            List<String> updatedLines = lines.stream()
+                    .filter(line -> !line.equals(String.format("Analysis ID,%s,Data,%d,%s,%s,%s,%s,%d",
+                            data.getDataId(), data.getType(), data.getDescription(), data.getLocation(), data.getFormat(), data.getPlatformId())))                    .collect(Collectors.toList());
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt"))) {
+                for (String line : updatedLines) {
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
     private static Optional<String> showSearchDialog() {

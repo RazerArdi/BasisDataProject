@@ -12,13 +12,13 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class Assignments extends Application {
-
+    private static TableView<Assignments> tableView = new TableView<>();
     private int assignmentId;
     private String task;
     private String description;
@@ -94,6 +94,17 @@ public class Assignments extends Application {
             result.ifPresent(analysisIdText::setText);
         });
 
+        Button refreshButton = new Button("Refresh Data");
+        refreshButton.setOnAction(e -> {
+            tableView.getItems().clear(); // Clear existing data
+            loadData(); // Load data from Database.txt
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("Data Refreshed");
+            alert.setHeaderText(null);
+            alert.setContentText("Data has been refreshed from the database.");
+            alert.showAndWait();
+        });
+
         Label assignmentIdLabel = new Label("Assignment ID:");
         TextField assignmentIdText = new TextField();
         Label taskLabel = new Label("Task:");
@@ -120,14 +131,22 @@ public class Assignments extends Application {
             clearForm(analysisIdText, assignmentIdText, taskText, descriptionText, personnelIdText, missionIdText);
         });
 
+        Button deleteButton = new Button("Delete Selected Data");
+        deleteButton.setOnAction(e -> {
+            Assignments selectedAssignment = tableView.getSelectionModel().getSelectedItem();
+            if (selectedAssignment != null) {
+                data.remove(selectedAssignment);
+                deleteFromDatabase(selectedAssignment);
+            }
+        });
+
         formLayout.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, assignmentIdLabel, assignmentIdText, taskLabel, taskText, descriptionLabel, descriptionText, personnelIdLabel, personnelIdText, missionIdLabel, missionIdText, insertButton);
 
         HBox contentLayout = new HBox(20, tableView, formLayout);
         contentLayout.setAlignment(Pos.CENTER);
         contentLayout.setPadding(new Insets(20));
 
-        mainLayout.getChildren().add(contentLayout);
-
+        mainLayout.getChildren().addAll(contentLayout, deleteButton, refreshButton);
         return mainLayout;
     }
 
@@ -138,6 +157,52 @@ public class Assignments extends Application {
             ex.printStackTrace();
         }
     }
+
+    private static void deleteFromDatabase(Assignments assignment) {
+        try {
+            List<String> lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get("Database.txt"));
+            List<String> updatedLines = lines.stream()
+                    .filter(line -> !line.equals(String.format("Analysis ID,%s,Assignments,%d,%s,%s,%d,%d",
+                            assignment.getAssignmentId(), assignment.getTask(), assignment.getDescription(), assignment.getPersonnelId(), assignment.getMissionId())))
+                    .collect(Collectors.toList());
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt"))) {
+                for (String line : updatedLines) {
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private static void loadData() {
+        try (BufferedReader reader = new BufferedReader(new FileReader("Database.txt"))) {
+            ObservableList<Assignments> dataList = FXCollections.observableArrayList();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length == 7 && parts[2].equals("Assignments")) {
+                    try {
+                        int assignmentId = Integer.parseInt(parts[3].trim());
+                        String task = parts[4].trim();
+                        String description = parts[5].trim();
+                        int personnelId = Integer.parseInt(parts[6].trim());
+                        int missionId = Integer.parseInt(parts[7].trim());
+                        dataList.add(new Assignments(assignmentId, task, description, personnelId, missionId));
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid data format in line: " + line);
+                    }
+                } else {
+                    System.out.println("Invalid data format in line: " + line);
+                }
+            }
+            tableView.setItems(dataList);
+        } catch (IOException e) {
+            System.out.println("Error loading data from Database.txt.");
+        }
+    }
+
 
     private static void clearForm(TextField analysisIdText, TextField assignmentIdText, TextField taskText, TextArea descriptionText, TextField personnelIdText, TextField missionIdText) {
         analysisIdText.clear();

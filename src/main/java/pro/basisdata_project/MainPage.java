@@ -60,7 +60,7 @@ public class MainPage extends StackPane {
         ListView<String> featureList = new ListView<>();
         featureList.getItems().addAll(
                 "Data", "Users", "Platforms", "Personnels", "Assignments",
-                "Equipments", "Missions", "Maintenancelogs", "Analysis", "CommLog"
+                "Equipments", "Missions", "Maintenancelogs", "Analysis", "CommLog", "Sensors"
         );
 
         // Set custom cell factory to adjust spacing between items

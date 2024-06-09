@@ -1,5 +1,6 @@
 package pro.basisdata_project;
 
+import javafx.application.Application;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
@@ -14,6 +15,8 @@ import javafx.stage.Stage;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class Analysis {
 
@@ -44,27 +47,40 @@ public class Analysis {
         mainLayout.setPadding(new Insets(10));
         mainLayout.setSpacing(10);
 
-        // Define table columns
         TableView<Analysis> tableView = new TableView<>();
-        tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY); // Add this line
+        tableView.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY); // Set resize policy
         ObservableList<Analysis> data = FXCollections.observableArrayList();
 
         // Define table columns
         TableColumn<Analysis, Integer> analysisIdCol = new TableColumn<>("Analysis ID");
         analysisIdCol.setCellValueFactory(new PropertyValueFactory<>("analysisId"));
+        analysisIdCol.setMinWidth(100); // Set minimum width for Analysis ID column
 
         TableColumn<Analysis, String> analysisTypeCol = new TableColumn<>("Analysis Type");
         analysisTypeCol.setCellValueFactory(new PropertyValueFactory<>("analysisType"));
+        analysisTypeCol.setMinWidth(150); // Set minimum width for Analysis Type column
 
         TableColumn<Analysis, String> resultsCol = new TableColumn<>("Results");
         resultsCol.setCellValueFactory(new PropertyValueFactory<>("results"));
-
-        resultsCol.setMinWidth(500); // Set minimum width
-        resultsCol.setMaxWidth(800); // Set maximum width
+        resultsCol.setMinWidth(250); // Set minimum width for Results column
 
         tableView.getColumns().addAll(analysisIdCol, analysisTypeCol, resultsCol);
         tableView.setItems(data);
 
+        Button deleteButton = new Button("Delete Selected Data");
+        deleteButton.setOnAction(e -> {
+            Analysis selectedAnalysis = tableView.getSelectionModel().getSelectedItem();
+            if (selectedAnalysis != null) {
+                data.remove(selectedAnalysis);
+                deleteFromDatabase(selectedAnalysis);
+            }
+        });
+
+        Button refreshButton = new Button("Refresh Table");
+        refreshButton.setOnAction(e -> {
+            data.clear(); // Clear existing data
+            loadData(data); // Load fresh data to the table view
+        });
 
         // Form for input
         VBox formLayout = new VBox();
@@ -93,18 +109,38 @@ public class Analysis {
 
         formLayout.getChildren().addAll(analysisIdLabel, analysisIdText, analysisTypeLabel, analysisTypeChoice, resultsLabel, resultsText, insertButton);
 
-        HBox contentLayout = new HBox(20, tableView, formLayout);
-        contentLayout.setAlignment(Pos.CENTER);
-        contentLayout.setPadding(new Insets(20));
+        HBox buttonLayout = new HBox(20, deleteButton, refreshButton);
+        buttonLayout.setAlignment(Pos.CENTER_RIGHT);
 
-        mainLayout.getChildren().add(contentLayout);
+        mainLayout.getChildren().addAll(tableView, buttonLayout, formLayout);
+
+        // Load initial data to the table view
+        loadData(data);
 
         return mainLayout;
     }
 
+
     private static void saveToDatabase(Analysis analysis) {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
             writer.write(String.format("Analysis,%d,%s,%s%n", analysis.getAnalysisId(), analysis.getAnalysisType(), analysis.getResults()));
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private static void deleteFromDatabase(Analysis analysis) {
+        try {
+            List<String> lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get("Database.txt"));
+            List<String> updatedLines = lines.stream()
+                    .filter(line -> !line.equals(String.format("Analysis,%d,%s,%s", analysis.getAnalysisId(), analysis.getAnalysisType(), analysis.getResults())))
+                    .collect(Collectors.toList());
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt"))) {
+                for (String line : updatedLines) {
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
         } catch (IOException ex) {
             ex.printStackTrace();
         }
@@ -116,12 +152,36 @@ public class Analysis {
         resultsText.clear();
     }
 
-    public static void main(String[] args) {
-        // Create a JavaFX application to display the UI
-        javafx.application.Application.launch(AnalysisApp.class, args);
+    private static void loadData(ObservableList<Analysis> data) {
+        try {
+            List<String> lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get("Database.txt"));
+
+            for (String line : lines) {
+                String[] parts = line.split(",");
+                if (parts.length >= 3) {
+                    try {
+                        int analysisId = Integer.parseInt(parts[1].trim());
+                        String analysisType = parts[2].trim();
+                        String results = parts[3].trim();
+                        data.add(new Analysis(analysisId, analysisType, results));
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid data format in line: " + line);
+                    }
+                } else {
+                    System.out.println("Invalid data format in line: " + line);
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error loading data from Database.txt.");
+        }
     }
 
-    public static class AnalysisApp extends javafx.application.Application {
+    public static void main(String[] args) {
+        // Create a JavaFX application to display the UI
+        Application.launch(AnalysisApp.class, args);
+    }
+
+    public static class AnalysisApp extends Application {
         @Override
         public void start(Stage primaryStage) {
             primaryStage.setTitle("Analysis Management");

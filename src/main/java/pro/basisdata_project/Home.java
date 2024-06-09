@@ -5,17 +5,11 @@ import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Home {
@@ -31,102 +25,171 @@ public class Home {
         searchField.setPromptText("Search...");
 
         TableView<DataItem> tableView = new TableView<>();
-        TableColumn<DataItem, String> colAnalysisId = new TableColumn<>("Analysis ID");
-        TableColumn<DataItem, String> colDescription = new TableColumn<>("Description");
-        TableColumn<DataItem, String> colDate = new TableColumn<>("Date");
-        TableColumn<DataItem, String> colUserId = new TableColumn<>("User ID");
-        TableColumn<DataItem, String> colPlatformId = new TableColumn<>("Platform ID");
+        TableColumn<DataItem, String> colType = new TableColumn<>("Type");
+        TableColumn<DataItem, String> colId = new TableColumn<>("ID");
+        TableColumn<DataItem, String> colName = new TableColumn<>("Name");
 
-        colAnalysisId.setCellValueFactory(new PropertyValueFactory<>("analysisId"));
-        colDescription.setCellValueFactory(new PropertyValueFactory<>("description"));
-        colDate.setCellValueFactory(new PropertyValueFactory<>("date"));
-        colUserId.setCellValueFactory(new PropertyValueFactory<>("userId"));
-        colPlatformId.setCellValueFactory(new PropertyValueFactory<>("platformId"));
+        colType.setCellValueFactory(new PropertyValueFactory<>("type"));
+        colId.setCellValueFactory(new PropertyValueFactory<>("id"));
+        colName.setCellValueFactory(new PropertyValueFactory<>("name"));
 
-        tableView.getColumns().addAll(colAnalysisId, colDescription, colDate, colUserId, colPlatformId);
+        tableView.getColumns().addAll(colType, colId, colName);
 
-        Button loadDataButton = new Button("Load Data from Database");
+        Button loadDataButton = new Button("Load Data from All Classes");
         loadDataButton.setOnAction(event -> {
-            try {
-                List<String> lines = Files.readAllLines(Paths.get("Database.txt"));
-                ObservableList<DataItem> data = FXCollections.observableArrayList();
+            ObservableList<DataItem> data = FXCollections.observableArrayList();
 
-                for (String line : lines) {
-                    String[] parts = line.split(",");
-                    if (parts.length >= 5) {
-                        data.add(new DataItem(parts[0], parts[1], parts[2], parts[3], parts[4]));
-                    } else {
-                        System.out.println("Invalid data format in line: " + line);
+            // Add data from Analysis
+            data.addAll(getAnalysisData());
+
+            // Add data from Data
+            data.addAll(getDataData());
+
+            // Add data from Users
+            data.addAll(getUsersData());
+
+            // Add data from Platforms
+            data.addAll(getPlatformsData());
+
+            // Add data from Personnels
+            data.addAll(getPersonnelsData());
+
+            // Add data from Equipments
+            data.addAll(getEquipmentsData());
+
+            // Add data from Missions
+            data.addAll(getMissionsData());
+
+            // Add data from Maintancelog
+            data.addAll(getMaintancelogData());
+
+            // Add data from Commlog
+            data.addAll(getCommlogData());
+
+            // Add data from Sensors
+            data.addAll(getSensorsData());
+
+            // Add data from Assignments
+            data.addAll(getAssignmentsData());
+
+            FilteredList<DataItem> filteredData = new FilteredList<>(data);
+            tableView.setItems(filteredData);
+
+            // Adding search functionality
+            searchField.textProperty().addListener((observable, oldValue, newValue) -> {
+                filteredData.setPredicate(dataItem -> {
+                    if (newValue == null || newValue.isEmpty()) {
+                        return true;
                     }
-                }
 
-                FilteredList<DataItem> filteredData = new FilteredList<>(data);
-                tableView.setItems(filteredData);
+                    String lowerCaseFilter = newValue.toLowerCase();
 
-                // Adding search functionality
-                searchField.textProperty().addListener((observable, oldValue, newValue) -> {
-                    filteredData.setPredicate(dataItem -> {
-                        if (newValue == null || newValue.isEmpty()) {
-                            return true;
-                        }
-
-                        String lowerCaseFilter = newValue.toLowerCase();
-
-                        return dataItem.getDescription().toLowerCase().contains(lowerCaseFilter);
-                    });
+                    // Filter by type or name
+                    return dataItem.getType().toLowerCase().contains(lowerCaseFilter)
+                            || dataItem.getName().toLowerCase().contains(lowerCaseFilter);
                 });
+            });
 
-                HBox searchBox = new HBox(searchField);
-                searchBox.setAlignment(Pos.CENTER);
-                searchBox.setPadding(new Insets(10));
+            HBox searchBox = new HBox(searchField);
+            searchBox.setAlignment(Pos.CENTER);
+            searchBox.setPadding(new Insets(10));
 
-                homeContent.getChildren().clear();
-                homeContent.getChildren().addAll(searchBox, tableView);
-            } catch (IOException e) {
-                System.out.println("Error loading data from Database.txt.");
-            }
+            homeContent.getChildren().clear();
+            homeContent.getChildren().addAll(searchBox, tableView);
         });
-
-
 
         homeContent.getChildren().addAll(loadDataButton);
 
         return homeContent;
     }
 
+    private static List<DataItem> getAnalysisData() {
+        List<DataItem> data = new ArrayList<>();
+        // Add data from Analysis class
+        return data;
+    }
+
+    private static List<DataItem> getDataData() {
+        List<DataItem> data = new ArrayList<>();
+        // Add data from Data class
+        return data;
+    }
+
+    private static List<DataItem> getUsersData() {
+        List<DataItem> data = new ArrayList<>();
+        // Add data from Users class
+        return data;
+    }
+
+    private static List<DataItem> getPlatformsData() {
+        List<DataItem> data = new ArrayList<>();
+        // Add data from Platforms class
+        return data;
+    }
+
+    private static List<DataItem> getPersonnelsData() {
+        List<DataItem> data = new ArrayList<>();
+        // Add data from Personnels class
+        return data;
+    }
+
+    private static List<DataItem> getEquipmentsData() {
+        List<DataItem> data = new ArrayList<>();
+        // Add data from Equipments class
+        return data;
+    }
+
+    private static List<DataItem> getMissionsData() {
+        List<DataItem> data = new ArrayList<>();
+        // Add data from Missions class
+        return data;
+    }
+
+    private static List<DataItem> getMaintancelogData() {
+        List<DataItem> data = new ArrayList<>();
+        // Add data from Maintancelog class
+        return data;
+    }
+
+    private static List<DataItem> getCommlogData() {
+        List<DataItem> data = new ArrayList<>();
+        // Add data from Commlog class
+        return data;
+    }
+
+    private static List<DataItem> getSensorsData() {
+        List<DataItem> data = new ArrayList<>();
+        // Add data from Sensors class
+        return data;
+    }
+
+    private static List<DataItem> getAssignmentsData() {
+        List<DataItem> data = new ArrayList<>();
+        // Add data from Assignments class
+        return data;
+    }
+
     public static class DataItem {
-        private final String analysisId;
-        private final String description;
-        private final String date;
-        private final String userId;
-        private final String platformId;
+        private final String type;
+        private final String id;
+        private final String name;
 
-        public DataItem(String analysisId, String description, String date, String userId, String platformId) {
-            this.analysisId = analysisId;
-            this.description = description;
-            this.date = date;
-            this.userId = userId;
-            this.platformId = platformId;
+        public DataItem(String type, String id, String name) {
+            this.type = type;
+            this.id = id;
+            this.name = name;
         }
 
-        public String getAnalysisId() {
-            return analysisId;
+        public String getType() {
+            return type;
         }
 
-        public String getDescription() {
-            return description;
+        public String getId() {
+            return id;
         }
 
-        public String getDate() {
-            return date;
-        }
-
-        public String getUserId() {
-            return userId;
-        }
-
-        public String getPlatformId() {
-            return platformId;
+        public String getName() {
+            return name;
         }
     }
 }

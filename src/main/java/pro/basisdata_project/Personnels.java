@@ -1,5 +1,7 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -8,7 +10,11 @@ import javafx.scene.layout.VBox;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class Personnels {
 
@@ -110,7 +116,7 @@ public class Personnels {
         TextField personnelIdText = new TextField();
         Label nameLabel = new Label("Personnel Name:");
         TextField nameText = new TextField();
-        Label PositionLabel = new Label("Position:");
+        Label positionLabel = new Label("Position:");
         ChoiceBox<Position> rankChoice = new ChoiceBox<>();
         rankChoice.getItems().addAll(Position.values());
         Label specialityLabel = new Label("Speciality:");
@@ -123,6 +129,8 @@ public class Personnels {
         TextField activeDateText = new TextField();
 
         TableView<Personnels> tableView = new TableView<>();
+        ObservableList<Personnels> data = FXCollections.observableArrayList();
+
         TableColumn<Personnels, String> personnelIdCol = new TableColumn<>("Personnel ID");
         personnelIdCol.setCellValueFactory(new PropertyValueFactory<>("personnelId"));
         TableColumn<Personnels, String> nameCol = new TableColumn<>("Name");
@@ -139,8 +147,7 @@ public class Personnels {
         activeDateCol.setCellValueFactory(new PropertyValueFactory<>("activeDate"));
 
         tableView.getColumns().addAll(personnelIdCol, nameCol, rankCol, specialityCol, assignmentCol, contactCol, activeDateCol);
-
-        vbox.getChildren().add(tableView);
+        tableView.setItems(data);
 
         rankChoice.getSelectionModel().selectedIndexProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue.intValue() == Position.OFFICER.ordinal()) {
@@ -164,7 +171,7 @@ public class Personnels {
             String activeDate = activeDateText.getText();
 
             Personnels personnel = new Personnels(personnelId, personnelName, rank, speciality, currentAssignment, contactInfo, activeDate);
-            System.out.println("Personnel Created: " + personnel.getPersonnelId());
+            data.add(personnel);
 
             // Save to Database.txt
             try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
@@ -174,9 +181,36 @@ public class Personnels {
             }
         });
 
-        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, personnelIdLabel, personnelIdText, nameLabel, nameText, PositionLabel, rankChoice, specialityLabel, specialityText, assignmentLabel, assignmentText, contactLabel, contactText, activeDateLabel, activeDateText, createButton);
+        Button deleteButton = new Button("Delete Selected Personnel");
+        deleteButton.setOnAction(e -> {
+            Personnels selectedPersonnel = tableView.getSelectionModel().getSelectedItem();
+            if (selectedPersonnel != null) {
+                data.remove(selectedPersonnel);
+                deleteFromDatabase(selectedPersonnel);
+            }
+        });
+
+        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, personnelIdLabel, personnelIdText, nameLabel, nameText, positionLabel, rankChoice, specialityLabel, specialityText, assignmentLabel, assignmentText, contactLabel, contactText, activeDateLabel, activeDateText, createButton, deleteButton, tableView);
 
         return vbox;
+    }
+
+    private static void deleteFromDatabase(Personnels personnel) {
+        try {
+            List<String> lines = Files.readAllLines(Paths.get("Database.txt"));
+            List<String> updatedLines = lines.stream()
+                    .filter(line -> !line.equals(String.format("Analysis ID,%s,Personnels,%s,%s,%s,%s,%s,%s,%s",
+                            personnel.getPersonnelId(), personnel.getPersonnelName(), personnel.getRank().name(), personnel.getSpeciality(), personnel.getCurrentAssignment(), personnel.getContactInfo(), personnel.getActiveDate())))
+                    .collect(Collectors.toList());
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt"))) {
+                for (String line : updatedLines) {
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
     private static Optional<String> showSearchDialog() {
@@ -193,12 +227,8 @@ public class Personnels {
         officerFields.setSpacing(10);
         officerFields.getChildren().addAll(activeDateLabel, activeDateText);
 
-        boolean isEditButtonAdded = false;
-
         Button editActiveDateButton = new Button("Edit Active Date");
-
         officerFields.getChildren().add(editActiveDateButton);
-        isEditButtonAdded = true;
 
         editActiveDateButton.setOnAction(event -> {
             TextInputDialog dialog = new TextInputDialog(activeDateText.getText());
@@ -218,18 +248,14 @@ public class Personnels {
         civilianContractorFields.setSpacing(10);
         civilianContractorFields.getChildren().addAll(activeDateLabel, activeDateText);
 
-        boolean isEditButtonAdded = false;
-
         Button editActiveDateButton = new Button("Edit Active Date");
-
         civilianContractorFields.getChildren().add(editActiveDateButton);
-        isEditButtonAdded = true;
 
         editActiveDateButton.setOnAction(event -> {
-            String personelType = "Civilian/Contractor"; // Tambahkan variabel personelType
+            String personnelType = "Civilian/Contractor"; // Tambahkan variabel personnelType
             TextInputDialog dialog = new TextInputDialog(activeDateText.getText());
             dialog.setTitle("Edit Active Date");
-            dialog.setHeaderText("Edit Active Date for " + personelType);
+            dialog.setHeaderText("Edit Active Date for " + personnelType);
             dialog.setContentText("New Active Date:");
 
             Optional<String> result = dialog.showAndWait();

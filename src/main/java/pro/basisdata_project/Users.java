@@ -1,13 +1,17 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
-
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.Optional;
 
 public class Users {
@@ -116,8 +120,26 @@ public class Users {
 
         tableView.getColumns().addAll(userIdCol, nameCol, roleCol, accessLevelCol, lastLoginCol);
 
-        // Add table view to the VBox
-        vbox.getChildren().add(tableView);
+        // Create button for delete operation
+        Button deleteSelectedButton = new Button("Delete Selected");
+        deleteSelectedButton.setOnAction(e -> {
+            Users selectedUser = tableView.getSelectionModel().getSelectedItem();
+            if (selectedUser != null) {
+                String userIdToDelete = selectedUser.getUserId();
+                // Code to delete user from database or list
+                System.out.println("Deleted User ID: " + userIdToDelete);
+                tableView.getItems().remove(selectedUser); // Remove from the table
+            } else {
+                Alert alert = new Alert(Alert.AlertType.WARNING);
+                alert.setTitle("No Selection");
+                alert.setHeaderText("No User Selected");
+                alert.setContentText("Please select a user to delete.");
+                alert.showAndWait();
+            }
+        });
+
+        // Add table view and delete button to the VBox
+        vbox.getChildren().addAll(tableView, deleteSelectedButton);
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
@@ -133,13 +155,33 @@ public class Users {
 
             // Save to Database.txt
             try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("Analysis ID,%s,Users,%s,%s,%s,%d,%d%n", analysisId, userId, name, role, accessLevel, lastLogin));
+                writer.write(String.format("%s,Users,%s,%s,%s,%d,%d%n", analysisId, userId, name, role, accessLevel, lastLogin));
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
+
+            // Add new user to the table view
+            tableView.getItems().add(user);
+
+            // Clear input fields after adding user
+            userIdText.clear();
+            nameText.clear();
+            roleText.clear();
+            accessLevelComboBox.setValue(1); // Reset to default value
         });
 
-        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, userIdLabel, userIdText, nameLabel, nameText, roleLabel, roleText, accessLevelLabel, accessLevelComboBox, lastLoginLabel, createButton);
+        // Button for refreshing table data
+        Button refreshDataButton = new Button("Refresh Data (Table)");
+        refreshDataButton.setOnAction(e -> {
+            tableView.getItems().clear(); // Clear existing data
+            // Load fresh data to the table view
+            loadData(tableView);
+        });
+
+        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, userIdLabel, userIdText, nameLabel, nameText, roleLabel, roleText, accessLevelLabel, accessLevelComboBox, lastLoginLabel, createButton, refreshDataButton);
+
+        // Load initial data to the table view
+        loadData(tableView);
 
         return vbox;
     }
@@ -153,17 +195,49 @@ public class Users {
         return dialog.showAndWait();
     }
 
-    private static boolean isDataFound(String analysisId) {
+    static boolean isDataFound(String analysisId) {
         // Implement logic to check if data with the given analysisId exists in the database
         return true; // For demonstration purposes, always return true
     }
 
-    private static void displayDataFound() {
+    static void displayDataFound() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("Data Found");
         alert.setHeaderText(null);
         alert.setContentText("Data Found!");
 
         alert.showAndWait();
+    }
+
+    private static void loadData(TableView<Users> tableView) {
+        try {
+            // Load data from file or database
+            List<String> lines = Files.readAllLines(Paths.get("Database.txt"));
+            ObservableList<Users> data = FXCollections.observableArrayList();
+
+            for (String line : lines) {
+                String[] parts = line.split(",");
+                if (parts.length == 7 && parts[1].equals("Users")) {
+                    try {
+                        int analysisId = Integer.parseInt(parts[0].trim());
+                        String userId = parts[2].trim();
+                        String name = parts[3].trim();
+                        String role = parts[4].trim();
+                        int accessLevel = Integer.parseInt(parts[5].trim());
+                        long lastLogin = Long.parseLong(parts[6].trim());
+                        data.add(new Users(userId, name, role, accessLevel, lastLogin));
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid data format in line: " + line);
+                    }
+                } else {
+                    System.out.println("Invalid data format in line: " + line);
+                }
+            }
+
+            tableView.setItems(data);
+            tableView.refresh(); // Refresh the table view
+        } catch (IOException e) {
+            System.out.println("Error loading data from Database.txt.");
+        }
     }
 }

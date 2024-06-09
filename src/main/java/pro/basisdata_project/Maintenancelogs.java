@@ -1,5 +1,7 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -8,7 +10,11 @@ import javafx.scene.layout.VBox;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class Maintenancelogs {
 
@@ -92,6 +98,8 @@ public class Maintenancelogs {
         TextField platformIdText = new TextField();
 
         TableView<Maintenancelogs> tableView = new TableView<>();
+        ObservableList<Maintenancelogs> data = FXCollections.observableArrayList();
+
         TableColumn<Maintenancelogs, Integer> logIdCol = new TableColumn<>("Log ID");
         logIdCol.setCellValueFactory(new PropertyValueFactory<>("logId"));
         TableColumn<Maintenancelogs, String> descriptionCol = new TableColumn<>("Description");
@@ -104,8 +112,7 @@ public class Maintenancelogs {
         platformIdCol.setCellValueFactory(new PropertyValueFactory<>("platformId"));
 
         tableView.getColumns().addAll(logIdCol, descriptionCol, dateCol, userIdCol, platformIdCol);
-
-        vbox.getChildren().add(tableView);
+        tableView.setItems(data);
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
@@ -117,7 +124,7 @@ public class Maintenancelogs {
             int platformId = Integer.parseInt(platformIdText.getText());
 
             Maintenancelogs maintenancelog = new Maintenancelogs(logId, description, date, userId, platformId);
-            System.out.println("Maintenancelog Created: " + maintenancelog.getLogId());
+            data.add(maintenancelog);
 
             // Save to Database.txt
             try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
@@ -127,9 +134,36 @@ public class Maintenancelogs {
             }
         });
 
-        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, logIdLabel, logIdText, descriptionLabel, descriptionText, dateLabel, dateText, userIdLabel, userIdText, platformIdLabel, platformIdText, createButton);
+        Button deleteButton = new Button("Delete Selected Log");
+        deleteButton.setOnAction(e -> {
+            Maintenancelogs selectedLog = tableView.getSelectionModel().getSelectedItem();
+            if (selectedLog != null) {
+                data.remove(selectedLog);
+                deleteFromDatabase(selectedLog);
+            }
+        });
+
+        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, logIdLabel, logIdText, descriptionLabel, descriptionText, dateLabel, dateText, userIdLabel, userIdText, platformIdLabel, platformIdText, createButton, deleteButton, tableView);
 
         return vbox;
+    }
+
+    private static void deleteFromDatabase(Maintenancelogs log) {
+        try {
+            List<String> lines = Files.readAllLines(Paths.get("Database.txt"));
+            List<String> updatedLines = lines.stream()
+                    .filter(line -> !line.equals(String.format("Analysis ID,%s,Maintenancelogs,%d,%s,%s,%s,%d",
+                            log.getLogId(), log.getDescription(), log.getDate(), log.getUserId(), log.getPlatformId())))
+                    .collect(Collectors.toList());
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt"))) {
+                for (String line : updatedLines) {
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
     private static Optional<String> showSearchDialog() {

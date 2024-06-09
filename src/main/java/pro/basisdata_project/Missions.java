@@ -1,5 +1,7 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -8,7 +10,11 @@ import javafx.scene.layout.VBox;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class Missions {
 
@@ -92,6 +98,8 @@ public class Missions {
         TextField endDateText = new TextField();
 
         TableView<Missions> tableView = new TableView<>();
+        ObservableList<Missions> data = FXCollections.observableArrayList();
+
         TableColumn<Missions, Integer> missionIdCol = new TableColumn<>("Mission ID");
         missionIdCol.setCellValueFactory(new PropertyValueFactory<>("missionId"));
         TableColumn<Missions, String> nameCol = new TableColumn<>("Name");
@@ -104,8 +112,7 @@ public class Missions {
         endDateCol.setCellValueFactory(new PropertyValueFactory<>("endDate"));
 
         tableView.getColumns().addAll(missionIdCol, nameCol, objectiveCol, startDateCol, endDateCol);
-
-        vbox.getChildren().add(tableView);
+        tableView.setItems(data);
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
@@ -117,7 +124,7 @@ public class Missions {
             String endDate = endDateText.getText();
 
             Missions mission = new Missions(missionId, name, objective, startDate, endDate);
-            System.out.println("Mission Created: " + mission.getMissionId());
+            data.add(mission);
 
             // Save to Database.txt
             try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
@@ -127,9 +134,36 @@ public class Missions {
             }
         });
 
-        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, missionIdLabel, missionIdText, nameLabel, nameText, objectiveLabel, objectiveText, startDateLabel, startDateText, endDateLabel, endDateText, createButton);
+        Button deleteButton = new Button("Delete Selected Mission");
+        deleteButton.setOnAction(e -> {
+            Missions selectedMission = tableView.getSelectionModel().getSelectedItem();
+            if (selectedMission != null) {
+                data.remove(selectedMission);
+                deleteFromDatabase(selectedMission);
+            }
+        });
+
+        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, missionIdLabel, missionIdText, nameLabel, nameText, objectiveLabel, objectiveText, startDateLabel, startDateText, endDateLabel, endDateText, createButton, deleteButton, tableView);
 
         return vbox;
+    }
+
+    private static void deleteFromDatabase(Missions mission) {
+        try {
+            List<String> lines = Files.readAllLines(Paths.get("Database.txt"));
+            List<String> updatedLines = lines.stream()
+                    .filter(line -> !line.equals(String.format("Analysis ID,%s,Missions,%d,%s,%s,%s,%s",
+                            mission.getMissionId(), mission.getName(), mission.getObjective(), mission.getStartDate(), mission.getEndDate())))
+                    .collect(Collectors.toList());
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt"))) {
+                for (String line : updatedLines) {
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
     private static Optional<String> showSearchDialog() {

@@ -1,5 +1,7 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -8,7 +10,11 @@ import javafx.scene.layout.VBox;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class Platforms {
 
@@ -93,8 +99,6 @@ public class Platforms {
 
         tableView.getColumns().addAll(platformIdCol, nameCol, typeCol, statusCol);
 
-        vbox.getChildren().add(tableView);
-
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             String analysisId = analysisIdText.getText();
@@ -114,9 +118,33 @@ public class Platforms {
             }
         });
 
-        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, platformIdLabel, platformIdText, nameLabel, nameText, typeLabel, typeText, statusLabel, statusComboBox, createButton);
+        vbox.getChildren().addAll(
+                analysisIdLabel, analysisIdText, searchAnalysisIdButton,
+                platformIdLabel, platformIdText, nameLabel, nameText,
+                typeLabel, typeText, statusLabel, statusComboBox,
+                tableView, createButton
+        );
 
         return vbox;
+    }
+
+
+    private static void deleteFromDatabase(Platforms platform) {
+        try {
+            List<String> lines = Files.readAllLines(Paths.get("Database.txt"));
+            List<String> updatedLines = lines.stream()
+                    .filter(line -> !line.equals(String.format("Analysis ID,%s,Platform,%d,%s,%s,%s",
+                            platform.getPlatformId(), platform.getName(), platform.getType(), platform.getStatus())))
+                    .collect(Collectors.toList());
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt"))) {
+                for (String line : updatedLines) {
+                    writer.write(line);
+                    writer.newLine();
+                }
+            }
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
     }
 
     private static Optional<String> showSearchDialog() {
@@ -127,5 +155,4 @@ public class Platforms {
 
         return dialog.showAndWait();
     }
-
 }
