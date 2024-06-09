@@ -36,40 +36,20 @@ public class Maintenancelogs {
         return logId;
     }
 
-    public void setLogId(int logId) {
-        this.logId = logId;
-    }
-
     public String getDescription() {
         return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     public String getDate() {
         return date;
     }
 
-    public void setDate(String date) {
-        this.date = date;
-    }
-
     public String getUserId() {
         return userId;
     }
 
-    public void setUserId(String userId) {
-        this.userId = userId;
-    }
-
     public int getPlatformId() {
         return platformId;
-    }
-
-    public void setPlatformId(int platformId) {
-        this.platformId = platformId;
     }
 
     public static VBox getMaintenancelogsUI() {

@@ -50,7 +50,7 @@ public class Equipments {
         return platformId;
     }
 
-    public static VBox getEquipmentsUI() {
+    public static VBox getEquipmentUI() {
         VBox vbox = new VBox();
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
@@ -106,7 +106,7 @@ public class Equipments {
 
             // Save to Database.txt
             try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("Analysis ID,%s,Equipments,%d,%s,%s,%s,%d%n", analysisId, equipmentId, name, type, status, platformId));
+                writer.write(String.format("Analysis ID,%s,Equipment,%d,%s,%s,%s,%d%n", analysisId, equipmentId, name, type, status, platformId));
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -130,7 +130,7 @@ public class Equipments {
         try {
             List<String> lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get("Database.txt"));
             List<String> updatedLines = lines.stream()
-                    .filter(line -> !line.equals(String.format("Analysis ID,%s,Equipments,%d,%s,%s,%s,%d",
+                    .filter(line -> !line.equals(String.format("Analysis ID,%s,Equipment,%d,%s,%s,%s,%d",
                             equipment.getEquipmentId(), equipment.getName(), equipment.getType(), equipment.getStatus(), equipment.getPlatformId())))
                     .collect(Collectors.toList());
             try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt"))) {
@@ -153,3 +153,4 @@ public class Equipments {
         return dialog.showAndWait();
     }
 }
+

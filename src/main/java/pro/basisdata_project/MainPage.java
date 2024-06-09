@@ -122,7 +122,7 @@ public class MainPage extends StackPane {
                         mainContent.getChildren().add(Assignments.getAssignmentsUI());
                         break;
                     case "Equipments":
-                        mainContent.getChildren().add(Equipments.getEquipmentsUI());
+                        mainContent.getChildren().add(Equipments.getEquipmentUI());
                         break;
                     case "Missions":
                         mainContent.getChildren().add(Missions.getMissionsUI());

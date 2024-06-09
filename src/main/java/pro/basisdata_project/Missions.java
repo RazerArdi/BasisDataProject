@@ -156,7 +156,8 @@ public class Missions {
                             mission.getMissionId(), mission.getName(), mission.getObjective(), mission.getStartDate(), mission.getEndDate())))
                     .collect(Collectors.toList());
             try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt"))) {
-                for (String line : updatedLines) {
+                for (String line : updatedLines)
+                {
                     writer.write(line);
                     writer.newLine();
                 }

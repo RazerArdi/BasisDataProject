@@ -7,14 +7,13 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class Data {
+    private static TableView<Data> tableviewDATA = new TableView<Data>();
     private int dataId;
     private String type;
     private String description;
@@ -138,7 +137,10 @@ public class Data {
             }
         });
 
-        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, dataIdLabel, dataIdText, typeLabel, typeText, descriptionLabel, descriptionText, locationLabel, locationText, formatLabel, formatText, platformIdLabel, platformIdText, createButton, deleteButton, tableView);
+        Button refreshButton = new Button("Refresh Data");
+        refreshButton.setOnAction(e -> loadData());
+
+        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, dataIdLabel, dataIdText, typeLabel, typeText, descriptionLabel, descriptionText, locationLabel, locationText, formatLabel, formatText, platformIdLabel, platformIdText, createButton, deleteButton, refreshButton, tableView);
 
         return vbox;
     }
@@ -182,4 +184,33 @@ public class Data {
 
         alert.showAndWait();
     }
+
+    private static void loadData() {
+        try (BufferedReader reader = new BufferedReader(new FileReader("Database.txt"))) {
+            ObservableList<Data> dataList = FXCollections.observableArrayList();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                String[] parts = line.split(",");
+                if (parts.length == 8 && parts[2].equals("Data")) {
+                    try {
+                        int dataId = Integer.parseInt(parts[3].trim());
+                        String type = parts[4].trim();
+                        String description = parts[5].trim();
+                        String location = parts[6].trim();
+                        String format = parts[7].trim();
+                        int platformId = Integer.parseInt(parts[8].trim());
+                        dataList.add(new Data(dataId, type, description, location, format, platformId));
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid data format in line: " + line);
+                    }
+                } else {
+                    System.out.println("Invalid data format in line: " + line);
+                }
+            }
+            tableviewDATA.setItems(dataList);
+        } catch (IOException e) {
+            System.out.println("Error loading data from Database.txt.");
+        }
+    }
 }
+

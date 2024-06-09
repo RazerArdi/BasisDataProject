@@ -198,8 +198,7 @@ public class Personnels {
     private static void deleteFromDatabase(Personnels personnel) {
         try {
             List<String> lines = Files.readAllLines(Paths.get("Database.txt"));
-            List<String> updatedLines = lines.stream()
-                    .filter(line -> !line.equals(String.format("Analysis ID,%s,Personnels,%s,%s,%s,%s,%s,%s,%s",
+            List<String> updatedLines = lines.stream()                    .filter(line -> !line.equals(String.format("Analysis ID,%s,Personnels,%s,%s,%s,%s,%s,%s,%s",
                             personnel.getPersonnelId(), personnel.getPersonnelName(), personnel.getRank().name(), personnel.getSpeciality(), personnel.getCurrentAssignment(), personnel.getContactInfo(), personnel.getActiveDate())))
                     .collect(Collectors.toList());
             try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt"))) {
@@ -252,7 +251,7 @@ public class Personnels {
         civilianContractorFields.getChildren().add(editActiveDateButton);
 
         editActiveDateButton.setOnAction(event -> {
-            String personnelType = "Civilian/Contractor"; // Tambahkan variabel personnelType
+            String personnelType = "Civilian/Contractor";
             TextInputDialog dialog = new TextInputDialog(activeDateText.getText());
             dialog.setTitle("Edit Active Date");
             dialog.setHeaderText("Edit Active Date for " + personnelType);
@@ -265,3 +264,4 @@ public class Personnels {
         return civilianContractorFields;
     }
 }
+

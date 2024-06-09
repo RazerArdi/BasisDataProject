@@ -73,7 +73,19 @@ public class Platforms {
 
         searchAnalysisIdButton.setOnAction(e -> {
             Optional<String> result = showSearchDialog();
-            result.ifPresent(analysisIdText::setText);
+            if (result.isPresent()) {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Data Found");
+                alert.setHeaderText(null);
+                alert.setContentText("Data Found for Analysis ID: " + result.get());
+                alert.showAndWait();
+            } else {
+                Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                alert.setTitle("Data Not Found");
+                alert.setHeaderText(null);
+                alert.setContentText("No Data Found for the specified Analysis ID.");
+                alert.showAndWait();
+            }
         });
 
         Label platformIdLabel = new Label("Platform ID:");
@@ -118,16 +130,29 @@ public class Platforms {
             }
         });
 
+        Button refreshButton = new Button("Refresh Table");
+        refreshButton.setOnAction(e -> {
+            tableView.getItems().clear();
+            tableView.getItems().addAll(getSamplePlatformsData());
+        });
+
         vbox.getChildren().addAll(
                 analysisIdLabel, analysisIdText, searchAnalysisIdButton,
                 platformIdLabel, platformIdText, nameLabel, nameText,
                 typeLabel, typeText, statusLabel, statusComboBox,
-                tableView, createButton
+                tableView, createButton, refreshButton
         );
 
         return vbox;
     }
 
+    private static ObservableList<Platforms> getSamplePlatformsData() {
+        ObservableList<Platforms> data = FXCollections.observableArrayList();
+        data.add(new Platforms(1, "Platform 1", "Type 1", "active"));
+        data.add(new Platforms(2, "Platform 2", "Type 2", "disabled"));
+        data.add(new Platforms(3, "Platform 3", "Type 3", "passive"));
+        return data;
+    }
 
     private static void deleteFromDatabase(Platforms platform) {
         try {
