@@ -4,28 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e0f60364-e204-47a5-ba62-a0924b2f2608" name="Changes" comment="Data Inputed V3 - Add-on">
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Air.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/CommunicationLog.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/ContractorsCivPersonnel.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Land.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/OracleAPEXConnection.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sea.java" afterDir="false" />
+    <list default="true" id="e0f60364-e204-47a5-ba62-a0924b2f2608" name="Changes" comment="Data Inputed V4 - Add-on">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DataUser.txt" beforeDir="false" afterPath="$PROJECT_DIR$/DataUser.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/module-info.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/module-info.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Analysis.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Analysis.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Assignments.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Assignments.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/CommLog.java" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Data.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Data.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Equipments.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Equipments.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MainPage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MainPage.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Maintenancelogs.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MaintenanceLogs.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Missions.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Missions.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Personnels.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Personnels.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Platforms.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Platforms.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sensors.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sensors.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Users.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Users.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -209,7 +190,23 @@
       <option name="project" value="LOCAL" />
       <updated>1717942215125</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="Data Inputed V4 - Add-on">
+      <option name="closed" value="true" />
+      <created>1718117517499</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1718117517499</updated>
+    </task>
+    <task id="LOCAL-00013" summary="Data Inputed V4 - Add-on">
+      <option name="closed" value="true" />
+      <created>1718117524486</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1718117524486</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -231,6 +228,7 @@
     <MESSAGE value="Data Inputed V2" />
     <MESSAGE value="Data Inputed V3" />
     <MESSAGE value="Data Inputed V3 - Add-on" />
-    <option name="LAST_COMMIT_MESSAGE" value="Data Inputed V3 - Add-on" />
+    <MESSAGE value="Data Inputed V4 - Add-on" />
+    <option name="LAST_COMMIT_MESSAGE" value="Data Inputed V4 - Add-on" />
   </component>
 </project>

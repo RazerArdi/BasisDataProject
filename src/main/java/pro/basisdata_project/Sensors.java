@@ -83,7 +83,9 @@ public class Sensors {
         Label locationLabel = new Label("Location:");
         TextField locationText = new TextField();
         Label statusLabel = new Label("Status:");
-        TextField statusText = new TextField();
+        ChoiceBox<String> statusChoice = new ChoiceBox<>();
+        statusChoice.getItems().addAll("Active", "Inactive", "Passive"); // Menambahkan opsi status
+
         Label lastMaintenanceLabel = new Label("Last Maintenance:");
         DatePicker lastMaintenancePicker = new DatePicker();
 
@@ -106,7 +108,7 @@ public class Sensors {
             int sensorId = Integer.parseInt(sensorIdText.getText());
             String type = typeText.getText();
             String location = locationText.getText();
-            String status = statusText.getText();
+            String status = statusChoice.getValue(); // Mengambil nilai yang dipilih dari ChoiceBox
             long lastMaintenance = lastMaintenancePicker.getValue().toEpochDay();
 
             Sensors sensor = new Sensors(sensorId, type, location, status, lastMaintenance);
@@ -126,13 +128,13 @@ public class Sensors {
             sensorIdText.clear();
             typeText.clear();
             locationText.clear();
-            statusText.clear();
+            statusChoice.setValue(null); // Menghapus pemilihan status
             lastMaintenancePicker.getEditor().clear();
         });
 
         vbox.getChildren().addAll(
                 sensorIdLabel, sensorIdText, typeLabel, typeText,
-                locationLabel, locationText, statusLabel, statusText,
+                locationLabel, locationText, statusLabel, statusChoice,
                 lastMaintenanceLabel, lastMaintenancePicker,
                 tableView, createButton);
 
