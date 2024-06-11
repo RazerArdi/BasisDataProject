@@ -4,10 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e0f60364-e204-47a5-ba62-a0924b2f2608" name="Changes" comment="Data Inputed V4 - Add-on">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sensors.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sensors.java" afterDir="false" />
-    </list>
+    <list default="true" id="e0f60364-e204-47a5-ba62-a0924b2f2608" name="Changes" comment="Data Inputed V4.2 - Add-on" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -206,7 +203,15 @@
       <option name="project" value="LOCAL" />
       <updated>1718117524486</updated>
     </task>
-    <option name="localTasksCounter" value="14" />
+    <task id="LOCAL-00014" summary="Data Inputed V4.2 - Add-on">
+      <option name="closed" value="true" />
+      <created>1718118555995</created>
+      <option name="number" value="00014" />
+      <option name="presentableId" value="LOCAL-00014" />
+      <option name="project" value="LOCAL" />
+      <updated>1718118555995</updated>
+    </task>
+    <option name="localTasksCounter" value="15" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -229,6 +234,7 @@
     <MESSAGE value="Data Inputed V3" />
     <MESSAGE value="Data Inputed V3 - Add-on" />
     <MESSAGE value="Data Inputed V4 - Add-on" />
-    <option name="LAST_COMMIT_MESSAGE" value="Data Inputed V4 - Add-on" />
+    <MESSAGE value="Data Inputed V4.2 - Add-on" />
+    <option name="LAST_COMMIT_MESSAGE" value="Data Inputed V4.2 - Add-on" />
   </component>
 </project>

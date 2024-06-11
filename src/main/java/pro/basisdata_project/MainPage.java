@@ -61,7 +61,7 @@ public class MainPage extends StackPane {
         featureList.getItems().addAll(
                 "Data", "Users", "Platforms", "Personnels", "Assignments",
                 "Equipments", "Missions", "Maintenancelogs", "Analysis", "CommLog", "Sensors",
-                "Land", "Sea", "Air"
+                "Land", "Sea", "Air", "Space"
         );
 
         // Set custom cell factory to adjust spacing between items
@@ -139,6 +139,9 @@ public class MainPage extends StackPane {
                         break;
                     case "Air":
                         mainContent.getChildren().add(Air.getAirUI());
+                        break;
+                    case "Space":
+                        mainContent.getChildren().add(Space.getSpaceUI());
                         break;
                     default:
                         mainContent.getChildren().add(new Label("Select an option from the sidebar."));
