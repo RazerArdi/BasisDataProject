@@ -1,4 +1,8 @@
 package pro.basisdata_project;
+import pro.basisdata_project.LogOrRegis.*;
+import pro.basisdata_project.ConnectionORACLE.*;
+import pro.basisdata_project.PilihanCommLog.*;
+import pro.basisdata_project.OPTIONMAIN.*;
 
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;

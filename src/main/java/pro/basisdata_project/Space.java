@@ -7,8 +7,6 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 
 public class Space {
 
