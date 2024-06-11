@@ -1,0 +1,6 @@
+Analysis,1,Diagnostic,satu
+Analysis,2,Predictive,dua
+1,Users,1,bayu,general,5,1717935664714
+2,Users,2,makan,good,4,1717935680234
+
+Analysis ID,1,Sensors,1,plane,SS6,Active
