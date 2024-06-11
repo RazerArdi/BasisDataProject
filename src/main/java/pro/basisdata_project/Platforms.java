@@ -14,36 +14,39 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 public class Platforms {
 
-    private int platformId;
-    private String name;
+    private String platformId;
+    private String platformName;
     private String type;
-    private String status;
+    private String capability;
+    private String lastMaintenance;
+    private int missionsMissionId;
 
-    public Platforms(int platformId, String name, String type, String status) {
+    public Platforms(String platformId, String platformName, String type, String capability, String lastMaintenance, int missionsMissionId) {
         this.platformId = platformId;
-        this.name = name;
+        this.platformName = platformName;
         this.type = type;
-        this.status = status;
+        this.capability = capability;
+        this.lastMaintenance = lastMaintenance;
+        this.missionsMissionId = missionsMissionId;
     }
 
-    public int getPlatformId() {
+    public String getPlatformId() {
         return platformId;
     }
 
-    public void setPlatformId(int platformId) {
+    public void setPlatformId(String platformId) {
         this.platformId = platformId;
     }
 
-    public String getName() {
-        return name;
+    public String getPlatformName() {
+        return platformName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setPlatformName(String platformName) {
+        this.platformName = platformName;
     }
 
     public String getType() {
@@ -54,12 +57,28 @@ public class Platforms {
         this.type = type;
     }
 
-    public String getStatus() {
-        return status;
+    public String getCapability() {
+        return capability;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void setCapability(String capability) {
+        this.capability = capability;
+    }
+
+    public String getLastMaintenance() {
+        return lastMaintenance;
+    }
+
+    public void setLastMaintenance(String lastMaintenance) {
+        this.lastMaintenance = lastMaintenance;
+    }
+
+    public int getMissionsMissionId() {
+        return missionsMissionId;
+    }
+
+    public void setMissionsMissionId(int missionsMissionId) {
+        this.missionsMissionId = missionsMissionId;
     }
 
     public static VBox getPlatformsUI() {
@@ -67,117 +86,73 @@ public class Platforms {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
-        Label analysisIdLabel = new Label("Analysis ID:");
-        TextField analysisIdText = new TextField();
-        Button searchAnalysisIdButton = new Button("Search Analysis ID");
-
-        searchAnalysisIdButton.setOnAction(e -> {
-            Optional<String> result = showSearchDialog();
-            if (result.isPresent()) {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Data Found");
-                alert.setHeaderText(null);
-                alert.setContentText("Data Found for Analysis ID: " + result.get());
-                alert.showAndWait();
-            } else {
-                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                alert.setTitle("Data Not Found");
-                alert.setHeaderText(null);
-                alert.setContentText("No Data Found for the specified Analysis ID.");
-                alert.showAndWait();
-            }
-        });
-
         Label platformIdLabel = new Label("Platform ID:");
         TextField platformIdText = new TextField();
-        Label nameLabel = new Label("Name:");
-        TextField nameText = new TextField();
+        Label platformNameLabel = new Label("Platform Name:");
+        TextField platformNameText = new TextField();
         Label typeLabel = new Label("Type:");
         TextField typeText = new TextField();
-        Label statusLabel = new Label("Status:");
-        ComboBox<String> statusComboBox = new ComboBox<>();
-        statusComboBox.getItems().addAll("active", "disabled", "passive");
-        statusComboBox.setValue("active"); // Default value
+        Label capabilityLabel = new Label("Capability:");
+        TextField capabilityText = new TextField();
+        Label lastMaintenanceLabel = new Label("Last Maintenance:");
+        TextField lastMaintenanceText = new TextField();
+        Label missionsMissionIdLabel = new Label("Mission ID:");
+        TextField missionsMissionIdText = new TextField();
 
         TableView<Platforms> tableView = new TableView<>();
-        TableColumn<Platforms, Integer> platformIdCol = new TableColumn<>("Platform ID");
+        TableColumn<Platforms, String> platformIdCol = new TableColumn<>("Platform ID");
         platformIdCol.setCellValueFactory(new PropertyValueFactory<>("platformId"));
-        TableColumn<Platforms, String> nameCol = new TableColumn<>("Name");
-        nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
+        TableColumn<Platforms, String> platformNameCol = new TableColumn<>("Platform Name");
+        platformNameCol.setCellValueFactory(new PropertyValueFactory<>("platformName"));
         TableColumn<Platforms, String> typeCol = new TableColumn<>("Type");
         typeCol.setCellValueFactory(new PropertyValueFactory<>("type"));
-        TableColumn<Platforms, String> statusCol = new TableColumn<>("Status");
-        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+        TableColumn<Platforms, String> capabilityCol = new TableColumn<>("Capability");
+        capabilityCol.setCellValueFactory(new PropertyValueFactory<>("capability"));
+        TableColumn<Platforms, String> lastMaintenanceCol = new TableColumn<>("Last Maintenance");
+        lastMaintenanceCol.setCellValueFactory(new PropertyValueFactory<>("lastMaintenance"));
+        TableColumn<Platforms, Integer> missionsMissionIdCol = new TableColumn<>("Mission ID");
+        missionsMissionIdCol.setCellValueFactory(new PropertyValueFactory<>("missionsMissionId"));
 
-        tableView.getColumns().addAll(platformIdCol, nameCol, typeCol, statusCol);
+        tableView.getColumns().addAll(platformIdCol, platformNameCol, typeCol, capabilityCol, lastMaintenanceCol, missionsMissionIdCol);
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            String analysisId = analysisIdText.getText();
-            int platformId = Integer.parseInt(platformIdText.getText());
-            String name = nameText.getText();
+            String platformId = platformIdText.getText();
+            String platformName = platformNameText.getText();
             String type = typeText.getText();
-            String status = statusComboBox.getValue();
+            String capability = capabilityText.getText();
+            String lastMaintenance = lastMaintenanceText.getText();
+            int missionsMissionId = Integer.parseInt(missionsMissionIdText.getText());
 
-            Platforms platform = new Platforms(platformId, name, type, status);
+            Platforms platform = new Platforms(platformId, platformName, type, capability, lastMaintenance, missionsMissionId);
             System.out.println("Platform Created: " + platform.getPlatformId());
 
             // Save to Database.txt
             try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("Analysis ID,%s,Platform,%d,%s,%s,%s%n", analysisId, platformId, name, type, status));
+                writer.write(String.format("%s,%s,%s,%s,%s,%d%n", platformId, platformName, type, capability, lastMaintenance, missionsMissionId));
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
-        });
 
-        Button refreshButton = new Button("Refresh Table");
-        refreshButton.setOnAction(e -> {
-            tableView.getItems().clear();
-            tableView.getItems().addAll(getSamplePlatformsData());
+            // Add new platform to the table view
+            tableView.getItems().add(platform);
+
+            // Clear input fields after adding platform
+            platformIdText.clear();
+            platformNameText.clear();
+            typeText.clear();
+            capabilityText.clear();
+            lastMaintenanceText.clear();
+            missionsMissionIdText.clear();
         });
 
         vbox.getChildren().addAll(
-                analysisIdLabel, analysisIdText, searchAnalysisIdButton,
-                platformIdLabel, platformIdText, nameLabel, nameText,
-                typeLabel, typeText, statusLabel, statusComboBox,
-                tableView, createButton, refreshButton
-        );
+                platformIdLabel, platformIdText, platformNameLabel, platformNameText,
+                typeLabel, typeText, capabilityLabel, capabilityText,
+                lastMaintenanceLabel, lastMaintenanceText,
+                missionsMissionIdLabel, missionsMissionIdText,
+                tableView, createButton);
 
         return vbox;
-    }
-
-    private static ObservableList<Platforms> getSamplePlatformsData() {
-        ObservableList<Platforms> data = FXCollections.observableArrayList();
-        data.add(new Platforms(1, "Platform 1", "Type 1", "active"));
-        data.add(new Platforms(2, "Platform 2", "Type 2", "disabled"));
-        data.add(new Platforms(3, "Platform 3", "Type 3", "passive"));
-        return data;
-    }
-
-    private static void deleteFromDatabase(Platforms platform) {
-        try {
-            List<String> lines = Files.readAllLines(Paths.get("Database.txt"));
-            List<String> updatedLines = lines.stream()
-                    .filter(line -> !line.equals(String.format("Analysis ID,%s,Platform,%d,%s,%s,%s",
-                            platform.getPlatformId(), platform.getName(), platform.getType(), platform.getStatus())))
-                    .collect(Collectors.toList());
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt"))) {
-                for (String line : updatedLines) {
-                    writer.write(line);
-                    writer.newLine();
-                }
-            }
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-    }
-
-    private static Optional<String> showSearchDialog() {
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("Search Analysis ID");
-        dialog.setHeaderText("Enter Analysis ID to search:");
-        dialog.setContentText("Analysis ID:");
-
-        return dialog.showAndWait();
     }
 }

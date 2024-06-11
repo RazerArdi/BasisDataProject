@@ -14,55 +14,97 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.geometry.Insets;
+import javafx.scene.control.*;
+import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.VBox;
+
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+
 public class Equipments {
 
-    private int equipmentId;
+    private String equipmentId;
     private String name;
     private String type;
     private String status;
-    private int platformId;
+    private String location;
+    private String lastMaintenance;
+    private String sensorId;
 
-    public Equipments(int equipmentId, String name, String type, String status, int platformId) {
+    public Equipments(String equipmentId, String name, String type, String status, String location, String lastMaintenance, String sensorId) {
         this.equipmentId = equipmentId;
         this.name = name;
         this.type = type;
         this.status = status;
-        this.platformId = platformId;
+        this.location = location;
+        this.lastMaintenance = lastMaintenance;
+        this.sensorId = sensorId;
     }
 
-    public int getEquipmentId() {
+    public String getEquipmentId() {
         return equipmentId;
+    }
+
+    public void setEquipmentId(String equipmentId) {
+        this.equipmentId = equipmentId;
     }
 
     public String getName() {
         return name;
     }
 
+    public void setName(String name) {
+        this.name = name;
+    }
+
     public String getType() {
         return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 
     public String getStatus() {
         return status;
     }
 
-    public int getPlatformId() {
-        return platformId;
+    public void setStatus(String status) {
+        this.status = status;
     }
 
-    public static VBox getEquipmentUI() {
+    public String getLocation() {
+        return location;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public String getLastMaintenance() {
+        return lastMaintenance;
+    }
+
+    public void setLastMaintenance(String lastMaintenance) {
+        this.lastMaintenance = lastMaintenance;
+    }
+
+    public String getSensorId() {
+        return sensorId;
+    }
+
+    public void setSensorId(String sensorId) {
+        this.sensorId = sensorId;
+    }
+
+    public static VBox getEquipmentsUI() {
         VBox vbox = new VBox();
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
-
-        Label analysisIdLabel = new Label("Analysis ID:");
-        TextField analysisIdText = new TextField();
-        Button searchAnalysisIdButton = new Button("Search Analysis ID");
-
-        searchAnalysisIdButton.setOnAction(e -> {
-            Optional<String> result = showSearchDialog();
-            result.ifPresent(analysisIdText::setText);
-        });
 
         Label equipmentIdLabel = new Label("Equipment ID:");
         TextField equipmentIdText = new TextField();
@@ -72,13 +114,15 @@ public class Equipments {
         TextField typeText = new TextField();
         Label statusLabel = new Label("Status:");
         TextField statusText = new TextField();
-        Label platformIdLabel = new Label("Platform ID:");
-        TextField platformIdText = new TextField();
+        Label locationLabel = new Label("Location:");
+        TextField locationText = new TextField();
+        Label lastMaintenanceLabel = new Label("Last Maintenance:");
+        TextField lastMaintenanceText = new TextField();
+        Label sensorIdLabel = new Label("Sensor ID:");
+        TextField sensorIdText = new TextField();
 
         TableView<Equipments> tableView = new TableView<>();
-        ObservableList<Equipments> data = FXCollections.observableArrayList();
-
-        TableColumn<Equipments, Integer> equipmentIdCol = new TableColumn<>("Equipment ID");
+        TableColumn<Equipments, String> equipmentIdCol = new TableColumn<>("Equipment ID");
         equipmentIdCol.setCellValueFactory(new PropertyValueFactory<>("equipmentId"));
         TableColumn<Equipments, String> nameCol = new TableColumn<>("Name");
         nameCol.setCellValueFactory(new PropertyValueFactory<>("name"));
@@ -86,71 +130,54 @@ public class Equipments {
         typeCol.setCellValueFactory(new PropertyValueFactory<>("type"));
         TableColumn<Equipments, String> statusCol = new TableColumn<>("Status");
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
-        TableColumn<Equipments, Integer> platformIdCol = new TableColumn<>("Platform ID");
-        platformIdCol.setCellValueFactory(new PropertyValueFactory<>("platformId"));
+        TableColumn<Equipments, String> locationCol = new TableColumn<>("Location");
+        locationCol.setCellValueFactory(new PropertyValueFactory<>("location"));
+        TableColumn<Equipments, String> lastMaintenanceCol = new TableColumn<>("Last Maintenance");
+        lastMaintenanceCol.setCellValueFactory(new PropertyValueFactory<>("lastMaintenance"));
+        TableColumn<Equipments, String> sensorIdCol = new TableColumn<>("Sensor ID");
+        sensorIdCol.setCellValueFactory(new PropertyValueFactory<>("sensorId"));
 
-        tableView.getColumns().addAll(equipmentIdCol, nameCol, typeCol, statusCol, platformIdCol);
-        tableView.setItems(data);
+        tableView.getColumns().addAll(equipmentIdCol, nameCol, typeCol, statusCol, locationCol, lastMaintenanceCol, sensorIdCol);
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            String analysisId = analysisIdText.getText();
-            int equipmentId = Integer.parseInt(equipmentIdText.getText());
+            String equipmentId = equipmentIdText.getText();
             String name = nameText.getText();
             String type = typeText.getText();
             String status = statusText.getText();
-            int platformId = Integer.parseInt(platformIdText.getText());
+            String location = locationText.getText();
+            String lastMaintenance = lastMaintenanceText.getText();
+            String sensorId = sensorIdText.getText();
 
-            Equipments equipment = new Equipments(equipmentId, name, type, status, platformId);
-            data.add(equipment);
+            Equipments equipment = new Equipments(equipmentId, name, type, status, location, lastMaintenance, sensorId);
+            System.out.println("Equipment Created: " + equipment.getEquipmentId());
 
             // Save to Database.txt
             try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("Analysis ID,%s,Equipment,%d,%s,%s,%s,%d%n", analysisId, equipmentId, name, type, status, platformId));
+                writer.write(String.format("%s,%s,%s,%s,%s,%s,%s%n", equipmentId, name, type, status, location, lastMaintenance, sensorId));
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
+
+            // Add new equipment to the table view
+            tableView.getItems().add(equipment);
+
+            // Clear input fields after adding equipment
+            equipmentIdText.clear();
+            nameText.clear();
+            typeText.clear();
+            statusText.clear();
+            locationText.clear();
+            lastMaintenanceText.clear();
+            sensorIdText.clear();
         });
 
-        Button deleteButton = new Button("Delete Selected Equipment");
-        deleteButton.setOnAction(e -> {
-            Equipments selectedEquipment = tableView.getSelectionModel().getSelectedItem();
-            if (selectedEquipment != null) {
-                data.remove(selectedEquipment);
-                deleteFromDatabase(selectedEquipment);
-            }
-        });
-
-        vbox.getChildren().addAll(analysisIdLabel, analysisIdText, searchAnalysisIdButton, equipmentIdLabel, equipmentIdText, nameLabel, nameText, typeLabel, typeText, statusLabel, statusText, platformIdLabel, platformIdText, createButton, deleteButton, tableView);
+        vbox.getChildren().addAll(
+                equipmentIdLabel, equipmentIdText, nameLabel, nameText,
+                typeLabel, typeText, statusLabel, statusText, locationLabel,
+                locationText, lastMaintenanceLabel, lastMaintenanceText,
+                sensorIdLabel, sensorIdText, tableView, createButton);
 
         return vbox;
     }
-
-    private static void deleteFromDatabase(Equipments equipment) {
-        try {
-            List<String> lines = java.nio.file.Files.readAllLines(java.nio.file.Paths.get("Database.txt"));
-            List<String> updatedLines = lines.stream()
-                    .filter(line -> !line.equals(String.format("Analysis ID,%s,Equipment,%d,%s,%s,%s,%d",
-                            equipment.getEquipmentId(), equipment.getName(), equipment.getType(), equipment.getStatus(), equipment.getPlatformId())))
-                    .collect(Collectors.toList());
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt"))) {
-                for (String line : updatedLines) {
-                    writer.write(line);
-                    writer.newLine();
-                }
-            }
-        } catch (IOException ex) {
-            ex.printStackTrace();
-        }
-    }
-
-    private static Optional<String> showSearchDialog() {
-        TextInputDialog dialog = new TextInputDialog();
-        dialog.setTitle("Search Analysis ID");
-        dialog.setHeaderText("Enter Analysis ID to search:");
-        dialog.setContentText("Analysis ID:");
-
-        return dialog.showAndWait();
-    }
 }
-

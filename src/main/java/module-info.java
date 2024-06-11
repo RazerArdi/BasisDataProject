@@ -10,6 +10,7 @@ module pro.basisdata_project {
     requires org.kordamp.bootstrapfx.core;
     requires eu.hansolo.tilesfx;
     requires com.almasb.fxgl.all;
+    requires java.sql;
 
     opens pro.basisdata_project to javafx.fxml;
     exports pro.basisdata_project;

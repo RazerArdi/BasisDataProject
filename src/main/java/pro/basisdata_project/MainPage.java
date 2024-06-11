@@ -60,7 +60,8 @@ public class MainPage extends StackPane {
         ListView<String> featureList = new ListView<>();
         featureList.getItems().addAll(
                 "Data", "Users", "Platforms", "Personnels", "Assignments",
-                "Equipments", "Missions", "Maintenancelogs", "Analysis", "CommLog", "Sensors"
+                "Equipments", "Missions", "Maintenancelogs", "Analysis", "CommLog", "Sensors",
+                "Land", "Sea", "Air"
         );
 
         // Set custom cell factory to adjust spacing between items
@@ -110,10 +111,10 @@ public class MainPage extends StackPane {
                         mainContent.getChildren().add(Personnels.getPersonnelsUI());
                         break;
                     case "Maintenancelogs":
-                        mainContent.getChildren().add(Maintenancelogs.getMaintenancelogsUI());
+                        mainContent.getChildren().add(MaintenanceLogs.getMaintenanceLogsUI());
                         break;
                     case "CommLog":
-                        mainContent.getChildren().add(CommLog.getCommLogUI());
+                        mainContent.getChildren().add(CommunicationLog.getCommunicationLogUI());
                         break;
                     case "Analysis":
                         mainContent.getChildren().add(Analysis.getAnalysisUI());
@@ -122,7 +123,7 @@ public class MainPage extends StackPane {
                         mainContent.getChildren().add(Assignments.getAssignmentsUI());
                         break;
                     case "Equipments":
-                        mainContent.getChildren().add(Equipments.getEquipmentUI());
+                        mainContent.getChildren().add(Equipments.getEquipmentsUI());
                         break;
                     case "Missions":
                         mainContent.getChildren().add(Missions.getMissionsUI());
@@ -130,12 +131,22 @@ public class MainPage extends StackPane {
                     case "Data":
                         mainContent.getChildren().add(Data.getDataUI());
                         break;
+                    case "Land":
+                        mainContent.getChildren().add(Land.getLandUI());
+                        break;
+                    case "Sea":
+                        mainContent.getChildren().add(Sea.getSeaUI());
+                        break;
+                    case "Air":
+                        mainContent.getChildren().add(Air.getAirUI());
+                        break;
                     default:
                         mainContent.getChildren().add(new Label("Select an option from the sidebar."));
                         break;
                 }
             }
         });
+
 
         homeButton.setOnAction(event -> {
             mainContent.getChildren().clear();

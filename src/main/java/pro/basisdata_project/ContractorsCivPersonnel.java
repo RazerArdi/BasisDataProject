@@ -15,15 +15,17 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.Optional;
 
-public class Personnels {
+public class ContractorsCivPersonnel {
 
     private String personnelId;
+    private String officerId;
     private String personnelName;
     private String rank;
     private String activeDate;
 
-    public Personnels(String personnelId, String personnelName, String rank, String activeDate) {
+    public ContractorsCivPersonnel(String personnelId, String officerId, String personnelName, String rank, String activeDate) {
         this.personnelId = personnelId;
+        this.officerId = officerId;
         this.personnelName = personnelName;
         this.rank = rank;
         this.activeDate = activeDate;
@@ -35,6 +37,14 @@ public class Personnels {
 
     public void setPersonnelId(String personnelId) {
         this.personnelId = personnelId;
+    }
+
+    public String getOfficerId() {
+        return officerId;
+    }
+
+    public void setOfficerId(String officerId) {
+        this.officerId = officerId;
     }
 
     public String getPersonnelName() {
@@ -61,13 +71,15 @@ public class Personnels {
         this.activeDate = activeDate;
     }
 
-    public static VBox getPersonnelsUI() {
+    public static VBox getContractorsCivPersonnelUI() {
         VBox vbox = new VBox();
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
         Label personnelIdLabel = new Label("Personnel ID:");
         TextField personnelIdText = new TextField();
+        Label officerIdLabel = new Label("Officer ID:");
+        TextField officerIdText = new TextField();
         Label personnelNameLabel = new Label("Personnel Name:");
         TextField personnelNameText = new TextField();
         Label rankLabel = new Label("Rank:");
@@ -75,31 +87,34 @@ public class Personnels {
         Label activeDateLabel = new Label("Active Date:");
         TextField activeDateText = new TextField();
 
-        TableView<Personnels> tableView = new TableView<>();
-        TableColumn<Personnels, String> personnelIdCol = new TableColumn<>("Personnel ID");
+        TableView<ContractorsCivPersonnel> tableView = new TableView<>();
+        TableColumn<ContractorsCivPersonnel, String> personnelIdCol = new TableColumn<>("Personnel ID");
         personnelIdCol.setCellValueFactory(new PropertyValueFactory<>("personnelId"));
-        TableColumn<Personnels, String> personnelNameCol = new TableColumn<>("Personnel Name");
+        TableColumn<ContractorsCivPersonnel, String> officerIdCol = new TableColumn<>("Officer ID");
+        officerIdCol.setCellValueFactory(new PropertyValueFactory<>("officerId"));
+        TableColumn<ContractorsCivPersonnel, String> personnelNameCol = new TableColumn<>("Personnel Name");
         personnelNameCol.setCellValueFactory(new PropertyValueFactory<>("personnelName"));
-        TableColumn<Personnels, String> rankCol = new TableColumn<>("Rank");
+        TableColumn<ContractorsCivPersonnel, String> rankCol = new TableColumn<>("Rank");
         rankCol.setCellValueFactory(new PropertyValueFactory<>("rank"));
-        TableColumn<Personnels, String> activeDateCol = new TableColumn<>("Active Date");
+        TableColumn<ContractorsCivPersonnel, String> activeDateCol = new TableColumn<>("Active Date");
         activeDateCol.setCellValueFactory(new PropertyValueFactory<>("activeDate"));
 
-        tableView.getColumns().addAll(personnelIdCol, personnelNameCol, rankCol, activeDateCol);
+        tableView.getColumns().addAll(personnelIdCol, officerIdCol, personnelNameCol, rankCol, activeDateCol);
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             String personnelId = personnelIdText.getText();
+            String officerId = officerIdText.getText();
             String personnelName = personnelNameText.getText();
             String rank = rankText.getText();
             String activeDate = activeDateText.getText();
 
-            Personnels personnel = new Personnels(personnelId, personnelName, rank, activeDate);
+            ContractorsCivPersonnel personnel = new ContractorsCivPersonnel(personnelId, officerId, personnelName, rank, activeDate);
             System.out.println("Personnel Created: " + personnel.getPersonnelId());
 
             // Save to Database.txt
             try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("%s,%s,%s,%s%n", personnelId, personnelName, rank, activeDate));
+                writer.write(String.format("%s,%s,%s,%s,%s%n", personnelId, officerId, personnelName, rank, activeDate));
             } catch (IOException ex) {
                 ex.printStackTrace();
             }
@@ -109,16 +124,19 @@ public class Personnels {
 
             // Clear input fields after adding personnel
             personnelIdText.clear();
+            officerIdText.clear();
             personnelNameText.clear();
             rankText.clear();
             activeDateText.clear();
         });
 
         vbox.getChildren().addAll(
-                personnelIdLabel, personnelIdText, personnelNameLabel, personnelNameText,
-                rankLabel, rankText, activeDateLabel, activeDateText,
+                personnelIdLabel, personnelIdText, officerIdLabel, officerIdText,
+                personnelNameLabel, personnelNameText, rankLabel, rankText,
+                activeDateLabel, activeDateText,
                 tableView, createButton);
 
         return vbox;
     }
 }
+
