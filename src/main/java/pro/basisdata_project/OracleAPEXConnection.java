@@ -6,12 +6,10 @@ import java.sql.SQLException;
 
 public class OracleAPEXConnection {
 
-    // JDBC URL, username, and password of Oracle APEX database server
-    private static final String URL = "jdbc:oracle:thin:@localhost:1521:XE";
-    private static final String USER = "your_username";
-    private static final String PASSWORD = "your_password";
+    private static final String URL = "jdbc:oracle:thin:@localhost:1521:XE";  // Simplified URL
+    private static final String USER = "system";
+    private static final String PASSWORD = "wonorejo88";
 
-    // JDBC variables for opening and managing connection
     private static Connection connection;
 
     public static Connection getConnection() {
@@ -20,20 +18,39 @@ public class OracleAPEXConnection {
             Class.forName("oracle.jdbc.driver.OracleDriver");
             // Establish the connection
             connection = DriverManager.getConnection(URL, USER, PASSWORD);
-        } catch (ClassNotFoundException | SQLException e) {
+            System.out.println("Connection established successfully.");
+        } catch (ClassNotFoundException e) {
+            System.err.println("Oracle JDBC Driver not found. Include it in your library path.");
+            e.printStackTrace();
+        } catch (SQLException e) {
+            System.err.println("Connection failed! Check output console.");
             e.printStackTrace();
         }
         return connection;
+    }
+
+    public static boolean isConnectionSuccessful() {
+        try {
+            if (connection == null || connection.isClosed()) {
+                getConnection();
+            }
+            return connection != null && !connection.isClosed();
+        } catch (SQLException e) {
+            System.err.println("Error while checking connection status.");
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public static void closeConnection() {
         try {
             if (connection != null) {
                 connection.close();
+                System.out.println("Connection closed successfully.");
             }
         } catch (SQLException e) {
+            System.err.println("Error while closing connection.");
             e.printStackTrace();
         }
     }
 }
-

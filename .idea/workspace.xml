@@ -4,7 +4,35 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e0f60364-e204-47a5-ba62-a0924b2f2608" name="Changes" comment="Data Inputed V4.3,5 - Add-on" />
+    <list default="true" id="e0f60364-e204-47a5-ba62-a0924b2f2608" name="Changes" comment="Data Inputed V4.3,5 - Add-on">
+      <change beforePath="$PROJECT_DIR$/.idea/discord.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/discord.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/uiDesigner.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/uiDesigner.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DataUser.txt" beforeDir="false" afterPath="$PROJECT_DIR$/DataUser.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Database.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Database.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Air.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Air.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Analysis.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Analysis.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Assignments.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Assignments.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/CommunicationLog.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/CommunicationLog.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/ContractorsCivPersonnel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/ContractorsCivPersonnel.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Data.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Data.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Equipments.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Equipments.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Home.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Home.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Land.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Land.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Login.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Login.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MainPage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MainPage.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MaintenanceLogs.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MaintenanceLogs.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Missions.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Missions.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Personnels.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Personnels.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Platforms.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Platforms.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sea.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sea.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sensors.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sensors.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Space.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Space.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Users.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Users.java" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -66,10 +94,10 @@
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "git-widget-placeholder": "main",
     "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "D:/BAYU/PemprogramanLanjutTB",
-    "project.structure.last.edited": "Project",
+    "last_opened_file_path": "C:/ojdbc14.jar",
+    "project.structure.last.edited": "Libraries",
     "project.structure.proportion": "0.0",
-    "project.structure.side.proportion": "0.0",
+    "project.structure.side.proportion": "0.6333333",
     "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>

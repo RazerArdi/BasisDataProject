@@ -2,6 +2,8 @@ package pro.basisdata_project;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
@@ -26,6 +28,14 @@ public class Main extends Application {
 
         stage.setTitle("SYSTEM");
 
+        // Check database connection
+        boolean isConnected = OracleAPEXConnection.isConnectionSuccessful();
+        Alert alert = new Alert(isConnected ? AlertType.INFORMATION : AlertType.ERROR);
+        alert.setTitle("Database Connection Status");
+        alert.setHeaderText(null);
+        alert.setContentText(isConnected ? "Connection to the database was successful." : "Failed to connect to the database.");
+        alert.showAndWait();
+
         Login login = new Login(this);
         login.initializeScenes(stage);
 
@@ -42,4 +52,3 @@ public class Main extends Application {
         launch();
     }
 }
-
