@@ -7,9 +7,6 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -128,7 +125,7 @@ public class MaintenanceLogs {
 
             // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".MAINTENANCE_LOGS (MAINTENANCE_ID, LOG_DATE, DESCRIPTION, EQUIPMENT_ID, PLATFORM_ID, PERSONNEL_ID) " +
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".MAINTENANCELOGS (MAINTENANCE_ID, LOG_DATE, DESCRIPTION, EQUIPMENT_ID, PLATFORM_ID, PERSONNEL_ID) " +
                         "VALUES (?, ?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, maintenanceId);
@@ -172,7 +169,7 @@ public class MaintenanceLogs {
         ObservableList<MaintenanceLogs> maintenanceLogsList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT MAINTENANCE_ID, LOG_DATE, DESCRIPTION, EQUIPMENT_ID, PLATFORM_ID, PERSONNEL_ID FROM \"C4ISR PROJECT (BASIC)\".MAINTENANCE_LOGS";
+            String sql = "SELECT MAINTENANCE_ID, LOG_DATE, DESCRIPTION, EQUIPMENT_ID, PLATFORM_ID, PERSONNEL_ID FROM \"C4ISR PROJECT (BASIC)\".MAINTENANCELOGS";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 

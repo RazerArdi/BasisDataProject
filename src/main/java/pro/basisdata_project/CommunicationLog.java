@@ -67,8 +67,15 @@ public class CommunicationLog {
         messageCol.setCellValueFactory(new PropertyValueFactory<>("message"));
         TableColumn<CommunicationLog, String> platformsPlatformIdCol = new TableColumn<>("Platform ID");
         platformsPlatformIdCol.setCellValueFactory(new PropertyValueFactory<>("platformsPlatformId"));
-
-        tableView.getColumns().addAll(commIdCol, messageCol, platformsPlatformIdCol);
+        TableColumn<CommunicationLog, String> sourceIdCol = new TableColumn<>("Source ID");
+        sourceIdCol.setCellValueFactory(new PropertyValueFactory<>("platformsPlatformId"));
+        TableColumn<CommunicationLog, String> destinationIdCol = new TableColumn<>("Destination ID");
+        destinationIdCol.setCellValueFactory(new PropertyValueFactory<>("destinationId"));
+        TableColumn<CommunicationLog, String> timestampCol = new TableColumn<>("Timestamp");
+        timestampCol.setCellValueFactory(new PropertyValueFactory<>("timestamp"));
+        TableColumn<CommunicationLog, String> statusCol = new TableColumn<>("Status");
+        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
+        tableView.getColumns().addAll(commIdCol, messageCol, platformsPlatformIdCol, sourceIdCol, destinationIdCol, timestampCol, statusCol);
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
@@ -81,11 +88,14 @@ public class CommunicationLog {
 
             // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".COMMUNICATION_LOG (COMM_ID, MESSAGE, PLATFORMS_PLATFORM_ID) VALUES (?, ?, ?)";
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".COMMUNICATIONLOG (COMM_ID, SOURCE_ID, DESTINATION_ID, TIMESTAMP, MESSAGE, STATUS) VALUES (?, ?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, commId);
-                pstmt.setString(2, message);
-                pstmt.setString(3, platformsPlatformId);
+                pstmt.setString(2, "SOURCE_ID_VALUE");
+                pstmt.setString(3, "DESTINATION_ID_VALUE");
+                pstmt.setString(4, "TIMESTAMP_VALUE");
+                pstmt.setString(5, message);
+                pstmt.setString(6, "STATUS_VALUE");
                 pstmt.executeUpdate();
                 System.out.println("Communication Log saved to database.");
             } catch (SQLException ex) {
@@ -117,14 +127,19 @@ public class CommunicationLog {
         ObservableList<CommunicationLog> commLogList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT COMM_ID, MESSAGE, PLATFORMS_PLATFORM_ID FROM \"C4ISR PROJECT (BASIC)\".COMMUNICATION_LOG";
+            String sql = "SELECT COMM_ID, SOURCE_ID, DESTINATION_ID, TIMESTAMP, MESSAGE, STATUS FROM \"C4ISR PROJECT (BASIC)\".COMMUNICATIONLOG";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
                 String commId = rs.getString("COMM_ID");
                 String message = rs.getString("MESSAGE");
-                String platformsPlatformId = rs.getString("PLATFORMS_PLATFORM_ID");
+                String sourceId = rs.getString("SOURCE_ID");
+                String destinationId = rs.getString("DESTINATION_ID");
+                String timestamp = rs.getString("TIMESTAMP");
+                String status = rs.getString("STATUS");
+
+                String platformsPlatformId = sourceId;
 
                 CommunicationLog log = new CommunicationLog(commId, message, platformsPlatformId);
                 commLogList.add(log);

@@ -143,7 +143,7 @@ public class Sensors {
 
     private static void saveSensorToDatabase(Sensors sensor) {
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "INSERT INTO SENSORS (SENSOR_ID, TYPE, LOCATION, STATUS, LAST_MAINTENANCE) " +
+            String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".SENSORS (SENSOR_ID, TYPE, LOCATION, STATUS, LAST_MAINTENANCE) " +
                     "VALUES (?, ?, ?, ?, ?)";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, sensor.getSensorId());
@@ -162,7 +162,7 @@ public class Sensors {
         ObservableList<Sensors> sensorList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT SENSOR_ID, TYPE, LOCATION, STATUS, LAST_MAINTENANCE FROM SENSORS";
+            String sql = "SELECT SENSOR_ID, TYPE, LOCATION, STATUS, LAST_MAINTENANCE FROM \"C4ISR PROJECT (BASIC)\".SENSORS";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 

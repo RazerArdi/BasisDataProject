@@ -112,7 +112,7 @@ public class Assignments {
 
             // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".ASSIGNMENTS (ASSIGNMENT_ID, ROLE, START_DATE, END_DATE, PERSONNEL_PERSONNEL_ID) VALUES (?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".ASSIGNMENTS (ASSIGNMENT_ID, ROLE, START_DATE, END_DATE, PERSONNEL_ID) VALUES (?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, assignmentId);
                 pstmt.setString(2, role);
@@ -153,7 +153,7 @@ public class Assignments {
         ObservableList<Assignments> assignmentList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT ASSIGNMENT_ID, ROLE, START_DATE, END_DATE, PERSONNEL_PERSONNEL_ID FROM \"C4ISR PROJECT (BASIC)\".ASSIGNMENTS";
+            String sql = "SELECT ASSIGNMENT_ID, ROLE, START_DATE, END_DATE, PERSONNEL_ID FROM \"C4ISR PROJECT (BASIC)\".ASSIGNMENTS";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
@@ -162,7 +162,7 @@ public class Assignments {
                 String role = rs.getString("ROLE");
                 LocalDate startDate = rs.getDate("START_DATE").toLocalDate();
                 LocalDate endDate = rs.getDate("END_DATE").toLocalDate();
-                String personnelPersonnelId = rs.getString("PERSONNEL_PERSONNEL_ID");
+                String personnelPersonnelId = rs.getString("PERSONNEL_ID");
 
                 Assignments assignment = new Assignments(assignmentId, role, startDate, endDate, personnelPersonnelId);
                 assignmentList.add(assignment);

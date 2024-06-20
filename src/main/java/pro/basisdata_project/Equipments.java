@@ -22,14 +22,13 @@ public class Equipments {
     private String lastMaintenance;
     private String sensorId;
 
-    public Equipments(String equipmentId, String name, String type, String status, String location, String lastMaintenance, String sensorId) {
+    public Equipments(String equipmentId, String name, String type, String status, String location, String lastMaintenance) {
         this.equipmentId = equipmentId;
         this.name = name;
         this.type = type;
         this.status = status;
         this.location = location;
         this.lastMaintenance = lastMaintenance;
-        this.sensorId = sensorId;
     }
 
     public String getEquipmentId() {
@@ -80,13 +79,6 @@ public class Equipments {
         this.lastMaintenance = lastMaintenance;
     }
 
-    public String getSensorId() {
-        return sensorId;
-    }
-
-    public void setSensorId(String sensorId) {
-        this.sensorId = sensorId;
-    }
 
     public static VBox getEquipmentsUI() {
         VBox vbox = new VBox();
@@ -136,12 +128,12 @@ public class Equipments {
             String lastMaintenance = lastMaintenanceText.getText();
             String sensorId = sensorIdText.getText();
 
-            Equipments equipment = new Equipments(equipmentId, name, type, status, location, lastMaintenance, sensorId);
+            Equipments equipment = new Equipments(equipmentId, name, type, status, location, lastMaintenance);
             System.out.println("Equipment Created: " + equipment.getEquipmentId());
 
             // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".EQUIPMENTS (EQUIPMENT_ID, NAME, TYPE, STATUS, LOCATION, LAST_MAINTENANCE, SENSOR_ID) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".EQUIPMENT (EQUIPMENT_ID, NAME, TYPE, STATUS, LOCATION, LAST_MAINTENANCE, SENSOR_ID) VALUES (?, ?, ?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, equipmentId);
                 pstmt.setString(2, name);
@@ -186,7 +178,7 @@ public class Equipments {
         ObservableList<Equipments> equipmentList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT EQUIPMENT_ID, NAME, TYPE, STATUS, LOCATION, LAST_MAINTENANCE, SENSOR_ID FROM \"C4ISR PROJECT (BASIC)\".EQUIPMENTS";
+            String sql = "SELECT EQUIPMENT_ID, NAME, TYPE, STATUS, LOCATION, LAST_MAINTENANCE FROM \"C4ISR PROJECT (BASIC)\".EQUIPMENT";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
@@ -197,9 +189,8 @@ public class Equipments {
                 String status = rs.getString("STATUS");
                 String location = rs.getString("LOCATION");
                 String lastMaintenance = rs.getString("LAST_MAINTENANCE");
-                String sensorId = rs.getString("SENSOR_ID");
 
-                Equipments equipment = new Equipments(equipmentId, name, type, status, location, lastMaintenance, sensorId);
+                Equipments equipment = new Equipments(equipmentId, name, type, status, location, lastMaintenance);
                 equipmentList.add(equipment);
             }
         } catch (SQLException ex) {

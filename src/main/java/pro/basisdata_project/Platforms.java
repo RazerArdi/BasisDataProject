@@ -19,15 +19,13 @@ public class Platforms {
     private String type;
     private String capability;
     private String lastMaintenance;
-    private int missionsMissionId;
 
-    public Platforms(String platformId, String platformName, String type, String capability, String lastMaintenance, int missionsMissionId) {
+    public Platforms(String platformId, String platformName, String type, String capability, String lastMaintenance) {
         this.platformId = platformId;
         this.platformName = platformName;
         this.type = type;
         this.capability = capability;
         this.lastMaintenance = lastMaintenance;
-        this.missionsMissionId = missionsMissionId;
     }
 
     public String getPlatformId() {
@@ -68,14 +66,6 @@ public class Platforms {
 
     public void setLastMaintenance(String lastMaintenance) {
         this.lastMaintenance = lastMaintenance;
-    }
-
-    public int getMissionsMissionId() {
-        return missionsMissionId;
-    }
-
-    public void setMissionsMissionId(int missionsMissionId) {
-        this.missionsMissionId = missionsMissionId;
     }
 
     public static VBox getPlatformsUI() {
@@ -119,9 +109,8 @@ public class Platforms {
             String type = typeText.getText();
             String capability = capabilityText.getText();
             String lastMaintenance = lastMaintenanceText.getText();
-            int missionsMissionId = Integer.parseInt(missionsMissionIdText.getText());
 
-            Platforms platform = new Platforms(platformId, platformName, type, capability, lastMaintenance, missionsMissionId);
+            Platforms platform = new Platforms(platformId, platformName, type, capability, lastMaintenance);
             System.out.println("Platform Created: " + platform.getPlatformId());
 
             // Save to Oracle database
@@ -133,7 +122,6 @@ public class Platforms {
                 pstmt.setString(3, type);
                 pstmt.setString(4, capability);
                 pstmt.setString(5, lastMaintenance);
-                pstmt.setInt(6, missionsMissionId);
                 pstmt.executeUpdate();
                 System.out.println("Platform saved to database.");
             } catch (SQLException ex) {
@@ -149,7 +137,6 @@ public class Platforms {
             typeText.clear();
             capabilityText.clear();
             lastMaintenanceText.clear();
-            missionsMissionIdText.clear();
         });
 
         // Fetch and display data from Oracle database
@@ -160,7 +147,6 @@ public class Platforms {
                 platformIdLabel, platformIdText, platformNameLabel, platformNameText,
                 typeLabel, typeText, capabilityLabel, capabilityText,
                 lastMaintenanceLabel, lastMaintenanceText,
-                missionsMissionIdLabel, missionsMissionIdText,
                 tableView, createButton);
 
         return vbox;
@@ -170,19 +156,18 @@ public class Platforms {
         ObservableList<Platforms> platformList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT PLATFORM_ID, PLATFORM_NAME, TYPE, CAPABILITY, LAST_MAINTENANCE, MISSIONS_MISSION_ID FROM \"C4ISR PROJECT (BASIC)\".PLATFORMS";
+            String sql = "SELECT PLATFORM_ID, NAME, TYPE, CAPABILITY, LAST_MAINTENANCE FROM \"C4ISR PROJECT (BASIC)\".PLATFORMS";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
                 String platformId = rs.getString("PLATFORM_ID");
-                String platformName = rs.getString("PLATFORM_NAME");
+                String platformName = rs.getString("NAME");
                 String type = rs.getString("TYPE");
                 String capability = rs.getString("CAPABILITY");
                 String lastMaintenance = rs.getString("LAST_MAINTENANCE");
-                int missionsMissionId = rs.getInt("MISSIONS_MISSION_ID");
 
-                Platforms platform = new Platforms(platformId, platformName, type, capability, lastMaintenance, missionsMissionId);
+                Platforms platform = new Platforms(platformId, platformName, type, capability, lastMaintenance);
                 platformList.add(platform);
             }
         } catch (SQLException ex) {

@@ -171,7 +171,7 @@ public class Data {
         ObservableList<Data> dataList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT DATA_ID, TIMESTAMP, DATA_TYPE, RAW_DATA, PROCESSED_DATA, SENSORS_SENSOR_ID FROM \"C4ISR PROJECT (BASIC)\".DATA";
+            String sql = "SELECT DATA_ID, TIMESTAMP, DATA_TYPE, RAW_DATA, PROCESSED_DATA, SENSOR_ID FROM \"C4ISR PROJECT (BASIC)\".DATA";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
@@ -181,7 +181,7 @@ public class Data {
                 String dataType = rs.getString("DATA_TYPE");
                 String rawData = rs.getString("RAW_DATA");
                 String processedData = rs.getString("PROCESSED_DATA");
-                int sensorsSensorId = rs.getInt("SENSORS_SENSOR_ID");
+                int sensorsSensorId = rs.getInt("SENSOR_ID");
 
                 Data data = new Data(dataId, timestamp, dataType, rawData, processedData, sensorsSensorId);
                 dataList.add(data);

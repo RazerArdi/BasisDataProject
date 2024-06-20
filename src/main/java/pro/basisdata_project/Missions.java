@@ -126,7 +126,7 @@ public class Missions {
 
             // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".MISSIONS (MISSION_ID, MISSION_NAME, DESCRIPTION, START_DATE, END_DATE, STATUS) VALUES (?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".MISSIONS (MISSION_ID, NAME, DESCRIPTION, START_DATE, END_DATE, STATUS) VALUES (?, ?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setInt(1, missionId);
                 pstmt.setString(2, missionName);
@@ -169,13 +169,13 @@ public class Missions {
         ObservableList<Missions> missionList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT MISSION_ID, MISSION_NAME, DESCRIPTION, START_DATE, END_DATE, STATUS FROM \"C4ISR PROJECT (BASIC)\".MISSIONS";
+            String sql = "SELECT MISSION_ID, NAME, DESCRIPTION, START_DATE, END_DATE, STATUS FROM \"C4ISR PROJECT (BASIC)\".MISSIONS";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
                 int missionId = rs.getInt("MISSION_ID");
-                String missionName = rs.getString("MISSION_NAME");
+                String missionName = rs.getString("NAME");
                 String description = rs.getString("DESCRIPTION");
                 String startDate = rs.getString("START_DATE");
                 String endDate = rs.getString("END_DATE");
