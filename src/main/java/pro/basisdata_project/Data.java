@@ -8,7 +8,6 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -127,7 +126,7 @@ public class Data {
 
             // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".DATA (DATA_ID, TIMESTAMP, DATA_TYPE, RAW_DATA, PROCESSED_DATA, SENSORS_SENSOR_ID) VALUES (?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".DATA (DATA_ID, TIMESTAMP, DATA_TYPE, RAW_DATA, PROCESSED_DATA, SENSORS_SENSOR_ID) VALUES (?, ?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setInt(1, dataId);
                 pstmt.setString(2, timestamp);
@@ -171,7 +170,7 @@ public class Data {
         ObservableList<Data> dataList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT DATA_ID, TIMESTAMP, DATA_TYPE, RAW_DATA, PROCESSED_DATA, SENSOR_ID FROM \"C4ISR PROJECT (BASIC)\".DATA";
+            String sql = "SELECT DATA_ID, TIMESTAMP, DATA_TYPE, RAW_DATA, PROCESSED_DATA, SENSORS_SENSOR_ID FROM \"C4ISR PROJECT (BASIC) V2\".DATA";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
@@ -181,7 +180,7 @@ public class Data {
                 String dataType = rs.getString("DATA_TYPE");
                 String rawData = rs.getString("RAW_DATA");
                 String processedData = rs.getString("PROCESSED_DATA");
-                int sensorsSensorId = rs.getInt("SENSOR_ID");
+                int sensorsSensorId = rs.getInt("SENSORS_SENSOR_ID");
 
                 Data data = new Data(dataId, timestamp, dataType, rawData, processedData, sensorsSensorId);
                 dataList.add(data);

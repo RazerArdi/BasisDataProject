@@ -124,9 +124,8 @@ public class Missions {
             Missions mission = new Missions(missionId, missionName, description, startDate, endDate, status);
             System.out.println("Mission Created: " + mission.getMissionId());
 
-            // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".MISSIONS (MISSION_ID, NAME, DESCRIPTION, START_DATE, END_DATE, STATUS) VALUES (?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".MISSIONS (MISSION_ID, NAME, DESCRIPTION, START_DATE, END_DATE, STATUS) VALUES (?, ?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setInt(1, missionId);
                 pstmt.setString(2, missionName);
@@ -140,10 +139,8 @@ public class Missions {
                 ex.printStackTrace();
             }
 
-            // Add new mission to the table view
             tableView.getItems().add(mission);
 
-            // Clear input fields after adding mission
             missionIdText.clear();
             missionNameText.clear();
             descriptionText.clear();
@@ -152,7 +149,6 @@ public class Missions {
             statusText.clear();
         });
 
-        // Fetch and display data from Oracle database
         ObservableList<Missions> missionList = fetchMissionsFromDatabase();
         tableView.setItems(missionList);
 
@@ -169,7 +165,7 @@ public class Missions {
         ObservableList<Missions> missionList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT MISSION_ID, NAME, DESCRIPTION, START_DATE, END_DATE, STATUS FROM \"C4ISR PROJECT (BASIC)\".MISSIONS";
+            String sql = "SELECT MISSION_ID, NAME, DESCRIPTION, START_DATE, END_DATE, STATUS FROM \"C4ISR PROJECT (BASIC) V2\".MISSIONS";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 

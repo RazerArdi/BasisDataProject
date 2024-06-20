@@ -67,15 +67,7 @@ public class CommunicationLog {
         messageCol.setCellValueFactory(new PropertyValueFactory<>("message"));
         TableColumn<CommunicationLog, String> platformsPlatformIdCol = new TableColumn<>("Platform ID");
         platformsPlatformIdCol.setCellValueFactory(new PropertyValueFactory<>("platformsPlatformId"));
-        TableColumn<CommunicationLog, String> sourceIdCol = new TableColumn<>("Source ID");
-        sourceIdCol.setCellValueFactory(new PropertyValueFactory<>("platformsPlatformId"));
-        TableColumn<CommunicationLog, String> destinationIdCol = new TableColumn<>("Destination ID");
-        destinationIdCol.setCellValueFactory(new PropertyValueFactory<>("destinationId"));
-        TableColumn<CommunicationLog, String> timestampCol = new TableColumn<>("Timestamp");
-        timestampCol.setCellValueFactory(new PropertyValueFactory<>("timestamp"));
-        TableColumn<CommunicationLog, String> statusCol = new TableColumn<>("Status");
-        statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
-        tableView.getColumns().addAll(commIdCol, messageCol, platformsPlatformIdCol, sourceIdCol, destinationIdCol, timestampCol, statusCol);
+        tableView.getColumns().addAll(commIdCol, messageCol, platformsPlatformIdCol);
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
@@ -88,30 +80,25 @@ public class CommunicationLog {
 
             // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".COMMUNICATIONLOG (COMM_ID, SOURCE_ID, DESTINATION_ID, TIMESTAMP, MESSAGE, STATUS) VALUES (?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG (comm_id, message, platforms_platform_id) VALUES (?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, commId);
-                pstmt.setString(2, "SOURCE_ID_VALUE");
-                pstmt.setString(3, "DESTINATION_ID_VALUE");
-                pstmt.setString(4, "TIMESTAMP_VALUE");
-                pstmt.setString(5, message);
-                pstmt.setString(6, "STATUS_VALUE");
+                pstmt.setString(2, message);
+                pstmt.setString(3, platformsPlatformId);
                 pstmt.executeUpdate();
+
                 System.out.println("Communication Log saved to database.");
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
 
-            // Add new communication log to the table view
             tableView.getItems().add(log);
 
-            // Clear input fields after adding log
             commIdText.clear();
             messageText.clear();
             platformsPlatformIdText.clear();
         });
 
-        // Fetch and display data from Oracle database
         ObservableList<CommunicationLog> commLogList = fetchCommunicationLogsFromDatabase();
         tableView.setItems(commLogList);
 
@@ -127,19 +114,14 @@ public class CommunicationLog {
         ObservableList<CommunicationLog> commLogList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT COMM_ID, SOURCE_ID, DESTINATION_ID, TIMESTAMP, MESSAGE, STATUS FROM \"C4ISR PROJECT (BASIC)\".COMMUNICATIONLOG";
+            String sql = "SELECT COMM_ID, SOURCE_ID, DESTINATION_ID, TIMESTAMP, MESSAGE, STATUS FROM \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
-                String commId = rs.getString("COMM_ID");
-                String message = rs.getString("MESSAGE");
-                String sourceId = rs.getString("SOURCE_ID");
-                String destinationId = rs.getString("DESTINATION_ID");
-                String timestamp = rs.getString("TIMESTAMP");
-                String status = rs.getString("STATUS");
-
-                String platformsPlatformId = sourceId;
+                String commId = rs.getString("comm_id");
+                String message = rs.getString("message");
+                String platformsPlatformId = rs.getString("platforms_platform_id");
 
                 CommunicationLog log = new CommunicationLog(commId, message, platformsPlatformId);
                 commLogList.add(log);

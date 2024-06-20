@@ -108,27 +108,23 @@ public class Sensors {
             int sensorId = Integer.parseInt(sensorIdText.getText());
             String type = typeText.getText();
             String location = locationText.getText();
-            String status = statusChoice.getValue(); // Mengambil nilai yang dipilih dari ChoiceBox
+            String status = statusChoice.getValue();
             LocalDate lastMaintenance = lastMaintenancePicker.getValue();
 
             Sensors sensor = new Sensors(sensorId, type, location, status, lastMaintenance);
             System.out.println("Sensor Created: " + sensor.getSensorId());
 
-            // Save to Oracle database
             saveSensorToDatabase(sensor);
 
-            // Add new sensor to the table view
             tableView.getItems().add(sensor);
 
-            // Clear input fields after adding sensor
             sensorIdText.clear();
             typeText.clear();
             locationText.clear();
-            statusChoice.setValue(null); // Menghapus pemilihan status
+            statusChoice.setValue(null);
             lastMaintenancePicker.getEditor().clear();
         });
 
-        // Fetch and display data from Oracle database
         ObservableList<Sensors> sensorList = fetchSensorsFromDatabase();
         tableView.setItems(sensorList);
 
@@ -143,7 +139,7 @@ public class Sensors {
 
     private static void saveSensorToDatabase(Sensors sensor) {
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".SENSORS (SENSOR_ID, TYPE, LOCATION, STATUS, LAST_MAINTENANCE) " +
+            String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".SENSORS (SENSOR_ID, TYPE, LOCATION, STATUS, LAST_MAINTENANCE) " +
                     "VALUES (?, ?, ?, ?, ?)";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, sensor.getSensorId());
@@ -162,7 +158,7 @@ public class Sensors {
         ObservableList<Sensors> sensorList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT SENSOR_ID, TYPE, LOCATION, STATUS, LAST_MAINTENANCE FROM \"C4ISR PROJECT (BASIC)\".SENSORS";
+            String sql = "SELECT SENSOR_ID, TYPE, LOCATION, STATUS, LAST_MAINTENANCE FROM \"C4ISR PROJECT (BASIC) V2\".SENSORS";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 

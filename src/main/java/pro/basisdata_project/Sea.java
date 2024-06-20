@@ -96,9 +96,8 @@ public class Sea {
             Sea sea = new Sea(platformId, task, location, commId);
             System.out.println("Sea Platform Created: " + sea.getSeaPlatformId());
 
-            // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".SEA_PLATFORMS (PLATFORM_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID) " +
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".SEA_PLATFORMS (PLATFORM_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID) " +
                         "VALUES (?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, platformId);
@@ -111,17 +110,14 @@ public class Sea {
                 ex.printStackTrace();
             }
 
-            // Add new sea platform to the table view
             tableView.getItems().add(sea);
 
-            // Clear input fields after adding sea platform
             platformIdText.clear();
             taskText.clear();
             locationText.clear();
             commIdText.clear();
         });
 
-        // Fetch and display data from Oracle database
         ObservableList<Sea> seaList = fetchSeaPlatformsFromDatabase();
         tableView.setItems(seaList);
 
@@ -137,7 +133,7 @@ public class Sea {
         ObservableList<Sea> seaList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT PLATFORM_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID FROM \"C4ISR PROJECT (BASIC)\".SEA_PLATFORMS";
+            String sql = "SELECT PLATFORM_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID FROM \"C4ISR PROJECT (BASIC) V2\".SEA_PLATFORMS";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 

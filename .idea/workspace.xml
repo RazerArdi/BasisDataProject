@@ -4,19 +4,26 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e0f60364-e204-47a5-ba62-a0924b2f2608" name="Changes" comment="Data Inputed V5 - Add-on(Oracle database integration)">
+    <list default="true" id="e0f60364-e204-47a5-ba62-a0924b2f2608" name="Changes" comment="Data Inputed V5.1 - Add-on(Oracle database integration)">
       <change beforePath="$PROJECT_DIR$/.idea/dbnavigator.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dbnavigator.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Air.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Air.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Analysis.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Analysis.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Assignments.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Assignments.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/CommunicationLog.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/CommunicationLog.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/ContractorsCivPersonnel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/ContractorsCivPersonnel.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Data.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Data.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Equipments.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Equipments.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Land.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Land.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Login.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Login.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MaintenanceLogs.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MaintenanceLogs.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Missions.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Missions.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Personnels.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Personnels.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Platforms.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Platforms.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sea.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sea.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sensors.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sensors.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Space.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Space.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Users.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Users.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -276,7 +283,15 @@
       <option name="project" value="LOCAL" />
       <updated>1718887491757</updated>
     </task>
-    <option name="localTasksCounter" value="20" />
+    <task id="LOCAL-00020" summary="Data Inputed V5.1 - Add-on(Oracle database integration)">
+      <option name="closed" value="true" />
+      <created>1718895184805</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1718895184806</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -304,6 +319,7 @@
     <MESSAGE value="Data Inputed V4.3 - Add-on" />
     <MESSAGE value="Data Inputed V4.3,5 - Add-on" />
     <MESSAGE value="Data Inputed V5 - Add-on(Oracle database integration)" />
-    <option name="LAST_COMMIT_MESSAGE" value="Data Inputed V5 - Add-on(Oracle database integration)" />
+    <MESSAGE value="Data Inputed V5.1 - Add-on(Oracle database integration)" />
+    <option name="LAST_COMMIT_MESSAGE" value="Data Inputed V5.1 - Add-on(Oracle database integration)" />
   </component>
 </project>

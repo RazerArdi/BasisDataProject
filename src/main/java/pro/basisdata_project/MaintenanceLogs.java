@@ -85,15 +85,25 @@ public class MaintenanceLogs {
         Label maintenanceIdLabel = new Label("Maintenance ID:");
         TextField maintenanceIdText = new TextField();
         Label dateLabel = new Label("Date:");
-        TextField dateText = new TextField();
+        DatePicker dateText = new DatePicker(); // Changed to DatePicker for date input
         Label descriptionLabel = new Label("Description:");
         TextField descriptionText = new TextField();
         Label equipmentIdLabel = new Label("Equipment ID:");
-        TextField equipmentIdText = new TextField();
+        ComboBox<String> equipmentIdCombo = new ComboBox<>();
         Label platformIdLabel = new Label("Platform ID:");
-        TextField platformIdText = new TextField();
+        ComboBox<String> platformIdCombo = new ComboBox<>();
         Label personnelIdLabel = new Label("Personnel ID:");
-        TextField personnelIdText = new TextField();
+        ComboBox<String> personnelIdCombo = new ComboBox<>();
+
+        // Fetching data from database for ComboBoxes
+        ObservableList<String> equipmentIds = fetchEquipmentIds();
+        equipmentIdCombo.setItems(equipmentIds);
+
+        ObservableList<String> platformIds = fetchPlatformIds();
+        platformIdCombo.setItems(platformIds);
+
+        ObservableList<String> personnelIds = fetchPersonnelIds();
+        personnelIdCombo.setItems(personnelIds);
 
         TableView<MaintenanceLogs> tableView = new TableView<>();
         TableColumn<MaintenanceLogs, String> maintenanceIdCol = new TableColumn<>("Maintenance ID");
@@ -114,19 +124,19 @@ public class MaintenanceLogs {
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             String maintenanceId = maintenanceIdText.getText();
-            String date = dateText.getText();
+            String date = dateText.getValue().toString(); // Convert DatePicker value to String
             String description = descriptionText.getText();
-            String equipmentId = equipmentIdText.getText();
-            String platformId = platformIdText.getText();
-            String personnelId = personnelIdText.getText();
+            String equipmentId = equipmentIdCombo.getValue();
+            String platformId = platformIdCombo.getValue();
+            String personnelId = personnelIdCombo.getValue();
 
             MaintenanceLogs maintenanceLog = new MaintenanceLogs(maintenanceId, date, description, equipmentId, platformId, personnelId);
             System.out.println("Maintenance Log Created: " + maintenanceLog.getMaintenanceId());
 
             // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".MAINTENANCELOGS (MAINTENANCE_ID, LOG_DATE, DESCRIPTION, EQUIPMENT_ID, PLATFORM_ID, PERSONNEL_ID) " +
-                        "VALUES (?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".MAINTENANCELOGS (MAINTENANCE_ID, \"DATE\", DESCRIPTION, EQUIPMENT_ID, PLATFORM_ID, PERSONNEL_ID) " +
+                        "VALUES (?, TO_DATE(?, 'YYYY-MM-DD'), ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, maintenanceId);
                 pstmt.setString(2, date);
@@ -145,11 +155,11 @@ public class MaintenanceLogs {
 
             // Clear input fields after adding maintenance log
             maintenanceIdText.clear();
-            dateText.clear();
+            dateText.getEditor().clear(); // Clear DatePicker editor
             descriptionText.clear();
-            equipmentIdText.clear();
-            platformIdText.clear();
-            personnelIdText.clear();
+            equipmentIdCombo.getSelectionModel().clearSelection();
+            platformIdCombo.getSelectionModel().clearSelection();
+            personnelIdCombo.getSelectionModel().clearSelection();
         });
 
         // Fetch and display data from Oracle database
@@ -158,24 +168,78 @@ public class MaintenanceLogs {
 
         vbox.getChildren().addAll(
                 maintenanceIdLabel, maintenanceIdText, dateLabel, dateText,
-                descriptionLabel, descriptionText, equipmentIdLabel, equipmentIdText,
-                platformIdLabel, platformIdText, personnelIdLabel, personnelIdText,
+                descriptionLabel, descriptionText, equipmentIdLabel, equipmentIdCombo,
+                platformIdLabel, platformIdCombo, personnelIdLabel, personnelIdCombo,
                 tableView, createButton);
 
         return vbox;
+    }
+
+    private static ObservableList<String> fetchEquipmentIds() {
+        ObservableList<String> equipmentIds = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT EQUIPMENT_ID FROM \"C4ISR PROJECT (BASIC)\".EQUIPMENT";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                equipmentIds.add(rs.getString("EQUIPMENT_ID"));
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return equipmentIds;
+    }
+
+    private static ObservableList<String> fetchPlatformIds() {
+        ObservableList<String> platformIds = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT PLATFORM_ID FROM \"C4ISR PROJECT (BASIC) V2\".PLATFORMS";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                platformIds.add(rs.getString("PLATFORM_ID"));
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return platformIds;
+    }
+
+    private static ObservableList<String> fetchPersonnelIds() {
+        ObservableList<String> personnelIds = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT PERSONNEL_ID FROM \"C4ISR PROJECT (BASIC)\".PERSONNEL";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                personnelIds.add(rs.getString("PERSONNEL_ID"));
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return personnelIds;
     }
 
     private static ObservableList<MaintenanceLogs> fetchMaintenanceLogsFromDatabase() {
         ObservableList<MaintenanceLogs> maintenanceLogsList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT MAINTENANCE_ID, LOG_DATE, DESCRIPTION, EQUIPMENT_ID, PLATFORM_ID, PERSONNEL_ID FROM \"C4ISR PROJECT (BASIC)\".MAINTENANCELOGS";
+            String sql = "SELECT MAINTENANCE_ID, \"DATE\", DESCRIPTION, EQUIPMENT_ID, PLATFORM_ID, PERSONNEL_ID FROM \"C4ISR PROJECT (BASIC) V2\".MAINTENANCELOGS";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
                 String maintenanceId = rs.getString("MAINTENANCE_ID");
-                String date = rs.getString("LOG_DATE");
+                String date = rs.getString("DATE");
                 String description = rs.getString("DESCRIPTION");
                 String equipmentId = rs.getString("EQUIPMENT_ID");
                 String platformId = rs.getString("PLATFORM_ID");

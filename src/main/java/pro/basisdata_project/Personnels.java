@@ -124,9 +124,8 @@ public class Personnels {
             Personnels personnel = new Personnels(personnelId, personnelName, rank, specialty, currentAssignment, contactInfo);
             System.out.println("Personnel Created: " + personnel.getPersonnelId());
 
-            // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".PERSONNEL (PERSONNEL_ID, NAME, RANK, SPECIALTY, CURRENT_ASSIGNMENT, CONTACT_INFO) VALUES (?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".PERSONNEL (PERSONNEL_ID, NAME, RANK, SPECIALTY, CURRENT_ASSIGNMENT, CONTACT_INFO) VALUES (?, ?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, personnelId);
                 pstmt.setString(2, personnelName);
@@ -140,10 +139,8 @@ public class Personnels {
                 ex.printStackTrace();
             }
 
-            // Add new personnel to the table view
             tableView.getItems().add(personnel);
 
-            // Clear input fields after adding personnel
             personnelIdText.clear();
             personnelNameText.clear();
             rankText.clear();
@@ -152,7 +149,6 @@ public class Personnels {
             contactInfoText.clear();
         });
 
-        // Fetch and display data from Oracle database
         ObservableList<Personnels> personnelList = fetchPersonnelsFromDatabase();
         tableView.setItems(personnelList);
 
@@ -169,7 +165,7 @@ public class Personnels {
         ObservableList<Personnels> personnelList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT PERSONNEL_ID, NAME, RANK, SPECIALTY, CURRENT_ASSIGNMENT, CONTACT_INFO FROM \"C4ISR PROJECT (BASIC)\".PERSONNEL";
+            String sql = "SELECT PERSONNEL_ID, NAME, RANK, SPECIALTY, CURRENT_ASSIGNMENT, CONTACT_INFO FROM \"C4ISR PROJECT (BASIC) V2\".PERSONNEL";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 

@@ -75,9 +75,8 @@ public class Air {
 
             Air air = new Air(airId, task, location, commId);
 
-            // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".AIR (AIR_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID) VALUES (?, ?, ?, ?)";
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".AIR (AIR_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID) VALUES (?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, airId);
                 pstmt.setString(2, task);
@@ -89,17 +88,15 @@ public class Air {
                 ex.printStackTrace();
             }
 
-            // Add new air to the table view
+
             tableView.getItems().add(air);
 
-            // Clear input fields after adding air
             airIdText.clear();
             taskText.clear();
             locationText.clear();
             commIdText.clear();
         });
 
-        // Fetch and display data from Oracle database
         ObservableList<Air> airList = fetchAirFromDatabase();
         tableView.setItems(airList);
 
@@ -115,7 +112,7 @@ public class Air {
         ObservableList<Air> airList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT AIR_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID FROM \"C4ISR PROJECT (BASIC)\".AIR";
+            String sql = "SELECT AIR_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID FROM \"C4ISR PROJECT (BASIC) V2\".AIR";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 

@@ -12,20 +12,22 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
-public class ContractorsCivPersonnel {
+public class ContractorsCivOfficers {
 
     private String personnelId;
     private String officerId;
     private String personnelName;
     private String rank;
     private String activeDate;
+    private String personnelType; // New field for personnel type
 
-    public ContractorsCivPersonnel(String personnelId, String officerId, String personnelName, String rank, String activeDate) {
+    public ContractorsCivOfficers(String personnelId, String officerId, String personnelName, String rank, String activeDate, String personnelType) {
         this.personnelId = personnelId;
         this.officerId = officerId;
         this.personnelName = personnelName;
         this.rank = rank;
         this.activeDate = activeDate;
+        this.personnelType = personnelType;
     }
 
     public String getPersonnelId() {
@@ -68,10 +70,21 @@ public class ContractorsCivPersonnel {
         this.activeDate = activeDate;
     }
 
+    public String getPersonnelType() {
+        return personnelType;
+    }
+
+    public void setPersonnelType(String personnelType) {
+        this.personnelType = personnelType;
+    }
+
     public static VBox getContractorsCivPersonnelUI() {
         VBox vbox = new VBox();
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
+
+        Label typeLabel = new Label("Select Personnel Type:");
+        ChoiceBox<String> typeChoiceBox = new ChoiceBox<>(FXCollections.observableArrayList("Contractors", "Officer", "Enlisted"));
 
         Label personnelIdLabel = new Label("Personnel ID:");
         TextField personnelIdText = new TextField();
@@ -84,16 +97,16 @@ public class ContractorsCivPersonnel {
         Label activeDateLabel = new Label("Active Date:");
         TextField activeDateText = new TextField();
 
-        TableView<ContractorsCivPersonnel> tableView = new TableView<>();
-        TableColumn<ContractorsCivPersonnel, String> personnelIdCol = new TableColumn<>("Personnel ID");
+        TableView<ContractorsCivOfficers> tableView = new TableView<>();
+        TableColumn<ContractorsCivOfficers, String> personnelIdCol = new TableColumn<>("Personnel ID");
         personnelIdCol.setCellValueFactory(new PropertyValueFactory<>("personnelId"));
-        TableColumn<ContractorsCivPersonnel, String> officerIdCol = new TableColumn<>("Officer ID");
+        TableColumn<ContractorsCivOfficers, String> officerIdCol = new TableColumn<>("Officer ID");
         officerIdCol.setCellValueFactory(new PropertyValueFactory<>("officerId"));
-        TableColumn<ContractorsCivPersonnel, String> personnelNameCol = new TableColumn<>("Personnel Name");
+        TableColumn<ContractorsCivOfficers, String> personnelNameCol = new TableColumn<>("Personnel Name");
         personnelNameCol.setCellValueFactory(new PropertyValueFactory<>("personnelName"));
-        TableColumn<ContractorsCivPersonnel, String> rankCol = new TableColumn<>("Rank");
+        TableColumn<ContractorsCivOfficers, String> rankCol = new TableColumn<>("Rank");
         rankCol.setCellValueFactory(new PropertyValueFactory<>("rank"));
-        TableColumn<ContractorsCivPersonnel, String> activeDateCol = new TableColumn<>("Active Date");
+        TableColumn<ContractorsCivOfficers, String> activeDateCol = new TableColumn<>("Active Date");
         activeDateCol.setCellValueFactory(new PropertyValueFactory<>("activeDate"));
 
         tableView.getColumns().addAll(personnelIdCol, officerIdCol, personnelNameCol, rankCol, activeDateCol);
@@ -105,12 +118,19 @@ public class ContractorsCivPersonnel {
             String personnelName = personnelNameText.getText();
             String rank = rankText.getText();
             String activeDate = activeDateText.getText();
+            String personnelType = typeChoiceBox.getValue(); // Get selected personnel type
 
-            ContractorsCivPersonnel personnel = new ContractorsCivPersonnel(personnelId, officerId, personnelName, rank, activeDate);
+            ContractorsCivOfficers personnel = new ContractorsCivOfficers(personnelId, officerId, personnelName, rank, activeDate, personnelType);
 
-            // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".CONTRACTORS_CIV_PERSONNEL (PERSONNEL_ID, OFFICER_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE) VALUES (?, ?, ?, ?, ?)";
+                String sql;
+                if ("Contractors".equals(personnelType)) {
+                    sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".\"contractors\" (PERSONNEL_ID, OFFICER_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE) VALUES (?, ?, ?, ?, ?)";
+                } else if ("Officer".equals(personnelType)) {
+                    sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".officer (PERSONNEL_ID, OFFICER_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE) VALUES (?, ?, ?, ?, ?)";
+                } else { // Enlisted
+                    sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".enlisted (PERSONNEL_ID, ENLIST_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE) VALUES (?, ?, ?, ?, ?)";
+                }
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, personnelId);
                 pstmt.setString(2, officerId);
@@ -123,10 +143,10 @@ public class ContractorsCivPersonnel {
                 ex.printStackTrace();
             }
 
-            // Add new personnel to the table view
-            tableView.getItems().add(personnel);
+            // Update the table view based on the selected personnel type
+            ObservableList<ContractorsCivOfficers> updatedList = fetchPersonnelByTypeFromDatabase(personnelType);
+            tableView.setItems(updatedList);
 
-            // Clear input fields after adding personnel
             personnelIdText.clear();
             officerIdText.clear();
             personnelNameText.clear();
@@ -134,11 +154,8 @@ public class ContractorsCivPersonnel {
             activeDateText.clear();
         });
 
-        // Fetch and display data from Oracle database
-        ObservableList<ContractorsCivPersonnel> personnelList = fetchPersonnelFromDatabase();
-        tableView.setItems(personnelList);
-
         vbox.getChildren().addAll(
+                typeLabel, typeChoiceBox,
                 personnelIdLabel, personnelIdText, officerIdLabel, officerIdText,
                 personnelNameLabel, personnelNameText, rankLabel, rankText,
                 activeDateLabel, activeDateText,
@@ -147,11 +164,18 @@ public class ContractorsCivPersonnel {
         return vbox;
     }
 
-    private static ObservableList<ContractorsCivPersonnel> fetchPersonnelFromDatabase() {
-        ObservableList<ContractorsCivPersonnel> personnelList = FXCollections.observableArrayList();
+    private static ObservableList<ContractorsCivOfficers> fetchPersonnelByTypeFromDatabase(String personnelType) {
+        ObservableList<ContractorsCivOfficers> personnelList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT PERSONNEL_ID, OFFICER_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE FROM \"C4ISR PROJECT (BASIC)\".CONTRACTORS_CIV_PERSONNEL";
+            String sql;
+            if ("Contractors".equals(personnelType)) {
+                sql = "SELECT PERSONNEL_ID, OFFICER_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE FROM \"C4ISR PROJECT (BASIC) V2\".\"contractors\"";
+            } else if ("Officer".equals(personnelType)) {
+                sql = "SELECT PERSONNEL_ID, OFFICER_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE FROM \"C4ISR PROJECT (BASIC) V2\".officer";
+            } else { // Enlisted
+                sql = "SELECT PERSONNEL_ID, ENLIST_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE FROM \"C4ISR PROJECT (BASIC) V2\".enlisted";
+            }
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
@@ -162,7 +186,7 @@ public class ContractorsCivPersonnel {
                 String rank = rs.getString("RANK");
                 String activeDate = rs.getString("ACTIVE_DATE");
 
-                ContractorsCivPersonnel personnel = new ContractorsCivPersonnel(personnelId, officerId, personnelName, rank, activeDate);
+                ContractorsCivOfficers personnel = new ContractorsCivOfficers(personnelId, officerId, personnelName, rank, activeDate, personnelType);
                 personnelList.add(personnel);
             }
         } catch (SQLException ex) {

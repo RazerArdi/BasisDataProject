@@ -149,7 +149,7 @@ public class Login {
 
     private void handleLogin(Stage stage, String emailOrUsername, String password) {
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT NAME, EMAIL, USERNAME, PASSWORD FROM \"C4ISR PROJECT (BASIC)\".LOGIN WHERE (EMAIL = ? OR USERNAME = ?) AND PASSWORD = ?";
+            String sql = "SELECT NAME, EMAIL, USERNAME, PASSWORD FROM \"C4ISR PROJECT (BASIC) V2\".LOGIN WHERE (EMAIL = ? OR USERNAME = ?) AND PASSWORD = ?";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setString(1, emailOrUsername);
             pstmt.setString(2, emailOrUsername);
@@ -184,14 +184,14 @@ public class Login {
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
             // Fetch the maximum LOGIN_ID
-            String fetchMaxIdSql = "SELECT NVL(MAX(LOGIN_ID), 0) + 1 AS NEW_ID FROM \"C4ISR PROJECT (BASIC)\".LOGIN";
+            String fetchMaxIdSql = "SELECT NVL(MAX(LOGIN_ID), 0) + 1 AS NEW_ID FROM \"C4ISR PROJECT (BASIC) V2\".LOGIN";
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(fetchMaxIdSql);
             rs.next();
             int newLoginId = rs.getInt("NEW_ID");
 
             // Insert new user with the generated LOGIN_ID
-            String insertSql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".LOGIN (LOGIN_ID, NAME, USERNAME, EMAIL, PASSWORD) VALUES (?, ?, ?, ?, ?)";
+            String insertSql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".LOGIN (LOGIN_ID, NAME, USERNAME, EMAIL, PASSWORD) VALUES (?, ?, ?, ?, ?)";
             PreparedStatement pstmt = conn.prepareStatement(insertSql);
             pstmt.setInt(1, newLoginId);
             pstmt.setString(2, fullName);

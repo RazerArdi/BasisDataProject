@@ -113,9 +113,8 @@ public class Platforms {
             Platforms platform = new Platforms(platformId, platformName, type, capability, lastMaintenance);
             System.out.println("Platform Created: " + platform.getPlatformId());
 
-            // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".PLATFORMS (PLATFORM_ID, PLATFORM_NAME, TYPE, CAPABILITY, LAST_MAINTENANCE, MISSIONS_MISSION_ID) VALUES (?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".PLATFORMS (PLATFORM_ID, PLATFORM_NAME, TYPE, CAPABILITY, LAST_MAINTENANCE, MISSIONS_MISSION_ID) VALUES (?, ?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, platformId);
                 pstmt.setString(2, platformName);
@@ -128,10 +127,8 @@ public class Platforms {
                 ex.printStackTrace();
             }
 
-            // Add new platform to the table view
             tableView.getItems().add(platform);
 
-            // Clear input fields after adding platform
             platformIdText.clear();
             platformNameText.clear();
             typeText.clear();
@@ -139,7 +136,6 @@ public class Platforms {
             lastMaintenanceText.clear();
         });
 
-        // Fetch and display data from Oracle database
         ObservableList<Platforms> platformList = fetchPlatformsFromDatabase();
         tableView.setItems(platformList);
 
@@ -156,7 +152,7 @@ public class Platforms {
         ObservableList<Platforms> platformList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT PLATFORM_ID, NAME, TYPE, CAPABILITY, LAST_MAINTENANCE FROM \"C4ISR PROJECT (BASIC)\".PLATFORMS";
+            String sql = "SELECT PLATFORM_ID, NAME, TYPE, CAPABILITY, LAST_MAINTENANCE FROM \"C4ISR PROJECT (BASIC) V2\".PLATFORMS";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 

@@ -7,9 +7,6 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -19,11 +16,13 @@ public class Space {
     private int spaceId;
     private String task;
     private String location;
+    private String communicationLogCommId;
 
-    public Space(int spaceId, String task, String location) {
+    public Space(int spaceId, String task, String location, String communicationLogCommId) {
         this.spaceId = spaceId;
         this.task = task;
         this.location = location;
+        this.communicationLogCommId = communicationLogCommId;
     }
 
     public int getSpaceId() {
@@ -50,6 +49,14 @@ public class Space {
         this.location = location;
     }
 
+    public String getCommunicationLogCommId() {
+        return communicationLogCommId;
+    }
+
+    public void setCommunicationLogCommId(String communicationLogCommId) {
+        this.communicationLogCommId = communicationLogCommId;
+    }
+
     public static VBox getSpaceUI() {
         VBox vbox = new VBox();
         vbox.setPadding(new Insets(10));
@@ -61,6 +68,8 @@ public class Space {
         TextField taskText = new TextField();
         Label locationLabel = new Label("Location (Optional):");
         TextField locationText = new TextField();
+        Label commIdLabel = new Label("Communication Log ID:");
+        TextField commIdText = new TextField();
 
         TableView<Space> tableView = new TableView<>();
         TableColumn<Space, Integer> spaceIdCol = new TableColumn<>("Space ID");
@@ -69,48 +78,50 @@ public class Space {
         taskCol.setCellValueFactory(new PropertyValueFactory<>("task"));
         TableColumn<Space, String> locationCol = new TableColumn<>("Location");
         locationCol.setCellValueFactory(new PropertyValueFactory<>("location"));
+        TableColumn<Space, String> commIdCol = new TableColumn<>("Communication Log ID");
+        commIdCol.setCellValueFactory(new PropertyValueFactory<>("communicationLogCommId"));
 
-        tableView.getColumns().addAll(spaceIdCol, taskCol, locationCol);
+        tableView.getColumns().addAll(spaceIdCol, taskCol, locationCol, commIdCol);
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             int spaceId = Integer.parseInt(spaceIdText.getText());
             String task = taskText.getText();
             String location = locationText.getText();
+            String commId = commIdText.getText();
 
-            Space space = new Space(spaceId, task, location);
+            Space space = new Space(spaceId, task, location, commId);
             System.out.println("Space Created: " + space.getSpaceId());
 
-            // Save to Oracle database
             saveSpaceToDatabase(space);
 
-            // Add new space to the table view
             tableView.getItems().add(space);
 
-            // Clear input fields after adding space
             spaceIdText.clear();
             taskText.clear();
             locationText.clear();
+            commIdText.clear();
         });
 
-        // Fetch and display data from Oracle database
         ObservableList<Space> spaceList = fetchSpacesFromDatabase();
         tableView.setItems(spaceList);
 
         vbox.getChildren().addAll(
                 spaceIdLabel, spaceIdText, taskLabel, taskText,
-                locationLabel, locationText, tableView, createButton);
+                locationLabel, locationText, commIdLabel, commIdText,
+                tableView, createButton);
 
         return vbox;
     }
 
     private static void saveSpaceToDatabase(Space space) {
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "INSERT INTO SPACES (SPACE_ID, TASK, LOCATION) VALUES (?, ?, ?)";
+            String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".SPACES_PLATFORMS (SPACE_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID) VALUES (?, ?, ?, ?)";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, space.getSpaceId());
             pstmt.setString(2, space.getTask());
             pstmt.setString(3, space.getLocation());
+            pstmt.setString(4, space.getCommunicationLogCommId());
             pstmt.executeUpdate();
             System.out.println("Space saved to database.");
         } catch (SQLException ex) {
@@ -122,7 +133,7 @@ public class Space {
         ObservableList<Space> spaceList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT SPACE_ID, TASK, LOCATION FROM SPACES";
+            String sql = "SELECT SPACE_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID FROM \"C4ISR PROJECT (BASIC) V2\".SPACES_PLATFORMS";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
@@ -130,8 +141,9 @@ public class Space {
                 int spaceId = rs.getInt("SPACE_ID");
                 String task = rs.getString("TASK");
                 String location = rs.getString("LOCATION");
+                String commId = rs.getString("COMMUNICATION_LOG_COMM_ID");
 
-                Space space = new Space(spaceId, task, location);
+                Space space = new Space(spaceId, task, location, commId);
                 spaceList.add(space);
             }
         } catch (SQLException ex) {

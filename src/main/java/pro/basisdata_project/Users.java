@@ -112,9 +112,9 @@ public class Users {
             Users user = new Users(userId, name, role, accessLevel, lastLogin);
             System.out.println("User Created: " + user.getUserId());
 
-            // Save to Oracle database
+
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".USERS (USER_ID, NAME, ROLE, ACCESS_LEVEL, LAST_LOGIN) VALUES (?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".USERS (USER_ID, NAME, ROLE, ACCESS_LEVEL, LAST_LOGIN) VALUES (?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, userId);
                 pstmt.setString(2, name);
@@ -134,11 +134,10 @@ public class Users {
             userIdText.clear();
             nameText.clear();
             roleText.clear();
-            accessLevelComboBox.setValue(1); // Reset to default value
+            accessLevelComboBox.setValue(1);
             lastLoginPicker.getEditor().clear();
         });
 
-        // Fetch and display users from Oracle database
         ObservableList<Users> usersList = fetchUsersFromDatabase();
         tableView.setItems(usersList);
 
@@ -155,7 +154,7 @@ public class Users {
         ObservableList<Users> usersList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT USER_ID, NAME, ROLE, ACCESS_LEVEL, LAST_LOGIN FROM \"C4ISR PROJECT (BASIC)\".USERS";
+            String sql = "SELECT USER_ID, NAME, ROLE, ACCESS_LEVEL, LAST_LOGIN FROM \"C4ISR PROJECT (BASIC) V2\".USERS";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 

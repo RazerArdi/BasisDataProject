@@ -92,7 +92,7 @@ public class Analysis {
         TableColumn<Analysis, String> resultsCol = new TableColumn<>("Results");
         resultsCol.setCellValueFactory(new PropertyValueFactory<>("results"));
         TableColumn<Analysis, String> usersUserIdCol = new TableColumn<>("User ID");
-        usersUserIdCol.setCellValueFactory(new PropertyValueFactory<>("UserId"));
+        usersUserIdCol.setCellValueFactory(new PropertyValueFactory<>("usersUserId"));
         TableColumn<Analysis, Integer> dataDataIdCol = new TableColumn<>("Data ID");
         dataDataIdCol.setCellValueFactory(new PropertyValueFactory<>("dataDataId"));
 
@@ -111,7 +111,7 @@ public class Analysis {
 
             // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".ANALYSIS (ANALYSIS_ID, DATA_ID, ANALYSIS_TYPE, RESULTS, Analyst_Id) VALUES (?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".ANALYSIS (ANALYSIS_ID, ANALYSIS_TYPE, RESULTS, USERS_USER_ID, DATA_DATA_ID) VALUES (?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setInt(1, analysisId);
                 pstmt.setString(2, analysisType);
@@ -152,7 +152,7 @@ public class Analysis {
         ObservableList<Analysis> analysisList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT ANALYSIS_ID, DATA_ID, ANALYSIS_TYPE, RESULTS, Analyst_Id FROM \"C4ISR PROJECT (BASIC)\".ANALYSIS";
+            String sql = "SELECT ANALYSIS_ID, ANALYSIS_TYPE, RESULTS, USERS_USER_ID, DATA_DATA_ID FROM \"C4ISR PROJECT (BASIC) V2\".ANALYSIS";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
@@ -160,8 +160,8 @@ public class Analysis {
                 int analysisId = rs.getInt("ANALYSIS_ID");
                 String analysisType = rs.getString("ANALYSIS_TYPE");
                 String results = rs.getString("RESULTS");
-                String usersUserId = rs.getString("USER_ID");
-                int dataDataId = rs.getInt("Analyst_Id");
+                String usersUserId = rs.getString("USERS_USER_ID");
+                int dataDataId = rs.getInt("DATA_DATA_ID");
 
                 Analysis analysis = new Analysis(analysisId, analysisType, results, usersUserId, dataDataId);
                 analysisList.add(analysis);

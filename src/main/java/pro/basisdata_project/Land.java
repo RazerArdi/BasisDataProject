@@ -76,9 +76,8 @@ public class Land {
 
             Land land = new Land(landId, task, location, commId);
 
-            // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".LAND (LAND_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID) VALUES (?, ?, ?, ?)";
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".LAND (LAND_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID) VALUES (?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, landId);
                 pstmt.setString(2, task);
@@ -90,17 +89,14 @@ public class Land {
                 ex.printStackTrace();
             }
 
-            // Add new land to the table view
             tableView.getItems().add(land);
 
-            // Clear input fields after adding land
             landIdText.clear();
             taskText.clear();
             locationText.clear();
             commIdText.clear();
         });
 
-        // Fetch and display data from Oracle database
         ObservableList<Land> landList = fetchLandFromDatabase();
         tableView.setItems(landList);
 
@@ -116,7 +112,7 @@ public class Land {
         ObservableList<Land> landList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT LAND_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID FROM \"C4ISR PROJECT (BASIC)\".LAND";
+            String sql = "SELECT LAND_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID FROM \"C4ISR PROJECT (BASIC) V2\".LAND";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
