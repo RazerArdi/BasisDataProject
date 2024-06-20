@@ -97,7 +97,7 @@ public class Sea {
             System.out.println("Sea Platform Created: " + sea.getSeaPlatformId());
 
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".SEA_PLATFORMS (PLATFORM_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID) " +
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".SEA (SEA_PLATFORM_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID) " +
                         "VALUES (?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, platformId);
@@ -133,12 +133,12 @@ public class Sea {
         ObservableList<Sea> seaList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT PLATFORM_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID FROM \"C4ISR PROJECT (BASIC) V2\".SEA_PLATFORMS";
+            String sql = "SELECT SEA_PLATFORM_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID FROM \"C4ISR PROJECT (BASIC) V2\".SEA";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
-                String platformId = rs.getString("PLATFORM_ID");
+                String platformId = rs.getString("SEA_PLATFORM_ID");
                 String task = rs.getString("TASK");
                 String location = rs.getString("LOCATION");
                 String commId = rs.getString("COMMUNICATION_LOG_COMM_ID");

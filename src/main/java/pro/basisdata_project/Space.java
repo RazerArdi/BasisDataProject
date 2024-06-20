@@ -116,7 +116,7 @@ public class Space {
 
     private static void saveSpaceToDatabase(Space space) {
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".SPACES_PLATFORMS (SPACE_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID) VALUES (?, ?, ?, ?)";
+            String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".SPACE (SPACE_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID) VALUES (?, ?, ?, ?)";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             pstmt.setInt(1, space.getSpaceId());
             pstmt.setString(2, space.getTask());
@@ -133,7 +133,7 @@ public class Space {
         ObservableList<Space> spaceList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT SPACE_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID FROM \"C4ISR PROJECT (BASIC) V2\".SPACES_PLATFORMS";
+            String sql = "SELECT SPACE_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID FROM \"C4ISR PROJECT (BASIC) V2\".SPACE";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 

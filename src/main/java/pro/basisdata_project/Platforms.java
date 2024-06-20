@@ -19,13 +19,15 @@ public class Platforms {
     private String type;
     private String capability;
     private String lastMaintenance;
+    private String missionsMissionId; // Added field for Mission ID
 
-    public Platforms(String platformId, String platformName, String type, String capability, String lastMaintenance) {
+    public Platforms(String platformId, String platformName, String type, String capability, String lastMaintenance, String missionsMissionId) {
         this.platformId = platformId;
         this.platformName = platformName;
         this.type = type;
         this.capability = capability;
         this.lastMaintenance = lastMaintenance;
+        this.missionsMissionId = missionsMissionId;
     }
 
     public String getPlatformId() {
@@ -68,6 +70,14 @@ public class Platforms {
         this.lastMaintenance = lastMaintenance;
     }
 
+    public String getMissionsMissionId() {
+        return missionsMissionId;
+    }
+
+    public void setMissionsMissionId(String missionsMissionId) {
+        this.missionsMissionId = missionsMissionId;
+    }
+
     public static VBox getPlatformsUI() {
         VBox vbox = new VBox();
         vbox.setPadding(new Insets(10));
@@ -84,7 +94,7 @@ public class Platforms {
         Label lastMaintenanceLabel = new Label("Last Maintenance:");
         TextField lastMaintenanceText = new TextField();
         Label missionsMissionIdLabel = new Label("Mission ID:");
-        TextField missionsMissionIdText = new TextField();
+        TextField missionsMissionIdText = new TextField(); // Input for Mission ID
 
         TableView<Platforms> tableView = new TableView<>();
         TableColumn<Platforms, String> platformIdCol = new TableColumn<>("Platform ID");
@@ -97,7 +107,7 @@ public class Platforms {
         capabilityCol.setCellValueFactory(new PropertyValueFactory<>("capability"));
         TableColumn<Platforms, String> lastMaintenanceCol = new TableColumn<>("Last Maintenance");
         lastMaintenanceCol.setCellValueFactory(new PropertyValueFactory<>("lastMaintenance"));
-        TableColumn<Platforms, Integer> missionsMissionIdCol = new TableColumn<>("Mission ID");
+        TableColumn<Platforms, String> missionsMissionIdCol = new TableColumn<>("Mission ID"); // Added column
         missionsMissionIdCol.setCellValueFactory(new PropertyValueFactory<>("missionsMissionId"));
 
         tableView.getColumns().addAll(platformIdCol, platformNameCol, typeCol, capabilityCol, lastMaintenanceCol, missionsMissionIdCol);
@@ -109,9 +119,9 @@ public class Platforms {
             String type = typeText.getText();
             String capability = capabilityText.getText();
             String lastMaintenance = lastMaintenanceText.getText();
+            String missionsMissionId = missionsMissionIdText.getText(); // Retrieve Mission ID
 
-            Platforms platform = new Platforms(platformId, platformName, type, capability, lastMaintenance);
-            System.out.println("Platform Created: " + platform.getPlatformId());
+            Platforms platform = new Platforms(platformId, platformName, type, capability, lastMaintenance, missionsMissionId);
 
             try (Connection conn = OracleAPEXConnection.getConnection()) {
                 String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".PLATFORMS (PLATFORM_ID, PLATFORM_NAME, TYPE, CAPABILITY, LAST_MAINTENANCE, MISSIONS_MISSION_ID) VALUES (?, ?, ?, ?, ?, ?)";
@@ -121,6 +131,7 @@ public class Platforms {
                 pstmt.setString(3, type);
                 pstmt.setString(4, capability);
                 pstmt.setString(5, lastMaintenance);
+                pstmt.setString(6, missionsMissionId); // Set Mission ID
                 pstmt.executeUpdate();
                 System.out.println("Platform saved to database.");
             } catch (SQLException ex) {
@@ -134,6 +145,7 @@ public class Platforms {
             typeText.clear();
             capabilityText.clear();
             lastMaintenanceText.clear();
+            missionsMissionIdText.clear();
         });
 
         ObservableList<Platforms> platformList = fetchPlatformsFromDatabase();
@@ -143,6 +155,7 @@ public class Platforms {
                 platformIdLabel, platformIdText, platformNameLabel, platformNameText,
                 typeLabel, typeText, capabilityLabel, capabilityText,
                 lastMaintenanceLabel, lastMaintenanceText,
+                missionsMissionIdLabel, missionsMissionIdText, // Add Mission ID field to UI
                 tableView, createButton);
 
         return vbox;
@@ -152,18 +165,19 @@ public class Platforms {
         ObservableList<Platforms> platformList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT PLATFORM_ID, NAME, TYPE, CAPABILITY, LAST_MAINTENANCE FROM \"C4ISR PROJECT (BASIC) V2\".PLATFORMS";
+            String sql = "SELECT PLATFORM_ID, PLATFORM_NAME, TYPE, CAPABILITY, LAST_MAINTENANCE, MISSIONS_MISSION_ID FROM \"C4ISR PROJECT (BASIC) V2\".PLATFORMS";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
                 String platformId = rs.getString("PLATFORM_ID");
-                String platformName = rs.getString("NAME");
+                String platformName = rs.getString("PLATFORM_NAME");
                 String type = rs.getString("TYPE");
                 String capability = rs.getString("CAPABILITY");
                 String lastMaintenance = rs.getString("LAST_MAINTENANCE");
+                String missionsMissionId = rs.getString("MISSIONS_MISSION_ID");
 
-                Platforms platform = new Platforms(platformId, platformName, type, capability, lastMaintenance);
+                Platforms platform = new Platforms(platformId, platformName, type, capability, lastMaintenance, missionsMissionId);
                 platformList.add(platform);
             }
         } catch (SQLException ex) {

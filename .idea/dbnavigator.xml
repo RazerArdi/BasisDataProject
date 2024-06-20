@@ -17,7 +17,7 @@
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
     <connection id="ecc496e3-5be9-4f65-90a3-75cee657f7c2">
-      <console name="Connection" type="STANDARD" schema="C4ISR PROJECT (BASIC) V2" session="Main"><![CDATA[select * from USERS]]></console>
+      <console name="Connection" type="STANDARD" schema="C4ISR PROJECT (BASIC) V2" session="Main"><![CDATA[select * from MAINTENANCE_LOGS]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseEditorStateManager">

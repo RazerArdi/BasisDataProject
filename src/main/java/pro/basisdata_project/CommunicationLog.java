@@ -114,7 +114,7 @@ public class CommunicationLog {
         ObservableList<CommunicationLog> commLogList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT COMM_ID, SOURCE_ID, DESTINATION_ID, TIMESTAMP, MESSAGE, STATUS FROM \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG";
+            String sql = "SELECT comm_id, message, platforms_platform_id FROM \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 

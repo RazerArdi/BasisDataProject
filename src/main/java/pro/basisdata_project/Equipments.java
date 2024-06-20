@@ -141,7 +141,7 @@ public class Equipments {
 
             // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".EQUIPMENT (EQUIPMENT_ID, NAME, TYPE, STATUS, LOCATION, LAST_MAINTENANCE, SENSOR_ID) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".EQUIPMENT (EQUIPMENT_ID, NAME, TYPE, STATUS, LOCATION, LAST_MAINTENANCE, SENSORS_SENSOR_ID) VALUES (?, ?, ?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, equipmentId);
                 pstmt.setString(2, name);
@@ -186,7 +186,7 @@ public class Equipments {
         ObservableList<Equipments> equipmentList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT EQUIPMENT_ID, NAME, TYPE, STATUS, LOCATION, LAST_MAINTENANCE, SENSOR_ID FROM \"C4ISR PROJECT (BASIC) V2\".EQUIPMENT";
+            String sql = "SELECT EQUIPMENT_ID, NAME, TYPE, STATUS, LOCATION, LAST_MAINTENANCE, SENSORS_SENSOR_ID FROM \"C4ISR PROJECT (BASIC) V2\".EQUIPMENT";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
@@ -197,7 +197,7 @@ public class Equipments {
                 String status = rs.getString("STATUS");
                 String location = rs.getString("LOCATION");
                 String lastMaintenance = rs.getString("LAST_MAINTENANCE");
-                String sensorId = rs.getString("SENSOR_ID");
+                String sensorId = rs.getString("SENSORS_SENSOR_ID");
 
                 Equipments equipment = new Equipments(equipmentId, name, type, status, location, lastMaintenance, sensorId);
                 equipmentList.add(equipment);

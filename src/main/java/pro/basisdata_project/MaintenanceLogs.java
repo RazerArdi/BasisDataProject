@@ -133,9 +133,8 @@ public class MaintenanceLogs {
             MaintenanceLogs maintenanceLog = new MaintenanceLogs(maintenanceId, date, description, equipmentId, platformId, personnelId);
             System.out.println("Maintenance Log Created: " + maintenanceLog.getMaintenanceId());
 
-            // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".MAINTENANCELOGS (MAINTENANCE_ID, \"DATE\", DESCRIPTION, EQUIPMENT_ID, PLATFORM_ID, PERSONNEL_ID) " +
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".MAINTENANCE_LOGS (MAINTENANCE_ID, \"DATE\", DESCRIPTION, EQUIPMENT_EQUIPMENT_ID, PLATFORM_PLATFORM_ID, PERSONNEL_PERSONNEL_ID) " +
                         "VALUES (?, TO_DATE(?, 'YYYY-MM-DD'), ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, maintenanceId);
@@ -150,10 +149,8 @@ public class MaintenanceLogs {
                 ex.printStackTrace();
             }
 
-            // Add new maintenance log to the table view
             tableView.getItems().add(maintenanceLog);
 
-            // Clear input fields after adding maintenance log
             maintenanceIdText.clear();
             dateText.getEditor().clear(); // Clear DatePicker editor
             descriptionText.clear();
@@ -162,7 +159,6 @@ public class MaintenanceLogs {
             personnelIdCombo.getSelectionModel().clearSelection();
         });
 
-        // Fetch and display data from Oracle database
         ObservableList<MaintenanceLogs> maintenanceLogsList = fetchMaintenanceLogsFromDatabase();
         tableView.setItems(maintenanceLogsList);
 
@@ -233,17 +229,18 @@ public class MaintenanceLogs {
         ObservableList<MaintenanceLogs> maintenanceLogsList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT MAINTENANCE_ID, \"DATE\", DESCRIPTION, EQUIPMENT_ID, PLATFORM_ID, PERSONNEL_ID FROM \"C4ISR PROJECT (BASIC) V2\".MAINTENANCELOGS";
+            String sql = "SELECT MAINTENANCE_ID, \"Date\", DESCRIPTION, EQUIPMENT_EQUIPMENT_ID, PLATFORMS_PLATFORM_ID, PERSONNEL_PERSONNEL_ID " +
+                    "FROM \"C4ISR PROJECT (BASIC) V2\".MAINTENANCE_LOGS";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
                 String maintenanceId = rs.getString("MAINTENANCE_ID");
-                String date = rs.getString("DATE");
+                String date = rs.getString("Date");
                 String description = rs.getString("DESCRIPTION");
                 String equipmentId = rs.getString("EQUIPMENT_ID");
                 String platformId = rs.getString("PLATFORM_ID");
-                String personnelId = rs.getString("PERSONNEL_ID");
+                String personnelId = rs.getString("PERSONNEL_PERSONNEL_ID");
 
                 MaintenanceLogs maintenanceLog = new MaintenanceLogs(maintenanceId, date, description, equipmentId, platformId, personnelId);
                 maintenanceLogsList.add(maintenanceLog);

@@ -125,7 +125,7 @@ public class Personnels {
             System.out.println("Personnel Created: " + personnel.getPersonnelId());
 
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".PERSONNEL (PERSONNEL_ID, NAME, RANK, SPECIALTY, CURRENT_ASSIGNMENT, CONTACT_INFO) VALUES (?, ?, ?, ?, ?, ?)";
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".PERSONNEL (PERSONNEL_ID, Personnel_Name, RANK, SPECIALTY, CURRENT_ASSIGNMENT, CONTACT_INFO) VALUES (?, ?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, personnelId);
                 pstmt.setString(2, personnelName);
@@ -165,13 +165,13 @@ public class Personnels {
         ObservableList<Personnels> personnelList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT PERSONNEL_ID, NAME, RANK, SPECIALTY, CURRENT_ASSIGNMENT, CONTACT_INFO FROM \"C4ISR PROJECT (BASIC) V2\".PERSONNEL";
+            String sql = "SELECT PERSONNEL_ID, Personnel_Name, RANK, SPECIALTY, CURRENT_ASSIGNMENT, CONTACT_INFO FROM \"C4ISR PROJECT (BASIC) V2\".PERSONNEL";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
                 String personnelId = rs.getString("PERSONNEL_ID");
-                String personnelName = rs.getString("NAME");
+                String personnelName = rs.getString("Personnel_Name");
                 String rank = rs.getString("RANK");
                 String specialty = rs.getString("SPECIALTY");
                 String currentAssignment = rs.getString("CURRENT_ASSIGNMENT");

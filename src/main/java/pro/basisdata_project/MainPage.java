@@ -4,17 +4,26 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
+import javafx.scene.input.MouseButton;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class MainPage extends StackPane {
 
+    private String accountName; // Menyimpan nama akun saat ini
+    private Stage primaryStage;
+    private Scene loginScene;
+
     public MainPage(String accountName, Stage primaryStage, Scene loginScene) {
+        this.accountName = accountName;
+        this.primaryStage = primaryStage;
+        this.loginScene = loginScene;
+
         this.setAlignment(Pos.TOP_CENTER);
         this.setStyle("-fx-background-color: #EEF5FF;");
 
@@ -150,89 +159,49 @@ public class MainPage extends StackPane {
             }
         });
 
+        accountLink.setOnMouseClicked(e -> {
+            if (e.getButton() == MouseButton.PRIMARY && e.getClickCount() == 1) {
+                // Create a context menu with options Profil and Log Out
+                ContextMenu contextMenu = new ContextMenu();
+                MenuItem profilItem = new MenuItem("Profil");
+                MenuItem logOutItem = new MenuItem("Log Out");
+
+                profilItem.setOnAction(event -> {
+                    // Handle action for Profil option
+                    // Load and display profile data for the current account from database
+                    String profileData = loadProfileDataFromDatabase(accountName);
+                    if (profileData != null) {
+                        // Show profile data in a dialog or somewhere in the UI
+                        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+                        alert.setTitle("Profil");
+                        alert.setHeaderText(null);
+                        alert.setContentText(profileData);
+                        alert.showAndWait();
+                    } else {
+                        showErrorDialog("Error loading profile data.");
+                    }
+                });
+
+                logOutItem.setOnAction(event -> {
+                    // Handle action for Log Out option
+                    // Return to the login page
+                    primaryStage.setScene(loginScene);
+                });
+
+                // Add menu items to the context menu
+                contextMenu.getItems().addAll(profilItem, logOutItem);
+
+                // Show context menu at the position of the mouse click relative to the accountLink
+                contextMenu.show(accountLink, e.getScreenX(), e.getScreenY());
+            }
+        });
+
 
         homeButton.setOnAction(event -> {
             mainContent.getChildren().clear();
             Home home = new Home(); // Buat instance dari kelas Home
             mainContent.getChildren().add(home.getHomeUI()); // Gunakan instance untuk memanggil metode getHomeUI()
             featureList.getSelectionModel().clearSelection(); // Menghapus pemilihan dari ListView saat tombol HOME ditekan
-        });
-
-
-        // Handling click event on accountLink (Hyperlink for account name)
-        accountLink.setOnAction(e -> {
-            // Create a context menu with options Profil and Log Out
-            ContextMenu contextMenu = new ContextMenu();
-            MenuItem profilItem = new MenuItem("Profil");
-            MenuItem logOutItem = new MenuItem("Log Out");
-
-            profilItem.setOnAction(event -> {
-                // Handle action for Profil option
-                // Load and display profile data from DataUser.txt for the current account
-                String profileData = loadProfileData(accountName);
-                if (profileData != null) {
-                    // Show profile data in a dialog or somewhere in the UI
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                    alert.setTitle("Profil");
-                    alert.setHeaderText(null);
-                    alert.setContentText(profileData);
-                    alert.showAndWait();
-                } else {
-                    showErrorDialog("Error loading profile data.");
-                }
-            });
-
-            logOutItem.setOnAction(event -> {
-                // Handle action for Log Out option
-                // Return to the login page
-                primaryStage.setScene(loginScene);
-            });
-
-            // Add menu items to the context menu
-            contextMenu.getItems().addAll(profilItem, logOutItem);
-            accountLink.setOnMouseClicked(o -> {
-                ContextMenu CM = new ContextMenu();
-                MenuItem profileItem = new MenuItem("Profil");
-                MenuItem logoutItem = new MenuItem("Log Out");
-
-                profileItem.setOnAction(event -> {
-                    try {
-                        // Baca file DataUser.txt
-                        List<String> userData = Files.readAllLines(Paths.get("DataUser.txt"));
-
-                        // Cari data profil sesuai dengan akun yang aktif
-                        for (String line : userData) {
-                            String[] parts = line.split(",");
-                            String storedUsername = parts[1]; // Indeks 1 berisi username
-
-                            if (storedUsername.equals(accountName)) {
-                                String fullName = parts[0];
-                                String Username = parts[1];
-                                String email = parts[2];
-                                String message = "Full Name: " + fullName + "Username: "+ Username +"\nEmail: " + email;
-
-                                Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                                alert.setTitle("Profile Information");
-                                alert.setHeaderText("Profile Data");
-                                alert.setContentText(message);
-                                alert.showAndWait();
-                                break;
-                            }
-                        }
-                    } catch (IOException s) {
-                        showErrorDialog("Error reading user data.");
-                    }
-                });
-
-                logoutItem.setOnAction(event -> {
-                    // Tambahkan logika untuk keluar ke halaman login
-                    primaryStage.setScene(loginScene);
-                });
-
-                CM.getItems().addAll(profileItem, logoutItem);
-                CM.show(accountLink, o.getScreenX(), o.getScreenY());
-            });
-
         });
 
         // BorderPane layout
@@ -248,15 +217,48 @@ public class MainPage extends StackPane {
         this.getChildren().add(borderPane); // Adding the BorderPane to the StackPane
     }
 
-    // Method to load profile data from DataUser.txt for the specified account
-    private String loadProfileData(String accountName) {
-        // Logic to load and return profile data for the account
-        // Example:
-        // Read the DataUser.txt file and find the profile data for the accountName
-        // Return the profile data as a String
+    // Method to load profile data from LOGIN table in the database
+    private String loadProfileDataFromDatabase(String accountName) {
+        String profileData = null;
+        Connection conn = null;
+        PreparedStatement pstmt = null;
+        ResultSet rs = null;
 
-        // Placeholder return value for demonstration
-        return "Name: John Doe\nEmail: johndoe@example.com\nRole: Administrator";
+        try {
+            conn = OracleAPEXConnection.getConnection(); // Get connection
+
+            // SQL query to retrieve profile data based on accountName
+            String sql = "SELECT NAME, EMAIL, USERNAME FROM \"C4ISR PROJECT (BASIC) V2\".LOGIN WHERE USERNAME = ?";
+            pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, accountName);
+            rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                String fullName = rs.getString("NAME");
+                String email = rs.getString("EMAIL");
+                String username = rs.getString("USERNAME");
+                profileData = "Full Name: " + fullName + "\nUsername: " + username + "\nEmail: " + email;
+            }
+        } catch (SQLException ex) {
+            showErrorDialog("Error loading profile data: " + ex.getMessage());
+        } finally {
+            // Close resources in a finally block to ensure they are always closed
+            try {
+                if (rs != null) {
+                    rs.close();
+                }
+                if (pstmt != null) {
+                    pstmt.close();
+                }
+                if (conn != null) {
+                    conn.close();
+                }
+            } catch (SQLException ex) {
+                showErrorDialog("Error closing database resources: " + ex.getMessage());
+            }
+        }
+
+        return profileData;
     }
 
     // Method to show an error dialog
@@ -268,3 +270,4 @@ public class MainPage extends StackPane {
         alert.showAndWait();
     }
 }
+
