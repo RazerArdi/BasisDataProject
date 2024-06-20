@@ -1,5 +1,7 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -8,16 +10,20 @@ import javafx.scene.layout.VBox;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.time.LocalDate;
 
 public class Sensors {
-
     private int sensorId;
     private String type;
     private String location;
     private String status;
-    private long lastMaintenance;
+    private LocalDate lastMaintenance;
 
-    public Sensors(int sensorId, String type, String location, String status, long lastMaintenance) {
+    public Sensors(int sensorId, String type, String location, String status, LocalDate lastMaintenance) {
         this.sensorId = sensorId;
         this.type = type;
         this.location = location;
@@ -57,11 +63,11 @@ public class Sensors {
         this.status = status;
     }
 
-    public long getLastMaintenance() {
+    public LocalDate getLastMaintenance() {
         return lastMaintenance;
     }
 
-    public void setLastMaintenance(long lastMaintenance) {
+    public void setLastMaintenance(LocalDate lastMaintenance) {
         this.lastMaintenance = lastMaintenance;
     }
 
@@ -92,7 +98,7 @@ public class Sensors {
         locationCol.setCellValueFactory(new PropertyValueFactory<>("location"));
         TableColumn<Sensors, String> statusCol = new TableColumn<>("Status");
         statusCol.setCellValueFactory(new PropertyValueFactory<>("status"));
-        TableColumn<Sensors, Long> lastMaintenanceCol = new TableColumn<>("Last Maintenance");
+        TableColumn<Sensors, LocalDate> lastMaintenanceCol = new TableColumn<>("Last Maintenance");
         lastMaintenanceCol.setCellValueFactory(new PropertyValueFactory<>("lastMaintenance"));
 
         tableView.getColumns().addAll(sensorIdCol, typeCol, locationCol, statusCol, lastMaintenanceCol);
@@ -103,17 +109,13 @@ public class Sensors {
             String type = typeText.getText();
             String location = locationText.getText();
             String status = statusChoice.getValue(); // Mengambil nilai yang dipilih dari ChoiceBox
-            long lastMaintenance = lastMaintenancePicker.getValue().toEpochDay();
+            LocalDate lastMaintenance = lastMaintenancePicker.getValue();
 
             Sensors sensor = new Sensors(sensorId, type, location, status, lastMaintenance);
             System.out.println("Sensor Created: " + sensor.getSensorId());
 
-            // Save to Database.txt
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("%d,%s,%s,%s,%d%n", sensorId, type, location, status, lastMaintenance));
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
+            // Save to Oracle database
+            saveSensorToDatabase(sensor);
 
             // Add new sensor to the table view
             tableView.getItems().add(sensor);
@@ -126,6 +128,10 @@ public class Sensors {
             lastMaintenancePicker.getEditor().clear();
         });
 
+        // Fetch and display data from Oracle database
+        ObservableList<Sensors> sensorList = fetchSensorsFromDatabase();
+        tableView.setItems(sensorList);
+
         vbox.getChildren().addAll(
                 sensorIdLabel, sensorIdText, typeLabel, typeText,
                 locationLabel, locationText, statusLabel, statusChoice,
@@ -133,5 +139,47 @@ public class Sensors {
                 tableView, createButton);
 
         return vbox;
+    }
+
+    private static void saveSensorToDatabase(Sensors sensor) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "INSERT INTO SENSORS (SENSOR_ID, TYPE, LOCATION, STATUS, LAST_MAINTENANCE) " +
+                    "VALUES (?, ?, ?, ?, ?)";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, sensor.getSensorId());
+            pstmt.setString(2, sensor.getType());
+            pstmt.setString(3, sensor.getLocation());
+            pstmt.setString(4, sensor.getStatus());
+            pstmt.setDate(5, java.sql.Date.valueOf(sensor.getLastMaintenance()));
+            pstmt.executeUpdate();
+            System.out.println("Sensor saved to database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private static ObservableList<Sensors> fetchSensorsFromDatabase() {
+        ObservableList<Sensors> sensorList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT SENSOR_ID, TYPE, LOCATION, STATUS, LAST_MAINTENANCE FROM SENSORS";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                int sensorId = rs.getInt("SENSOR_ID");
+                String type = rs.getString("TYPE");
+                String location = rs.getString("LOCATION");
+                String status = rs.getString("STATUS");
+                LocalDate lastMaintenance = rs.getDate("LAST_MAINTENANCE").toLocalDate();
+
+                Sensors sensor = new Sensors(sensorId, type, location, status, lastMaintenance);
+                sensorList.add(sensor);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return sensorList;
     }
 }

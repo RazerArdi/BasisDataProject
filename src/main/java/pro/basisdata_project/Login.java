@@ -15,6 +15,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.*;
 import java.util.List;
 
 public class Login {
@@ -147,31 +148,26 @@ public class Login {
     }
 
     private void handleLogin(Stage stage, String emailOrUsername, String password) {
-        List<String> userData;
-        try {
-            userData = Files.readAllLines(Paths.get("DataUser.txt"));
-        } catch (IOException e) {
-            showErrorDialog("Error reading user data.");
-            return;
-        }
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT NAME, EMAIL, USERNAME, PASSWORD FROM \"C4ISR PROJECT (BASIC)\".LOGIN WHERE (EMAIL = ? OR USERNAME = ?) AND PASSWORD = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, emailOrUsername);
+            pstmt.setString(2, emailOrUsername);
+            pstmt.setString(3, password);
 
-        for (String line : userData) {
-            String[] parts = line.split(",");
-            String storedEmail = parts[2];
-            String storedUsername = parts[1];
-            String storedPassword = parts[3];
-            String storedName = parts[1]; // Assuming name is the first part in your data
+            ResultSet rs = pstmt.executeQuery();
 
-            if ((storedEmail.equals(emailOrUsername) || storedUsername.equals(emailOrUsername)) && storedPassword.equals(password)) {
+            if (rs.next()) {
+                String storedName = rs.getString("name");
                 showSuccessDialog("Login successful!");
-
                 mainApp.showMainScene(storedName, loginScene);
-                // Call method in Main class to show the main scene
-                return;
+            } else {
+                showErrorDialog("Invalid email/username or password.");
             }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            showErrorDialog("Error accessing the database.");
         }
-
-        showErrorDialog("Invalid email/username or password.");
     }
 
 
@@ -186,15 +182,32 @@ public class Login {
             return;
         }
 
-        String userData = fullName + "," + username + "," + email + "," + password;
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter("DataUser.txt", true))) {
-            writer.write(userData);
-            writer.newLine();
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            // Fetch the maximum LOGIN_ID
+            String fetchMaxIdSql = "SELECT NVL(MAX(LOGIN_ID), 0) + 1 AS NEW_ID FROM \"C4ISR PROJECT (BASIC)\".LOGIN";
+            Statement stmt = conn.createStatement();
+            ResultSet rs = stmt.executeQuery(fetchMaxIdSql);
+            rs.next();
+            int newLoginId = rs.getInt("NEW_ID");
+
+            // Insert new user with the generated LOGIN_ID
+            String insertSql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".LOGIN (LOGIN_ID, NAME, USERNAME, EMAIL, PASSWORD) VALUES (?, ?, ?, ?, ?)";
+            PreparedStatement pstmt = conn.prepareStatement(insertSql);
+            pstmt.setInt(1, newLoginId);
+            pstmt.setString(2, fullName);
+            pstmt.setString(3, username);
+            pstmt.setString(4, email);
+            pstmt.setString(5, password);
+
+            pstmt.executeUpdate();
             showSuccessDialog("Registration successful!");
-        } catch (IOException e) {
+            stage.setScene(loginScene);
+        } catch (SQLException ex) {
+            ex.printStackTrace();
             showErrorDialog("Error saving user data.");
         }
     }
+
 
     private void handleForgotPassword(Stage stage, String email) {
         if (isValidEmail(email)) {

@@ -1,13 +1,11 @@
 package pro.basisdata_project;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.sql.*;
 
 public class OracleAPEXConnection {
 
-    private static final String URL = "jdbc:oracle:thin:@localhost:1521:XE";  // Simplified URL
-    private static final String USER = "system";
+    private static final String URL = "jdbc:oracle:thin:@localhost:1521:XE";
+    private static final String USER = "SYSTEM";
     private static final String PASSWORD = "wonorejo88";
 
     private static Connection connection;
@@ -24,6 +22,9 @@ public class OracleAPEXConnection {
             e.printStackTrace();
         } catch (SQLException e) {
             System.err.println("Connection failed! Check output console.");
+            System.err.println("SQL State: " + e.getSQLState());
+            System.err.println("Error Code: " + e.getErrorCode());
+            System.err.println("Message: " + e.getMessage());
             e.printStackTrace();
         }
         return connection;
@@ -51,6 +52,14 @@ public class OracleAPEXConnection {
         } catch (SQLException e) {
             System.err.println("Error while closing connection.");
             e.printStackTrace();
+        }
+    }
+
+    public static void main(String[] args) {
+        if (isConnectionSuccessful()) {
+            System.out.println("Connection to the database was successful.");
+        } else {
+            System.err.println("Failed to connect to the database.");
         }
     }
 }

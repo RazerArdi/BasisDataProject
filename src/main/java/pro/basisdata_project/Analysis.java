@@ -1,13 +1,16 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class Analysis {
 
@@ -106,10 +109,18 @@ public class Analysis {
             Analysis analysis = new Analysis(analysisId, analysisType, results, usersUserId, dataDataId);
             System.out.println("Analysis Created: " + analysis.getAnalysisId());
 
-            // Save to Database.txt
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("%d,%s,%s,%s,%d%n", analysisId, analysisType, results, usersUserId, dataDataId));
-            } catch (IOException ex) {
+            // Save to Oracle database
+            try (Connection conn = OracleAPEXConnection.getConnection()) {
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".ANALYSIS (ANALYSIS_ID, ANALYSIS_TYPE, RESULTS, USERS_USER_ID, DATA_DATA_ID) VALUES (?, ?, ?, ?, ?)";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setInt(1, analysisId);
+                pstmt.setString(2, analysisType);
+                pstmt.setString(3, results);
+                pstmt.setString(4, usersUserId);
+                pstmt.setInt(5, dataDataId);
+                pstmt.executeUpdate();
+                System.out.println("Analysis saved to database.");
+            } catch (SQLException ex) {
                 ex.printStackTrace();
             }
 
@@ -124,6 +135,10 @@ public class Analysis {
             dataDataIdText.clear();
         });
 
+        // Fetch and display data from Oracle database
+        ObservableList<Analysis> analysisList = fetchAnalysisFromDatabase();
+        tableView.setItems(analysisList);
+
         vbox.getChildren().addAll(
                 analysisIdLabel, analysisIdText, analysisTypeLabel, analysisTypeText,
                 resultsLabel, resultsText, usersUserIdLabel, usersUserIdText,
@@ -131,5 +146,30 @@ public class Analysis {
                 tableView, createButton);
 
         return vbox;
+    }
+
+    private static ObservableList<Analysis> fetchAnalysisFromDatabase() {
+        ObservableList<Analysis> analysisList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT ANALYSIS_ID, ANALYSIS_TYPE, RESULTS, USERS_USER_ID, DATA_DATA_ID FROM \"C4ISR PROJECT (BASIC)\".ANALYSIS";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                int analysisId = rs.getInt("ANALYSIS_ID");
+                String analysisType = rs.getString("ANALYSIS_TYPE");
+                String results = rs.getString("RESULTS");
+                String usersUserId = rs.getString("USERS_USER_ID");
+                int dataDataId = rs.getInt("DATA_DATA_ID");
+
+                Analysis analysis = new Analysis(analysisId, analysisType, results, usersUserId, dataDataId);
+                analysisList.add(analysis);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return analysisList;
     }
 }

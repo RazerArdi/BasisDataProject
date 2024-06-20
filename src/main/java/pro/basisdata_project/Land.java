@@ -1,9 +1,16 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class Land {
     private String landId;
@@ -68,13 +75,34 @@ public class Land {
             String commId = commIdText.getText();
 
             Land land = new Land(landId, task, location, commId);
+
+            // Save to Oracle database
+            try (Connection conn = OracleAPEXConnection.getConnection()) {
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".LAND (LAND_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID) VALUES (?, ?, ?, ?)";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, landId);
+                pstmt.setString(2, task);
+                pstmt.setString(3, location);
+                pstmt.setString(4, commId);
+                pstmt.executeUpdate();
+                System.out.println("Land saved to database.");
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+
+            // Add new land to the table view
             tableView.getItems().add(land);
 
+            // Clear input fields after adding land
             landIdText.clear();
             taskText.clear();
             locationText.clear();
             commIdText.clear();
         });
+
+        // Fetch and display data from Oracle database
+        ObservableList<Land> landList = fetchLandFromDatabase();
+        tableView.setItems(landList);
 
         vbox.getChildren().addAll(
                 landIdLabel, landIdText, taskLabel, taskText,
@@ -83,5 +111,28 @@ public class Land {
 
         return vbox;
     }
-}
 
+    private static ObservableList<Land> fetchLandFromDatabase() {
+        ObservableList<Land> landList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT LAND_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID FROM \"C4ISR PROJECT (BASIC)\".LAND";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String landId = rs.getString("LAND_ID");
+                String task = rs.getString("TASK");
+                String location = rs.getString("LOCATION");
+                String commId = rs.getString("COMMUNICATION_LOG_COMM_ID");
+
+                Land land = new Land(landId, task, location, commId);
+                landList.add(land);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return landList;
+    }
+}

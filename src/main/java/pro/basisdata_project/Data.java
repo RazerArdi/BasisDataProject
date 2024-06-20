@@ -1,13 +1,17 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.sql.Connection;
+import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class Data {
 
@@ -121,10 +125,19 @@ public class Data {
             Data data = new Data(dataId, timestamp, dataType, rawData, processedData, sensorsSensorId);
             System.out.println("Data Created: " + data.getDataId());
 
-            // Save to Database.txt
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("%d,%s,%s,%s,%s,%d%n", dataId, timestamp, dataType, rawData, processedData, sensorsSensorId));
-            } catch (IOException ex) {
+            // Save to Oracle database
+            try (Connection conn = OracleAPEXConnection.getConnection()) {
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".DATA (DATA_ID, TIMESTAMP, DATA_TYPE, RAW_DATA, PROCESSED_DATA, SENSORS_SENSOR_ID) VALUES (?, ?, ?, ?, ?, ?)";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setInt(1, dataId);
+                pstmt.setString(2, timestamp);
+                pstmt.setString(3, dataType);
+                pstmt.setString(4, rawData);
+                pstmt.setString(5, processedData);
+                pstmt.setInt(6, sensorsSensorId);
+                pstmt.executeUpdate();
+                System.out.println("Data saved to database.");
+            } catch (SQLException ex) {
                 ex.printStackTrace();
             }
 
@@ -140,6 +153,10 @@ public class Data {
             sensorsSensorIdText.clear();
         });
 
+        // Fetch and display data from Oracle database
+        ObservableList<Data> dataList = fetchDataFromDatabase();
+        tableView.setItems(dataList);
+
         vbox.getChildren().addAll(
                 dataIdLabel, dataIdText, timestampLabel, timestampText,
                 dataTypeLabel, dataTypeText, rawDataLabel, rawDataText,
@@ -148,5 +165,31 @@ public class Data {
                 tableView, createButton);
 
         return vbox;
+    }
+
+    private static ObservableList<Data> fetchDataFromDatabase() {
+        ObservableList<Data> dataList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT DATA_ID, TIMESTAMP, DATA_TYPE, RAW_DATA, PROCESSED_DATA, SENSORS_SENSOR_ID FROM \"C4ISR PROJECT (BASIC)\".DATA";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                int dataId = rs.getInt("DATA_ID");
+                String timestamp = rs.getString("TIMESTAMP");
+                String dataType = rs.getString("DATA_TYPE");
+                String rawData = rs.getString("RAW_DATA");
+                String processedData = rs.getString("PROCESSED_DATA");
+                int sensorsSensorId = rs.getInt("SENSORS_SENSOR_ID");
+
+                Data data = new Data(dataId, timestamp, dataType, rawData, processedData, sensorsSensorId);
+                dataList.add(data);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return dataList;
     }
 }

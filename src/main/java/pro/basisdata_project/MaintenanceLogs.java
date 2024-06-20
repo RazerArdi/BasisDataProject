@@ -1,5 +1,7 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -8,9 +10,12 @@ import javafx.scene.layout.VBox;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class MaintenanceLogs {
-
     private String maintenanceId;
     private String date;
     private String description;
@@ -121,10 +126,20 @@ public class MaintenanceLogs {
             MaintenanceLogs maintenanceLog = new MaintenanceLogs(maintenanceId, date, description, equipmentId, platformId, personnelId);
             System.out.println("Maintenance Log Created: " + maintenanceLog.getMaintenanceId());
 
-            // Save to Database.txt
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("%s,%s,%s,%s,%s,%s%n", maintenanceId, date, description, equipmentId, platformId, personnelId));
-            } catch (IOException ex) {
+            // Save to Oracle database
+            try (Connection conn = OracleAPEXConnection.getConnection()) {
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".MAINTENANCE_LOGS (MAINTENANCE_ID, LOG_DATE, DESCRIPTION, EQUIPMENT_ID, PLATFORM_ID, PERSONNEL_ID) " +
+                        "VALUES (?, ?, ?, ?, ?, ?)";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, maintenanceId);
+                pstmt.setString(2, date);
+                pstmt.setString(3, description);
+                pstmt.setString(4, equipmentId);
+                pstmt.setString(5, platformId);
+                pstmt.setString(6, personnelId);
+                pstmt.executeUpdate();
+                System.out.println("Maintenance log saved to database.");
+            } catch (SQLException ex) {
                 ex.printStackTrace();
             }
 
@@ -140,6 +155,10 @@ public class MaintenanceLogs {
             personnelIdText.clear();
         });
 
+        // Fetch and display data from Oracle database
+        ObservableList<MaintenanceLogs> maintenanceLogsList = fetchMaintenanceLogsFromDatabase();
+        tableView.setItems(maintenanceLogsList);
+
         vbox.getChildren().addAll(
                 maintenanceIdLabel, maintenanceIdText, dateLabel, dateText,
                 descriptionLabel, descriptionText, equipmentIdLabel, equipmentIdText,
@@ -148,5 +167,30 @@ public class MaintenanceLogs {
 
         return vbox;
     }
-}
 
+    private static ObservableList<MaintenanceLogs> fetchMaintenanceLogsFromDatabase() {
+        ObservableList<MaintenanceLogs> maintenanceLogsList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT MAINTENANCE_ID, LOG_DATE, DESCRIPTION, EQUIPMENT_ID, PLATFORM_ID, PERSONNEL_ID FROM \"C4ISR PROJECT (BASIC)\".MAINTENANCE_LOGS";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String maintenanceId = rs.getString("MAINTENANCE_ID");
+                String date = rs.getString("LOG_DATE");
+                String description = rs.getString("DESCRIPTION");
+                String equipmentId = rs.getString("EQUIPMENT_ID");
+                String platformId = rs.getString("PLATFORM_ID");
+                String personnelId = rs.getString("PERSONNEL_ID");
+
+                MaintenanceLogs maintenanceLog = new MaintenanceLogs(maintenanceId, date, description, equipmentId, platformId, personnelId);
+                maintenanceLogsList.add(maintenanceLog);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return maintenanceLogsList;
+    }
+}

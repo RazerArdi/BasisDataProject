@@ -1,13 +1,16 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class CommunicationLog {
 
@@ -76,10 +79,16 @@ public class CommunicationLog {
             CommunicationLog log = new CommunicationLog(commId, message, platformsPlatformId);
             System.out.println("Communication Log Created: " + log.getCommId());
 
-            // Save to Database.txt
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("%s,%s,%s%n", commId, message, platformsPlatformId));
-            } catch (IOException ex) {
+            // Save to Oracle database
+            try (Connection conn = OracleAPEXConnection.getConnection()) {
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".COMMUNICATION_LOG (COMM_ID, MESSAGE, PLATFORMS_PLATFORM_ID) VALUES (?, ?, ?)";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, commId);
+                pstmt.setString(2, message);
+                pstmt.setString(3, platformsPlatformId);
+                pstmt.executeUpdate();
+                System.out.println("Communication Log saved to database.");
+            } catch (SQLException ex) {
                 ex.printStackTrace();
             }
 
@@ -92,11 +101,38 @@ public class CommunicationLog {
             platformsPlatformIdText.clear();
         });
 
+        // Fetch and display data from Oracle database
+        ObservableList<CommunicationLog> commLogList = fetchCommunicationLogsFromDatabase();
+        tableView.setItems(commLogList);
+
         vbox.getChildren().addAll(
                 commIdLabel, commIdText, messageLabel, messageText,
                 platformsPlatformIdLabel, platformsPlatformIdText,
                 tableView, createButton);
 
         return vbox;
+    }
+
+    private static ObservableList<CommunicationLog> fetchCommunicationLogsFromDatabase() {
+        ObservableList<CommunicationLog> commLogList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT COMM_ID, MESSAGE, PLATFORMS_PLATFORM_ID FROM \"C4ISR PROJECT (BASIC)\".COMMUNICATION_LOG";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String commId = rs.getString("COMM_ID");
+                String message = rs.getString("MESSAGE");
+                String platformsPlatformId = rs.getString("PLATFORMS_PLATFORM_ID");
+
+                CommunicationLog log = new CommunicationLog(commId, message, platformsPlatformId);
+                commLogList.add(log);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return commLogList;
     }
 }

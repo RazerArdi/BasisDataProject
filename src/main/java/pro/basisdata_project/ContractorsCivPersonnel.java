@@ -1,13 +1,16 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class ContractorsCivPersonnel {
 
@@ -104,12 +107,19 @@ public class ContractorsCivPersonnel {
             String activeDate = activeDateText.getText();
 
             ContractorsCivPersonnel personnel = new ContractorsCivPersonnel(personnelId, officerId, personnelName, rank, activeDate);
-            System.out.println("Personnel Created: " + personnel.getPersonnelId());
 
-            // Save to Database.txt
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("%s,%s,%s,%s,%s%n", personnelId, officerId, personnelName, rank, activeDate));
-            } catch (IOException ex) {
+            // Save to Oracle database
+            try (Connection conn = OracleAPEXConnection.getConnection()) {
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".CONTRACTORS_CIV_PERSONNEL (PERSONNEL_ID, OFFICER_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE) VALUES (?, ?, ?, ?, ?)";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, personnelId);
+                pstmt.setString(2, officerId);
+                pstmt.setString(3, personnelName);
+                pstmt.setString(4, rank);
+                pstmt.setString(5, activeDate);
+                pstmt.executeUpdate();
+                System.out.println("Personnel saved to database.");
+            } catch (SQLException ex) {
                 ex.printStackTrace();
             }
 
@@ -124,6 +134,10 @@ public class ContractorsCivPersonnel {
             activeDateText.clear();
         });
 
+        // Fetch and display data from Oracle database
+        ObservableList<ContractorsCivPersonnel> personnelList = fetchPersonnelFromDatabase();
+        tableView.setItems(personnelList);
+
         vbox.getChildren().addAll(
                 personnelIdLabel, personnelIdText, officerIdLabel, officerIdText,
                 personnelNameLabel, personnelNameText, rankLabel, rankText,
@@ -132,5 +146,29 @@ public class ContractorsCivPersonnel {
 
         return vbox;
     }
-}
 
+    private static ObservableList<ContractorsCivPersonnel> fetchPersonnelFromDatabase() {
+        ObservableList<ContractorsCivPersonnel> personnelList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT PERSONNEL_ID, OFFICER_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE FROM \"C4ISR PROJECT (BASIC)\".CONTRACTORS_CIV_PERSONNEL";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String personnelId = rs.getString("PERSONNEL_ID");
+                String officerId = rs.getString("OFFICER_ID");
+                String personnelName = rs.getString("PERSONNEL_NAME");
+                String rank = rs.getString("RANK");
+                String activeDate = rs.getString("ACTIVE_DATE");
+
+                ContractorsCivPersonnel personnel = new ContractorsCivPersonnel(personnelId, officerId, personnelName, rank, activeDate);
+                personnelList.add(personnel);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return personnelList;
+    }
+}

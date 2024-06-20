@@ -1,9 +1,16 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class Air {
     private String airId;
@@ -67,13 +74,34 @@ public class Air {
             String commId = commIdText.getText();
 
             Air air = new Air(airId, task, location, commId);
+
+            // Save to Oracle database
+            try (Connection conn = OracleAPEXConnection.getConnection()) {
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".AIR (AIR_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID) VALUES (?, ?, ?, ?)";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, airId);
+                pstmt.setString(2, task);
+                pstmt.setString(3, location);
+                pstmt.setString(4, commId);
+                pstmt.executeUpdate();
+                System.out.println("Air saved to database.");
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+
+            // Add new air to the table view
             tableView.getItems().add(air);
 
+            // Clear input fields after adding air
             airIdText.clear();
             taskText.clear();
             locationText.clear();
             commIdText.clear();
         });
+
+        // Fetch and display data from Oracle database
+        ObservableList<Air> airList = fetchAirFromDatabase();
+        tableView.setItems(airList);
 
         vbox.getChildren().addAll(
                 airIdLabel, airIdText, taskLabel, taskText,
@@ -82,5 +110,28 @@ public class Air {
 
         return vbox;
     }
-}
 
+    private static ObservableList<Air> fetchAirFromDatabase() {
+        ObservableList<Air> airList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT AIR_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID FROM \"C4ISR PROJECT (BASIC)\".AIR";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String airId = rs.getString("AIR_ID");
+                String task = rs.getString("TASK");
+                String location = rs.getString("LOCATION");
+                String commId = rs.getString("COMMUNICATION_LOG_COMM_ID");
+
+                Air air = new Air(airId, task, location, commId);
+                airList.add(air);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return airList;
+    }
+}

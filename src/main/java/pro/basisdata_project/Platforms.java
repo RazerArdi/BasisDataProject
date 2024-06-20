@@ -1,13 +1,16 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class Platforms {
 
@@ -121,10 +124,19 @@ public class Platforms {
             Platforms platform = new Platforms(platformId, platformName, type, capability, lastMaintenance, missionsMissionId);
             System.out.println("Platform Created: " + platform.getPlatformId());
 
-            // Save to Database.txt
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("%s,%s,%s,%s,%s,%d%n", platformId, platformName, type, capability, lastMaintenance, missionsMissionId));
-            } catch (IOException ex) {
+            // Save to Oracle database
+            try (Connection conn = OracleAPEXConnection.getConnection()) {
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".PLATFORMS (PLATFORM_ID, PLATFORM_NAME, TYPE, CAPABILITY, LAST_MAINTENANCE, MISSIONS_MISSION_ID) VALUES (?, ?, ?, ?, ?, ?)";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, platformId);
+                pstmt.setString(2, platformName);
+                pstmt.setString(3, type);
+                pstmt.setString(4, capability);
+                pstmt.setString(5, lastMaintenance);
+                pstmt.setInt(6, missionsMissionId);
+                pstmt.executeUpdate();
+                System.out.println("Platform saved to database.");
+            } catch (SQLException ex) {
                 ex.printStackTrace();
             }
 
@@ -140,6 +152,10 @@ public class Platforms {
             missionsMissionIdText.clear();
         });
 
+        // Fetch and display data from Oracle database
+        ObservableList<Platforms> platformList = fetchPlatformsFromDatabase();
+        tableView.setItems(platformList);
+
         vbox.getChildren().addAll(
                 platformIdLabel, platformIdText, platformNameLabel, platformNameText,
                 typeLabel, typeText, capabilityLabel, capabilityText,
@@ -148,5 +164,31 @@ public class Platforms {
                 tableView, createButton);
 
         return vbox;
+    }
+
+    private static ObservableList<Platforms> fetchPlatformsFromDatabase() {
+        ObservableList<Platforms> platformList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT PLATFORM_ID, PLATFORM_NAME, TYPE, CAPABILITY, LAST_MAINTENANCE, MISSIONS_MISSION_ID FROM \"C4ISR PROJECT (BASIC)\".PLATFORMS";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String platformId = rs.getString("PLATFORM_ID");
+                String platformName = rs.getString("PLATFORM_NAME");
+                String type = rs.getString("TYPE");
+                String capability = rs.getString("CAPABILITY");
+                String lastMaintenance = rs.getString("LAST_MAINTENANCE");
+                int missionsMissionId = rs.getInt("MISSIONS_MISSION_ID");
+
+                Platforms platform = new Platforms(platformId, platformName, type, capability, lastMaintenance, missionsMissionId);
+                platformList.add(platform);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return platformList;
     }
 }

@@ -1,13 +1,16 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.time.LocalDate;
 
 public class Assignments {
@@ -107,10 +110,18 @@ public class Assignments {
             Assignments assignment = new Assignments(assignmentId, role, startDate, endDate, personnelPersonnelId);
             System.out.println("Assignment Created: " + assignment.getAssignmentId());
 
-            // Save to Database.txt
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("%s,%s,%s,%s,%s%n", assignmentId, role, startDate, endDate, personnelPersonnelId));
-            } catch (IOException ex) {
+            // Save to Oracle database
+            try (Connection conn = OracleAPEXConnection.getConnection()) {
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".ASSIGNMENTS (ASSIGNMENT_ID, ROLE, START_DATE, END_DATE, PERSONNEL_PERSONNEL_ID) VALUES (?, ?, ?, ?, ?)";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, assignmentId);
+                pstmt.setString(2, role);
+                pstmt.setDate(3, java.sql.Date.valueOf(startDate));
+                pstmt.setDate(4, java.sql.Date.valueOf(endDate));
+                pstmt.setString(5, personnelPersonnelId);
+                pstmt.executeUpdate();
+                System.out.println("Assignment saved to database.");
+            } catch (SQLException ex) {
                 ex.printStackTrace();
             }
 
@@ -125,6 +136,10 @@ public class Assignments {
             personnelPersonnelIdText.clear();
         });
 
+        // Fetch and display data from Oracle database
+        ObservableList<Assignments> assignmentList = fetchAssignmentsFromDatabase();
+        tableView.setItems(assignmentList);
+
         vbox.getChildren().addAll(
                 assignmentIdLabel, assignmentIdText, roleLabel, roleText,
                 startDateLabel, startDatePicker, endDateLabel, endDatePicker,
@@ -132,5 +147,30 @@ public class Assignments {
                 tableView, createButton);
 
         return vbox;
+    }
+
+    private static ObservableList<Assignments> fetchAssignmentsFromDatabase() {
+        ObservableList<Assignments> assignmentList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT ASSIGNMENT_ID, ROLE, START_DATE, END_DATE, PERSONNEL_PERSONNEL_ID FROM \"C4ISR PROJECT (BASIC)\".ASSIGNMENTS";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String assignmentId = rs.getString("ASSIGNMENT_ID");
+                String role = rs.getString("ROLE");
+                LocalDate startDate = rs.getDate("START_DATE").toLocalDate();
+                LocalDate endDate = rs.getDate("END_DATE").toLocalDate();
+                String personnelPersonnelId = rs.getString("PERSONNEL_PERSONNEL_ID");
+
+                Assignments assignment = new Assignments(assignmentId, role, startDate, endDate, personnelPersonnelId);
+                assignmentList.add(assignment);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return assignmentList;
     }
 }

@@ -1,5 +1,7 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -8,6 +10,7 @@ import javafx.scene.layout.VBox;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.*;
 
 public class Users {
 
@@ -103,15 +106,24 @@ public class Users {
             String name = nameText.getText();
             String role = roleText.getText();
             int accessLevel = accessLevelComboBox.getValue();
+            java.time.LocalDate lastLoginDate = lastLoginPicker.getValue();
             long lastLogin = lastLoginPicker.getValue().toEpochDay();
 
             Users user = new Users(userId, name, role, accessLevel, lastLogin);
             System.out.println("User Created: " + user.getUserId());
 
-            // Save to Database.txt
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("%s,%s,%s,%d,%d%n", userId, name, role, accessLevel, lastLogin));
-            } catch (IOException ex) {
+            // Save to Oracle database
+            try (Connection conn = OracleAPEXConnection.getConnection()) {
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".USERS (USER_ID, NAME, ROLE, ACCESS_LEVEL, LAST_LOGIN) VALUES (?, ?, ?, ?, ?)";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, userId);
+                pstmt.setString(2, name);
+                pstmt.setString(3, role);
+                pstmt.setInt(4, accessLevel);
+                pstmt.setDate(5, Date.valueOf(lastLoginDate));
+                pstmt.executeUpdate();
+                System.out.println("User saved to database.");
+            } catch (SQLException ex) {
                 ex.printStackTrace();
             }
 
@@ -126,6 +138,10 @@ public class Users {
             lastLoginPicker.getEditor().clear();
         });
 
+        // Fetch and display users from Oracle database
+        ObservableList<Users> usersList = fetchUsersFromDatabase();
+        tableView.setItems(usersList);
+
         vbox.getChildren().addAll(
                 userIdLabel, userIdText, nameLabel, nameText,
                 roleLabel, roleText, accessLevelLabel, accessLevelComboBox,
@@ -133,5 +149,30 @@ public class Users {
                 tableView, createButton);
 
         return vbox;
+    }
+
+    private static ObservableList<Users> fetchUsersFromDatabase() {
+        ObservableList<Users> usersList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT USER_ID, NAME, ROLE, ACCESS_LEVEL, LAST_LOGIN FROM \"C4ISR PROJECT (BASIC)\".USERS";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String userId = rs.getString("USER_ID");
+                String name = rs.getString("NAME");
+                String role = rs.getString("ROLE");
+                int accessLevel = rs.getInt("ACCESS_LEVEL");
+                long lastLogin = rs.getDate("LAST_LOGIN").toLocalDate().toEpochDay();
+
+                Users user = new Users(userId, name, role, accessLevel, lastLogin);
+                usersList.add(user);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return usersList;
     }
 }

@@ -1,13 +1,16 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class Missions {
 
@@ -121,10 +124,19 @@ public class Missions {
             Missions mission = new Missions(missionId, missionName, description, startDate, endDate, status);
             System.out.println("Mission Created: " + mission.getMissionId());
 
-            // Save to Database.txt
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("%d,%s,%s,%s,%s,%s%n", missionId, missionName, description, startDate, endDate, status));
-            } catch (IOException ex) {
+            // Save to Oracle database
+            try (Connection conn = OracleAPEXConnection.getConnection()) {
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".MISSIONS (MISSION_ID, MISSION_NAME, DESCRIPTION, START_DATE, END_DATE, STATUS) VALUES (?, ?, ?, ?, ?, ?)";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setInt(1, missionId);
+                pstmt.setString(2, missionName);
+                pstmt.setString(3, description);
+                pstmt.setString(4, startDate);
+                pstmt.setString(5, endDate);
+                pstmt.setString(6, status);
+                pstmt.executeUpdate();
+                System.out.println("Mission saved to database.");
+            } catch (SQLException ex) {
                 ex.printStackTrace();
             }
 
@@ -140,6 +152,10 @@ public class Missions {
             statusText.clear();
         });
 
+        // Fetch and display data from Oracle database
+        ObservableList<Missions> missionList = fetchMissionsFromDatabase();
+        tableView.setItems(missionList);
+
         vbox.getChildren().addAll(
                 missionIdLabel, missionIdText, missionNameLabel, missionNameText,
                 descriptionLabel, descriptionText, startDateLabel, startDateText,
@@ -147,5 +163,31 @@ public class Missions {
                 tableView, createButton);
 
         return vbox;
+    }
+
+    private static ObservableList<Missions> fetchMissionsFromDatabase() {
+        ObservableList<Missions> missionList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT MISSION_ID, MISSION_NAME, DESCRIPTION, START_DATE, END_DATE, STATUS FROM \"C4ISR PROJECT (BASIC)\".MISSIONS";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                int missionId = rs.getInt("MISSION_ID");
+                String missionName = rs.getString("MISSION_NAME");
+                String description = rs.getString("DESCRIPTION");
+                String startDate = rs.getString("START_DATE");
+                String endDate = rs.getString("END_DATE");
+                String status = rs.getString("STATUS");
+
+                Missions mission = new Missions(missionId, missionName, description, startDate, endDate, status);
+                missionList.add(mission);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return missionList;
     }
 }

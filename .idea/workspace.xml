@@ -5,14 +5,12 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e0f60364-e204-47a5-ba62-a0924b2f2608" name="Changes" comment="Data Inputed V4.3,5 - Add-on">
+      <change afterPath="$PROJECT_DIR$/.idea/dbnavigator.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/pro/basisdata_project/ojdbc14.jar" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/discord.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/discord.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/encodings.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/uiDesigner.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/uiDesigner.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/DataUser.txt" beforeDir="false" afterPath="$PROJECT_DIR$/DataUser.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Database.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Database.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Air.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Air.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Analysis.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Analysis.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Assignments.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Assignments.java" afterDir="false" />
@@ -20,17 +18,15 @@
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/ContractorsCivPersonnel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/ContractorsCivPersonnel.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Data.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Data.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Equipments.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Equipments.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Home.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Home.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Land.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Land.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Login.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Login.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MainPage.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MainPage.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MaintenanceLogs.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/MaintenanceLogs.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Missions.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Missions.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/OracleAPEXConnection.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/OracleAPEXConnection.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Personnels.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Personnels.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Platforms.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Platforms.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sea.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sea.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sensors.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Sensors.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Space.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Space.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Users.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pro/basisdata_project/Users.java" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -80,28 +76,36 @@
   &quot;associatedIndex&quot;: 6
 }</component>
   <component name="ProjectId" id="2h9Qj0uiKDPQl3ypFA9s6OsEAUv" />
-  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
+    <ConfirmationsSetting value="2" id="Add" />
+  </component>
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Application.HelloApplication.executor": "Run",
-    "Application.Main.executor": "Run",
-    "Application.Unnamed.executor": "Run",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "main",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "C:/ojdbc14.jar",
-    "project.structure.last.edited": "Libraries",
-    "project.structure.proportion": "0.0",
-    "project.structure.side.proportion": "0.6333333",
-    "settings.editor.selected.configurable": "preferences.pluginManager"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_ADD_EXTERNAL_FILES&quot;: &quot;true&quot;,
+    &quot;Application.HelloApplication.executor&quot;: &quot;Run&quot;,
+    &quot;Application.Main.executor&quot;: &quot;Run&quot;,
+    &quot;Application.Unnamed.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;C:/ojdbc14.jar&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Modules&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.15&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.6333333&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;reference.settingsdialog.project.grazie&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="D:\BasisData_Project\src\main\resources\pro\basisdata_project" />
+      <recent name="D:\BasisData_Project\src\main\java\pro\basisdata_project\lib" />
+      <recent name="D:\BasisData_Project\src\main\java\pro\basisdata_project" />
+    </key>
     <key name="MoveFile.RECENT_KEYS">
       <recent name="D:\BasisData_Project\src\main\resources\pro\basisdata_project" />
       <recent name="D:\BasisData_Project\src\main\resources" />
@@ -267,7 +271,15 @@
       <option name="project" value="LOCAL" />
       <updated>1718119979355</updated>
     </task>
-    <option name="localTasksCounter" value="18" />
+    <task id="LOCAL-00018" summary="Data Inputed V4.3,5 - Add-on">
+      <option name="closed" value="true" />
+      <created>1718814540163</created>
+      <option name="number" value="00018" />
+      <option name="presentableId" value="LOCAL-00018" />
+      <option name="project" value="LOCAL" />
+      <updated>1718814540163</updated>
+    </task>
+    <option name="localTasksCounter" value="19" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -282,6 +294,7 @@
     </option>
   </component>
   <component name="VcsManagerConfiguration">
+    <option name="ADD_EXTERNAL_FILES_SILENTLY" value="true" />
     <MESSAGE value="Login" />
     <MESSAGE value="Beranda Updated" />
     <MESSAGE value="Entitas Updated" />

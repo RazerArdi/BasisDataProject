@@ -1,13 +1,16 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.VBox;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class Equipments {
 
@@ -136,10 +139,20 @@ public class Equipments {
             Equipments equipment = new Equipments(equipmentId, name, type, status, location, lastMaintenance, sensorId);
             System.out.println("Equipment Created: " + equipment.getEquipmentId());
 
-            // Save to Database.txt
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("%s,%s,%s,%s,%s,%s,%s%n", equipmentId, name, type, status, location, lastMaintenance, sensorId));
-            } catch (IOException ex) {
+            // Save to Oracle database
+            try (Connection conn = OracleAPEXConnection.getConnection()) {
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".EQUIPMENTS (EQUIPMENT_ID, NAME, TYPE, STATUS, LOCATION, LAST_MAINTENANCE, SENSOR_ID) VALUES (?, ?, ?, ?, ?, ?, ?)";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, equipmentId);
+                pstmt.setString(2, name);
+                pstmt.setString(3, type);
+                pstmt.setString(4, status);
+                pstmt.setString(5, location);
+                pstmt.setString(6, lastMaintenance);
+                pstmt.setString(7, sensorId);
+                pstmt.executeUpdate();
+                System.out.println("Equipment saved to database.");
+            } catch (SQLException ex) {
                 ex.printStackTrace();
             }
 
@@ -156,6 +169,10 @@ public class Equipments {
             sensorIdText.clear();
         });
 
+        // Fetch and display data from Oracle database
+        ObservableList<Equipments> equipmentList = fetchEquipmentsFromDatabase();
+        tableView.setItems(equipmentList);
+
         vbox.getChildren().addAll(
                 equipmentIdLabel, equipmentIdText, nameLabel, nameText,
                 typeLabel, typeText, statusLabel, statusText, locationLabel,
@@ -163,5 +180,32 @@ public class Equipments {
                 sensorIdLabel, sensorIdText, tableView, createButton);
 
         return vbox;
+    }
+
+    private static ObservableList<Equipments> fetchEquipmentsFromDatabase() {
+        ObservableList<Equipments> equipmentList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT EQUIPMENT_ID, NAME, TYPE, STATUS, LOCATION, LAST_MAINTENANCE, SENSOR_ID FROM \"C4ISR PROJECT (BASIC)\".EQUIPMENTS";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String equipmentId = rs.getString("EQUIPMENT_ID");
+                String name = rs.getString("NAME");
+                String type = rs.getString("TYPE");
+                String status = rs.getString("STATUS");
+                String location = rs.getString("LOCATION");
+                String lastMaintenance = rs.getString("LAST_MAINTENANCE");
+                String sensorId = rs.getString("SENSOR_ID");
+
+                Equipments equipment = new Equipments(equipmentId, name, type, status, location, lastMaintenance, sensorId);
+                equipmentList.add(equipment);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return equipmentList;
     }
 }

@@ -1,15 +1,21 @@
 package pro.basisdata_project;
 
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
-import javafx.scene.layout.VBox;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.VBox;
+
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 public class Space {
-
     private int spaceId;
     private String task;
     private String location;
@@ -75,12 +81,8 @@ public class Space {
             Space space = new Space(spaceId, task, location);
             System.out.println("Space Created: " + space.getSpaceId());
 
-            // Save to Database.txt
-            try (BufferedWriter writer = new BufferedWriter(new FileWriter("Database.txt", true))) {
-                writer.write(String.format("%d,%s,%s%n", spaceId, task, location));
-            } catch (IOException ex) {
-                ex.printStackTrace();
-            }
+            // Save to Oracle database
+            saveSpaceToDatabase(space);
 
             // Add new space to the table view
             tableView.getItems().add(space);
@@ -91,11 +93,51 @@ public class Space {
             locationText.clear();
         });
 
+        // Fetch and display data from Oracle database
+        ObservableList<Space> spaceList = fetchSpacesFromDatabase();
+        tableView.setItems(spaceList);
+
         vbox.getChildren().addAll(
                 spaceIdLabel, spaceIdText, taskLabel, taskText,
                 locationLabel, locationText, tableView, createButton);
 
         return vbox;
     }
-}
 
+    private static void saveSpaceToDatabase(Space space) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "INSERT INTO SPACES (SPACE_ID, TASK, LOCATION) VALUES (?, ?, ?)";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, space.getSpaceId());
+            pstmt.setString(2, space.getTask());
+            pstmt.setString(3, space.getLocation());
+            pstmt.executeUpdate();
+            System.out.println("Space saved to database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private static ObservableList<Space> fetchSpacesFromDatabase() {
+        ObservableList<Space> spaceList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT SPACE_ID, TASK, LOCATION FROM SPACES";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                int spaceId = rs.getInt("SPACE_ID");
+                String task = rs.getString("TASK");
+                String location = rs.getString("LOCATION");
+
+                Space space = new Space(spaceId, task, location);
+                spaceList.add(space);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return spaceList;
+    }
+}
