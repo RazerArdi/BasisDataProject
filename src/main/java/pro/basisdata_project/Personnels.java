@@ -5,6 +5,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.sql.Connection;
@@ -112,6 +113,46 @@ public class Personnels {
 
         tableView.getColumns().addAll(personnelIdCol, personnelNameCol, rankCol, specialtyCol, currentAssignmentCol, contactInfoCol);
 
+        Button editButton = new Button("Edit");
+        editButton.setOnAction(e -> {
+            Personnels selectedPersonnel = tableView.getSelectionModel().getSelectedItem();
+            if (selectedPersonnel != null) {
+                personnelIdText.setText(selectedPersonnel.getPersonnelId());
+                personnelNameText.setText(selectedPersonnel.getPersonnelName());
+                rankText.setText(selectedPersonnel.getRank());
+                specialtyText.setText(selectedPersonnel.getSpecialty());
+                currentAssignmentText.setText(selectedPersonnel.getCurrentAssignment());
+                contactInfoText.setText(selectedPersonnel.getContactInfo());
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Personnel Selected", "Please select a personnel to edit.");
+            }
+        });
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(e -> {
+            Personnels selectedPersonnel = tableView.getSelectionModel().getSelectedItem();
+            if (selectedPersonnel != null) {
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".PERSONNEL WHERE PERSONNEL_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, selectedPersonnel.getPersonnelId());
+                    int affected = pstmt.executeUpdate();
+                    if (affected > 0) {
+                        showAlert(Alert.AlertType.INFORMATION, "Delete Successful", "Personnel Deleted", "Personnel with ID " + selectedPersonnel.getPersonnelId() + " has been deleted.");
+                        tableView.getItems().remove(selectedPersonnel);
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Delete Failed", "Delete Operation Failed", "Failed to delete personnel from database.");
+                    }
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Personnel Selected", "Please select a personnel to delete.");
+            }
+        });
+
+        HBox buttonBox = new HBox(10, editButton, deleteButton);
+
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             String personnelId = personnelIdText.getText();
@@ -122,7 +163,6 @@ public class Personnels {
             String contactInfo = contactInfoText.getText();
 
             Personnels personnel = new Personnels(personnelId, personnelName, rank, specialty, currentAssignment, contactInfo);
-            System.out.println("Personnel Created: " + personnel.getPersonnelId());
 
             try (Connection conn = OracleAPEXConnection.getConnection()) {
                 String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".PERSONNEL (PERSONNEL_ID, Personnel_Name, RANK, SPECIALTY, CURRENT_ASSIGNMENT, CONTACT_INFO) VALUES (?, ?, ?, ?, ?, ?)";
@@ -156,9 +196,17 @@ public class Personnels {
                 personnelIdLabel, personnelIdText, personnelNameLabel, personnelNameText,
                 rankLabel, rankText, specialtyLabel, specialtyText,
                 currentAssignmentLabel, currentAssignmentText, contactInfoLabel, contactInfoText,
-                tableView, createButton);
+                tableView, buttonBox, createButton);
 
         return vbox;
+    }
+
+    private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.showAndWait();
     }
 
     private static ObservableList<Personnels> fetchPersonnelsFromDatabase() {

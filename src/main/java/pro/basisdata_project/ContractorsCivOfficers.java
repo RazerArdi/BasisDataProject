@@ -5,6 +5,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.sql.Connection;
@@ -154,12 +155,93 @@ public class ContractorsCivOfficers {
             activeDateText.clear();
         });
 
+        Button editButton = new Button("Edit");
+        editButton.setOnAction(e -> {
+            ContractorsCivOfficers selectedPersonnel = tableView.getSelectionModel().getSelectedItem();
+            if (selectedPersonnel != null) {
+                String personnelId = personnelIdText.getText();
+                String officerId = officerIdText.getText();
+                String personnelName = personnelNameText.getText();
+                String rank = rankText.getText();
+                String activeDate = activeDateText.getText();
+                String personnelType = typeChoiceBox.getValue(); // Get selected personnel type
+
+                selectedPersonnel.setPersonnelId(personnelId);
+                selectedPersonnel.setOfficerId(officerId);
+                selectedPersonnel.setPersonnelName(personnelName);
+                selectedPersonnel.setRank(rank);
+                selectedPersonnel.setActiveDate(activeDate);
+                selectedPersonnel.setPersonnelType(personnelType);
+
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql;
+                    if ("Contractors".equals(personnelType)) {
+                        sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".\"contractors\" SET OFFICER_ID = ?, PERSONNEL_NAME = ?, RANK = ?, ACTIVE_DATE = ? WHERE PERSONNEL_ID = ?";
+                    } else if ("Officer".equals(personnelType)) {
+                        sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".officer SET OFFICER_ID = ?, PERSONNEL_NAME = ?, RANK = ?, ACTIVE_DATE = ? WHERE PERSONNEL_ID = ?";
+                    } else { // Enlisted
+                        sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".enlisted SET ENLIST_ID = ?, PERSONNEL_NAME = ?, RANK = ?, ACTIVE_DATE = ? WHERE PERSONNEL_ID = ?";
+                    }
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, officerId);
+                    pstmt.setString(2, personnelName);
+                    pstmt.setString(3, rank);
+                    pstmt.setString(4, activeDate);
+                    pstmt.setString(5, personnelId);
+                    pstmt.executeUpdate();
+                    System.out.println("Personnel updated in database.");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+
+                // Update the table view based on the selected personnel type
+                ObservableList<ContractorsCivOfficers> updatedList = fetchPersonnelByTypeFromDatabase(personnelType);
+                tableView.setItems(updatedList);
+
+                personnelIdText.clear();
+                officerIdText.clear();
+                personnelNameText.clear();
+                rankText.clear();
+                activeDateText.clear();
+            }
+        });
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(e -> {
+            ContractorsCivOfficers selectedPersonnel = tableView.getSelectionModel().getSelectedItem();
+            if (selectedPersonnel != null) {
+                String personnelId = selectedPersonnel.getPersonnelId();
+                String personnelType = selectedPersonnel.getPersonnelType();
+
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql;
+                    if ("Contractors".equals(personnelType)) {
+                        sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".\"contractors\" WHERE PERSONNEL_ID = ?";
+                    } else if ("Officer".equals(personnelType)) {
+                        sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".officer WHERE PERSONNEL_ID = ?";
+                    } else { // Enlisted
+                        sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".enlisted WHERE PERSONNEL_ID = ?";
+                    }
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, personnelId);
+                    pstmt.executeUpdate();
+                    System.out.println("Personnel deleted from database.");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+
+                tableView.getItems().remove(selectedPersonnel);
+            }
+        });
+
+        HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
+
         vbox.getChildren().addAll(
                 typeLabel, typeChoiceBox,
                 personnelIdLabel, personnelIdText, officerIdLabel, officerIdText,
                 personnelNameLabel, personnelNameText, rankLabel, rankText,
                 activeDateLabel, activeDateText,
-                tableView, createButton);
+                tableView, buttonBox);
 
         return vbox;
     }

@@ -127,10 +127,8 @@ public class Users {
                 ex.printStackTrace();
             }
 
-            // Add new user to the table view
             tableView.getItems().add(user);
 
-            // Clear input fields after adding user
             userIdText.clear();
             nameText.clear();
             roleText.clear();

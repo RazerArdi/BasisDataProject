@@ -5,6 +5,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.sql.Connection;
@@ -83,6 +84,42 @@ public class Space {
 
         tableView.getColumns().addAll(spaceIdCol, taskCol, locationCol, commIdCol);
 
+        Button editButton = new Button("Edit");
+        editButton.setOnAction(e -> {
+            Space selectedSpace = tableView.getSelectionModel().getSelectedItem();
+            if (selectedSpace != null) {
+                spaceIdText.setText(String.valueOf(selectedSpace.getSpaceId()));
+                taskText.setText(selectedSpace.getTask());
+                locationText.setText(selectedSpace.getLocation());
+                commIdText.setText(selectedSpace.getCommunicationLogCommId());
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Space Selected", "Please select a space to edit.");
+            }
+        });
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(e -> {
+            Space selectedSpace = tableView.getSelectionModel().getSelectedItem();
+            if (selectedSpace != null) {
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".SPACE WHERE SPACE_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setInt(1, selectedSpace.getSpaceId());
+                    int affected = pstmt.executeUpdate();
+                    if (affected > 0) {
+                        showAlert(Alert.AlertType.INFORMATION, "Delete Successful", "Space Deleted", "Space with ID " + selectedSpace.getSpaceId() + " has been deleted.");
+                        tableView.getItems().remove(selectedSpace);
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Delete Failed", "Delete Operation Failed", "Failed to delete space from database.");
+                    }
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Space Selected", "Please select a space to delete.");
+            }
+        });
+
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             int spaceId = Integer.parseInt(spaceIdText.getText());
@@ -103,15 +140,25 @@ public class Space {
             commIdText.clear();
         });
 
+        HBox buttonBox = new HBox(10, editButton, deleteButton, createButton);
+
         ObservableList<Space> spaceList = fetchSpacesFromDatabase();
         tableView.setItems(spaceList);
 
         vbox.getChildren().addAll(
                 spaceIdLabel, spaceIdText, taskLabel, taskText,
                 locationLabel, locationText, commIdLabel, commIdText,
-                tableView, createButton);
+                tableView, buttonBox);
 
         return vbox;
+    }
+
+    private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.showAndWait();
     }
 
     private static void saveSpaceToDatabase(Space space) {

@@ -5,6 +5,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.sql.Connection;
@@ -110,7 +111,6 @@ public class Assignments {
             Assignments assignment = new Assignments(assignmentId, role, startDate, endDate, personnelPersonnelId);
             System.out.println("Assignment Created: " + assignment.getAssignmentId());
 
-            // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
                 String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".ASSIGNMENTS (ASSIGNMENT_ID, ROLE, START_DATE, END_DATE, PERSONNEL_PERSONNEL_ID) VALUES (?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
@@ -125,10 +125,8 @@ public class Assignments {
                 ex.printStackTrace();
             }
 
-            // Add new assignment to the table view
             tableView.getItems().add(assignment);
 
-            // Clear input fields after adding assignment
             assignmentIdText.clear();
             roleText.clear();
             startDatePicker.setValue(null);
@@ -136,15 +134,76 @@ public class Assignments {
             personnelPersonnelIdText.clear();
         });
 
-        // Fetch and display data from Oracle database
+        Button editButton = new Button("Edit");
+        editButton.setOnAction(e -> {
+            Assignments selectedAssignment = tableView.getSelectionModel().getSelectedItem();
+            if (selectedAssignment != null) {
+                String assignmentId = assignmentIdText.getText();
+                String role = roleText.getText();
+                LocalDate startDate = startDatePicker.getValue();
+                LocalDate endDate = endDatePicker.getValue();
+                String personnelPersonnelId = personnelPersonnelIdText.getText();
+
+                selectedAssignment.setAssignmentId(assignmentId);
+                selectedAssignment.setRole(role);
+                selectedAssignment.setStartDate(startDate);
+                selectedAssignment.setEndDate(endDate);
+                selectedAssignment.setPersonnelPersonnelId(personnelPersonnelId);
+
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".ASSIGNMENTS SET ROLE = ?, START_DATE = ?, END_DATE = ?, PERSONNEL_PERSONNEL_ID = ? WHERE ASSIGNMENT_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, role);
+                    pstmt.setDate(2, java.sql.Date.valueOf(startDate));
+                    pstmt.setDate(3, java.sql.Date.valueOf(endDate));
+                    pstmt.setString(4, personnelPersonnelId);
+                    pstmt.setString(5, assignmentId);
+                    pstmt.executeUpdate();
+                    System.out.println("Assignment updated in database.");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+
+                tableView.refresh();
+
+                assignmentIdText.clear();
+                roleText.clear();
+                startDatePicker.setValue(null);
+                endDatePicker.setValue(null);
+                personnelPersonnelIdText.clear();
+            }
+        });
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(e -> {
+            Assignments selectedAssignment = tableView.getSelectionModel().getSelectedItem();
+            if (selectedAssignment != null) {
+                String assignmentId = selectedAssignment.getAssignmentId();
+
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".ASSIGNMENTS WHERE ASSIGNMENT_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, assignmentId);
+                    pstmt.executeUpdate();
+                    System.out.println("Assignment deleted from database.");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+
+                tableView.getItems().remove(selectedAssignment);
+            }
+        });
+
         ObservableList<Assignments> assignmentList = fetchAssignmentsFromDatabase();
         tableView.setItems(assignmentList);
+
+        HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
 
         vbox.getChildren().addAll(
                 assignmentIdLabel, assignmentIdText, roleLabel, roleText,
                 startDateLabel, startDatePicker, endDateLabel, endDatePicker,
                 personnelPersonnelIdLabel, personnelPersonnelIdText,
-                tableView, createButton);
+                tableView, buttonBox);
 
         return vbox;
     }

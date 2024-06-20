@@ -5,6 +5,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.sql.Connection;
@@ -127,6 +128,12 @@ public class Equipments {
         tableView.getColumns().addAll(equipmentIdCol, nameCol, typeCol, statusCol, locationCol, lastMaintenanceCol, sensorIdCol);
 
         Button createButton = new Button("Create");
+        Button editButton = new Button("Edit");
+        Button deleteButton = new Button("Delete");
+
+        HBox buttonBox = new HBox(10);
+        buttonBox.getChildren().addAll(createButton, editButton, deleteButton);
+
         createButton.setOnAction(e -> {
             String equipmentId = equipmentIdText.getText();
             String name = nameText.getText();
@@ -139,7 +146,6 @@ public class Equipments {
             Equipments equipment = new Equipments(equipmentId, name, type, status, location, lastMaintenance, sensorId);
             System.out.println("Equipment Created: " + equipment.getEquipmentId());
 
-            // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
                 String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".EQUIPMENT (EQUIPMENT_ID, NAME, TYPE, STATUS, LOCATION, LAST_MAINTENANCE, SENSORS_SENSOR_ID) VALUES (?, ?, ?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
@@ -156,10 +162,8 @@ public class Equipments {
                 ex.printStackTrace();
             }
 
-            // Add new equipment to the table view
             tableView.getItems().add(equipment);
 
-            // Clear input fields after adding equipment
             equipmentIdText.clear();
             nameText.clear();
             typeText.clear();
@@ -169,7 +173,40 @@ public class Equipments {
             sensorIdText.clear();
         });
 
-        // Fetch and display data from Oracle database
+        editButton.setOnAction(e -> {
+            Equipments selectedEquipment = tableView.getSelectionModel().getSelectedItem();
+            if (selectedEquipment != null) {
+                equipmentIdText.setText(selectedEquipment.getEquipmentId());
+                nameText.setText(selectedEquipment.getName());
+                typeText.setText(selectedEquipment.getType());
+                statusText.setText(selectedEquipment.getStatus());
+                locationText.setText(selectedEquipment.getLocation());
+                lastMaintenanceText.setText(selectedEquipment.getLastMaintenance());
+                sensorIdText.setText(selectedEquipment.getSensorId());
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Equipment Selected", "Please select an equipment to edit.");
+            }
+        });
+
+        deleteButton.setOnAction(e -> {
+            Equipments selectedEquipment = tableView.getSelectionModel().getSelectedItem();
+            if (selectedEquipment != null) {
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".EQUIPMENT WHERE EQUIPMENT_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, selectedEquipment.getEquipmentId());
+                    pstmt.executeUpdate();
+                    System.out.println("Equipment deleted from database.");
+
+                    tableView.getItems().remove(selectedEquipment);
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Equipment Selected", "Please select an equipment to delete.");
+            }
+        });
+
         ObservableList<Equipments> equipmentList = fetchEquipmentsFromDatabase();
         tableView.setItems(equipmentList);
 
@@ -177,7 +214,7 @@ public class Equipments {
                 equipmentIdLabel, equipmentIdText, nameLabel, nameText,
                 typeLabel, typeText, statusLabel, statusText, locationLabel,
                 locationText, lastMaintenanceLabel, lastMaintenanceText,
-                sensorIdLabel, sensorIdText, tableView, createButton);
+                sensorIdLabel, sensorIdText, tableView, buttonBox);
 
         return vbox;
     }
@@ -207,5 +244,13 @@ public class Equipments {
         }
 
         return equipmentList;
+    }
+
+    private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.showAndWait();
     }
 }

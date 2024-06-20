@@ -5,11 +5,9 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -84,7 +82,7 @@ public class Sensors {
         TextField locationText = new TextField();
         Label statusLabel = new Label("Status:");
         ChoiceBox<String> statusChoice = new ChoiceBox<>();
-        statusChoice.getItems().addAll("Active", "Inactive", "Passive"); // Menambahkan opsi status
+        statusChoice.getItems().addAll("Active", "Inactive", "Passive");
 
         Label lastMaintenanceLabel = new Label("Last Maintenance:");
         DatePicker lastMaintenancePicker = new DatePicker();
@@ -102,6 +100,43 @@ public class Sensors {
         lastMaintenanceCol.setCellValueFactory(new PropertyValueFactory<>("lastMaintenance"));
 
         tableView.getColumns().addAll(sensorIdCol, typeCol, locationCol, statusCol, lastMaintenanceCol);
+
+        Button editButton = new Button("Edit");
+        editButton.setOnAction(e -> {
+            Sensors selectedSensor = tableView.getSelectionModel().getSelectedItem();
+            if (selectedSensor != null) {
+                sensorIdText.setText(String.valueOf(selectedSensor.getSensorId()));
+                typeText.setText(selectedSensor.getType());
+                locationText.setText(selectedSensor.getLocation());
+                statusChoice.setValue(selectedSensor.getStatus());
+                lastMaintenancePicker.setValue(selectedSensor.getLastMaintenance());
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Sensor Selected", "Please select a sensor to edit.");
+            }
+        });
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(e -> {
+            Sensors selectedSensor = tableView.getSelectionModel().getSelectedItem();
+            if (selectedSensor != null) {
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".SENSORS WHERE SENSOR_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setInt(1, selectedSensor.getSensorId());
+                    int affected = pstmt.executeUpdate();
+                    if (affected > 0) {
+                        showAlert(Alert.AlertType.INFORMATION, "Delete Successful", "Sensor Deleted", "Sensor with ID " + selectedSensor.getSensorId() + " has been deleted.");
+                        tableView.getItems().remove(selectedSensor);
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Delete Failed", "Delete Operation Failed", "Failed to delete sensor from database.");
+                    }
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Sensor Selected", "Please select a sensor to delete.");
+            }
+        });
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
@@ -125,6 +160,8 @@ public class Sensors {
             lastMaintenancePicker.getEditor().clear();
         });
 
+        HBox buttonBox = new HBox(10, editButton, deleteButton, createButton);
+
         ObservableList<Sensors> sensorList = fetchSensorsFromDatabase();
         tableView.setItems(sensorList);
 
@@ -132,9 +169,17 @@ public class Sensors {
                 sensorIdLabel, sensorIdText, typeLabel, typeText,
                 locationLabel, locationText, statusLabel, statusChoice,
                 lastMaintenanceLabel, lastMaintenancePicker,
-                tableView, createButton);
+                tableView, buttonBox);
 
         return vbox;
+    }
+
+    private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.showAndWait();
     }
 
     private static void saveSensorToDatabase(Sensors sensor) {

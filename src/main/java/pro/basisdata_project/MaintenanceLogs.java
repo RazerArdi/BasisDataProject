@@ -5,6 +5,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.sql.Connection;
@@ -85,7 +86,7 @@ public class MaintenanceLogs {
         Label maintenanceIdLabel = new Label("Maintenance ID:");
         TextField maintenanceIdText = new TextField();
         Label dateLabel = new Label("Date:");
-        DatePicker dateText = new DatePicker(); // Changed to DatePicker for date input
+        DatePicker dateText = new DatePicker();
         Label descriptionLabel = new Label("Description:");
         TextField descriptionText = new TextField();
         Label equipmentIdLabel = new Label("Equipment ID:");
@@ -95,7 +96,6 @@ public class MaintenanceLogs {
         Label personnelIdLabel = new Label("Personnel ID:");
         ComboBox<String> personnelIdCombo = new ComboBox<>();
 
-        // Fetching data from database for ComboBoxes
         ObservableList<String> equipmentIds = fetchEquipmentIds();
         equipmentIdCombo.setItems(equipmentIds);
 
@@ -121,10 +121,35 @@ public class MaintenanceLogs {
 
         tableView.getColumns().addAll(maintenanceIdCol, dateCol, descriptionCol, equipmentIdCol, platformIdCol, personnelIdCol);
 
+        ObservableList<MaintenanceLogs> maintenanceLogsList = fetchMaintenanceLogsFromDatabase();
+        tableView.setItems(maintenanceLogsList);
+
+        tableView.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
+            if (newSelection != null) {
+                MaintenanceLogs selectedMaintenanceLog = tableView.getSelectionModel().getSelectedItem();
+                maintenanceIdText.setText(selectedMaintenanceLog.getMaintenanceId());
+                dateText.setValue(selectedMaintenanceLog.getDate() != null ? dateText.getConverter().fromString(selectedMaintenanceLog.getDate()) : null);
+                descriptionText.setText(selectedMaintenanceLog.getDescription());
+                equipmentIdCombo.setValue(selectedMaintenanceLog.getEquipmentId());
+                platformIdCombo.setValue(selectedMaintenanceLog.getPlatformId());
+                personnelIdCombo.setValue(selectedMaintenanceLog.getPersonnelId());
+            } else {
+                maintenanceIdText.clear();
+                dateText.getEditor().clear();
+                descriptionText.clear();
+                equipmentIdCombo.getSelectionModel().clearSelection();
+                platformIdCombo.getSelectionModel().clearSelection();
+                personnelIdCombo.getSelectionModel().clearSelection();
+            }
+        });
+
         Button createButton = new Button("Create");
+        Button editButton = new Button("Edit");
+        Button deleteButton = new Button("Delete");
+
         createButton.setOnAction(e -> {
             String maintenanceId = maintenanceIdText.getText();
-            String date = dateText.getValue().toString(); // Convert DatePicker value to String
+            String date = dateText.getValue().toString();
             String description = descriptionText.getText();
             String equipmentId = equipmentIdCombo.getValue();
             String platformId = platformIdCombo.getValue();
@@ -152,23 +177,100 @@ public class MaintenanceLogs {
             tableView.getItems().add(maintenanceLog);
 
             maintenanceIdText.clear();
-            dateText.getEditor().clear(); // Clear DatePicker editor
+            dateText.getEditor().clear();
             descriptionText.clear();
             equipmentIdCombo.getSelectionModel().clearSelection();
             platformIdCombo.getSelectionModel().clearSelection();
             personnelIdCombo.getSelectionModel().clearSelection();
         });
 
-        ObservableList<MaintenanceLogs> maintenanceLogsList = fetchMaintenanceLogsFromDatabase();
-        tableView.setItems(maintenanceLogsList);
+        editButton.setOnAction(e -> {
+            MaintenanceLogs selectedMaintenanceLog = tableView.getSelectionModel().getSelectedItem();
+            if (selectedMaintenanceLog == null) {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Maintenance Log Selected", "Please select a maintenance log to edit.");
+                return;
+            }
+
+            String newMaintenanceId = maintenanceIdText.getText();
+            String newDate = dateText.getValue().toString();
+            String newDescription = descriptionText.getText();
+            String newEquipmentId = equipmentIdCombo.getValue();
+            String newPlatformId = platformIdCombo.getValue();
+            String newPersonnelId = personnelIdCombo.getValue();
+
+            try (Connection conn = OracleAPEXConnection.getConnection()) {
+                String sql = "UPDATE \"C4ISR PROJECT (BASIC)\".MAINTENANCE_LOGS SET MAINTENANCE_ID = ?, \"DATE\" = TO_DATE(?, 'YYYY-MM-DD'), " +
+                        "DESCRIPTION = ?, EQUIPMENT_EQUIPMENT_ID = ?, PLATFORM_PLATFORM_ID = ?, PERSONNEL_PERSONNEL_ID = ? " +
+                        "WHERE MAINTENANCE_ID = ?";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, newMaintenanceId);
+                pstmt.setString(2, newDate);
+                pstmt.setString(3, newDescription);
+                pstmt.setString(4, newEquipmentId);
+                pstmt.setString(5, newPlatformId);
+                pstmt.setString(6, newPersonnelId);
+                pstmt.setString(7, selectedMaintenanceLog.getMaintenanceId());
+                int updated = pstmt.executeUpdate();
+
+                if (updated > 0) {
+                    selectedMaintenanceLog.setMaintenanceId(newMaintenanceId);
+                    selectedMaintenanceLog.setDate(newDate);
+                    selectedMaintenanceLog.setDescription(newDescription);
+                    selectedMaintenanceLog.setEquipmentId(newEquipmentId);
+                    selectedMaintenanceLog.setPlatformId(newPlatformId);
+                    selectedMaintenanceLog.setPersonnelId(newPersonnelId);
+
+                    tableView.refresh();
+                    System.out.println("Maintenance log updated successfully.");
+                } else {
+                    showAlert(Alert.AlertType.ERROR, "Update Failed", "Update Maintenance Log Failed", "Failed to update maintenance log.");
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        });
+
+        deleteButton.setOnAction(e -> {
+            MaintenanceLogs selectedMaintenanceLog = tableView.getSelectionModel().getSelectedItem();
+            if (selectedMaintenanceLog == null) {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Maintenance Log Selected", "Please select a maintenance log to delete.");
+                return;
+            }
+
+            try (Connection conn = OracleAPEXConnection.getConnection()) {
+                String sql = "DELETE FROM \"C4ISR PROJECT (BASIC)\".MAINTENANCE_LOGS WHERE MAINTENANCE_ID = ?";
+                PreparedStatement pstmt = conn.prepareStatement(sql);
+                pstmt.setString(1, selectedMaintenanceLog.getMaintenanceId());
+                int deleted = pstmt.executeUpdate();
+
+                if (deleted > 0) {
+                    tableView.getItems().remove(selectedMaintenanceLog);
+                    System.out.println("Maintenance log deleted successfully.");
+                } else {
+                    showAlert(Alert.AlertType.ERROR, "Delete Failed", "Delete Maintenance Log Failed", "Failed to delete maintenance log.");
+                }
+            } catch (SQLException ex) {
+                ex.printStackTrace();
+            }
+        });
+
+        HBox buttonsBox = new HBox(10);
+        buttonsBox.getChildren().addAll(createButton, editButton, deleteButton);
 
         vbox.getChildren().addAll(
                 maintenanceIdLabel, maintenanceIdText, dateLabel, dateText,
                 descriptionLabel, descriptionText, equipmentIdLabel, equipmentIdCombo,
-                platformIdLabel, platformIdCombo, personnelIdLabel, personnelIdCombo,
-                tableView, createButton);
+                platformIdLabel, platformIdCombo, personnelIdLabel, personnelIdCombo, tableView, buttonsBox);
 
         return vbox;
+    }
+
+    private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.showAndWait();
     }
 
     private static ObservableList<String> fetchEquipmentIds() {

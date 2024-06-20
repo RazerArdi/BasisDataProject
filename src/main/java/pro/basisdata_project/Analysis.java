@@ -5,6 +5,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.sql.Connection;
@@ -109,7 +110,6 @@ public class Analysis {
             Analysis analysis = new Analysis(analysisId, analysisType, results, usersUserId, dataDataId);
             System.out.println("Analysis Created: " + analysis.getAnalysisId());
 
-            // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
                 String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".ANALYSIS (ANALYSIS_ID, ANALYSIS_TYPE, RESULTS, USERS_USER_ID, DATA_DATA_ID) VALUES (?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
@@ -124,10 +124,8 @@ public class Analysis {
                 ex.printStackTrace();
             }
 
-            // Add new analysis to the table view
             tableView.getItems().add(analysis);
 
-            // Clear input fields after adding analysis
             analysisIdText.clear();
             analysisTypeText.clear();
             resultsText.clear();
@@ -135,15 +133,76 @@ public class Analysis {
             dataDataIdText.clear();
         });
 
-        // Fetch and display data from Oracle database
+        Button editButton = new Button("Edit");
+        editButton.setOnAction(e -> {
+            Analysis selectedAnalysis = tableView.getSelectionModel().getSelectedItem();
+            if (selectedAnalysis != null) {
+                int analysisId = Integer.parseInt(analysisIdText.getText());
+                String analysisType = analysisTypeText.getText();
+                String results = resultsText.getText();
+                String usersUserId = usersUserIdText.getText();
+                int dataDataId = Integer.parseInt(dataDataIdText.getText());
+
+                selectedAnalysis.setAnalysisId(analysisId);
+                selectedAnalysis.setAnalysisType(analysisType);
+                selectedAnalysis.setResults(results);
+                selectedAnalysis.setUsersUserId(usersUserId);
+                selectedAnalysis.setDataDataId(dataDataId);
+
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".ANALYSIS SET ANALYSIS_TYPE = ?, RESULTS = ?, USERS_USER_ID = ?, DATA_DATA_ID = ? WHERE ANALYSIS_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, analysisType);
+                    pstmt.setString(2, results);
+                    pstmt.setString(3, usersUserId);
+                    pstmt.setInt(4, dataDataId);
+                    pstmt.setInt(5, analysisId);
+                    pstmt.executeUpdate();
+                    System.out.println("Analysis updated in database.");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+
+                tableView.refresh();
+
+                analysisIdText.clear();
+                analysisTypeText.clear();
+                resultsText.clear();
+                usersUserIdText.clear();
+                dataDataIdText.clear();
+            }
+        });
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(e -> {
+            Analysis selectedAnalysis = tableView.getSelectionModel().getSelectedItem();
+            if (selectedAnalysis != null) {
+                int analysisId = selectedAnalysis.getAnalysisId();
+
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".ANALYSIS WHERE ANALYSIS_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setInt(1, analysisId);
+                    pstmt.executeUpdate();
+                    System.out.println("Analysis deleted from database.");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+
+                tableView.getItems().remove(selectedAnalysis);
+            }
+        });
+
         ObservableList<Analysis> analysisList = fetchAnalysisFromDatabase();
         tableView.setItems(analysisList);
+
+        HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
 
         vbox.getChildren().addAll(
                 analysisIdLabel, analysisIdText, analysisTypeLabel, analysisTypeText,
                 resultsLabel, resultsText, usersUserIdLabel, usersUserIdText,
                 dataDataIdLabel, dataDataIdText,
-                tableView, createButton);
+                tableView, buttonBox);
 
         return vbox;
     }

@@ -5,6 +5,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.sql.Connection;
@@ -39,6 +40,22 @@ public class Air {
 
     public String getCommunicationLogCommId() {
         return communicationLogCommId;
+    }
+
+    public void setAirId(String airId) {
+        this.airId = airId;
+    }
+
+    public void setTask(String task) {
+        this.task = task;
+    }
+
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
+    public void setCommunicationLogCommId(String communicationLogCommId) {
+        this.communicationLogCommId = communicationLogCommId;
     }
 
     public static VBox getAirUI() {
@@ -88,7 +105,6 @@ public class Air {
                 ex.printStackTrace();
             }
 
-
             tableView.getItems().add(air);
 
             airIdText.clear();
@@ -97,13 +113,71 @@ public class Air {
             commIdText.clear();
         });
 
+        Button editButton = new Button("Edit");
+        editButton.setOnAction(e -> {
+            Air selectedAir = tableView.getSelectionModel().getSelectedItem();
+            if (selectedAir != null) {
+                String airId = airIdText.getText();
+                String task = taskText.getText();
+                String location = locationText.getText();
+                String commId = commIdText.getText();
+
+                selectedAir.setAirId(airId);
+                selectedAir.setTask(task);
+                selectedAir.setLocation(location);
+                selectedAir.setCommunicationLogCommId(commId);
+
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".AIR SET TASK = ?, LOCATION = ?, COMMUNICATION_LOG_COMM_ID = ? WHERE AIR_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, task);
+                    pstmt.setString(2, location);
+                    pstmt.setString(3, commId);
+                    pstmt.setString(4, airId);
+                    pstmt.executeUpdate();
+                    System.out.println("Air updated in database.");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+
+                tableView.refresh();
+
+                airIdText.clear();
+                taskText.clear();
+                locationText.clear();
+                commIdText.clear();
+            }
+        });
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(e -> {
+            Air selectedAir = tableView.getSelectionModel().getSelectedItem();
+            if (selectedAir != null) {
+                String airId = selectedAir.getAirId();
+
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".AIR WHERE AIR_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, airId);
+                    pstmt.executeUpdate();
+                    System.out.println("Air deleted from database.");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+
+                tableView.getItems().remove(selectedAir);
+            }
+        });
+
         ObservableList<Air> airList = fetchAirFromDatabase();
         tableView.setItems(airList);
+
+        HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
 
         vbox.getChildren().addAll(
                 airIdLabel, airIdText, taskLabel, taskText,
                 locationLabel, locationText, commIdLabel, commIdText,
-                tableView, createButton);
+                tableView, buttonBox);
 
         return vbox;
     }

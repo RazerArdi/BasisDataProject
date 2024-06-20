@@ -5,6 +5,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.sql.Connection;
@@ -112,6 +113,46 @@ public class Missions {
 
         tableView.getColumns().addAll(missionIdCol, missionNameCol, descriptionCol, startDateCol, endDateCol, statusCol);
 
+        Button editButton = new Button("Edit");
+        editButton.setOnAction(e -> {
+            Missions selectedMission = tableView.getSelectionModel().getSelectedItem();
+            if (selectedMission != null) {
+                missionIdText.setText(String.valueOf(selectedMission.getMissionId()));
+                missionNameText.setText(selectedMission.getMissionName());
+                descriptionText.setText(selectedMission.getDescription());
+                startDateText.setText(selectedMission.getStartDate());
+                endDateText.setText(selectedMission.getEndDate());
+                statusText.setText(selectedMission.getStatus());
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Mission Selected", "Please select a mission to edit.");
+            }
+        });
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(e -> {
+            Missions selectedMission = tableView.getSelectionModel().getSelectedItem();
+            if (selectedMission != null) {
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".MISSIONS WHERE MISSION_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setInt(1, selectedMission.getMissionId());
+                    int affected = pstmt.executeUpdate();
+                    if (affected > 0) {
+                        showAlert(Alert.AlertType.INFORMATION, "Delete Successful", "Mission Deleted", "Mission with ID " + selectedMission.getMissionId() + " has been deleted.");
+                        tableView.getItems().remove(selectedMission);
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Delete Failed", "Delete Operation Failed", "Failed to delete mission from database.");
+                    }
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Mission Selected", "Please select a mission to delete.");
+            }
+        });
+
+        HBox buttonBox = new HBox(10, editButton, deleteButton);
+
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             int missionId = Integer.parseInt(missionIdText.getText());
@@ -122,7 +163,6 @@ public class Missions {
             String status = statusText.getText();
 
             Missions mission = new Missions(missionId, missionName, description, startDate, endDate, status);
-            System.out.println("Mission Created: " + mission.getMissionId());
 
             try (Connection conn = OracleAPEXConnection.getConnection()) {
                 String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".MISSIONS (MISSION_ID, MISSION_NAME, DESCRIPTION, START_DATE, END_DATE, STATUS) VALUES (?, ?, ?, ?, ?, ?)";
@@ -156,9 +196,17 @@ public class Missions {
                 missionIdLabel, missionIdText, missionNameLabel, missionNameText,
                 descriptionLabel, descriptionText, startDateLabel, startDateText,
                 endDateLabel, endDateText, statusLabel, statusText,
-                tableView, createButton);
+                tableView, buttonBox, createButton);
 
         return vbox;
+    }
+
+    private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.showAndWait();
     }
 
     private static ObservableList<Missions> fetchMissionsFromDatabase() {

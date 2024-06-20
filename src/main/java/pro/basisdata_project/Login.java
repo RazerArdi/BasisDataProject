@@ -13,15 +13,13 @@ import javafx.stage.Stage;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.sql.*;
-import java.util.List;
+import java.util.regex.Pattern;
 
 public class Login {
 
-    private Button loginButton, registerButton, forgotPasswordButton;
-    private Scene loginScene, registerScene, forgotPasswordScene;
+    private Button loginButton;
+    private Scene loginScene, registerScene, forgotPasswordScene, changePasswordScene;
     private TextField emailField, passwordField;
     private Main mainApp;
 
@@ -33,6 +31,7 @@ public class Login {
         createLoginScene(stage);
         createRegisterScene(stage);
         createForgotPasswordScene(stage);
+        createChangePasswordScene(stage);
         stage.setScene(loginScene);
     }
 
@@ -53,6 +52,7 @@ public class Login {
 
         emailField = new TextField();
         emailField.setPromptText("Email/Username");
+
         passwordField = new PasswordField();
         passwordField.setPromptText("Password");
 
@@ -60,10 +60,10 @@ public class Login {
         loginButton.setStyle("-fx-font-size: 14; -fx-background-color: #1877f2; -fx-text-fill: white; -fx-font-weight: bold;");
         loginButton.setOnAction(e -> handleLogin(stage, emailField.getText(), passwordField.getText()));
 
-        Hyperlink registerLink = new Hyperlink("Register here");
+        Hyperlink registerLink = new Hyperlink("Register here!");
         registerLink.setOnAction(e -> stage.setScene(registerScene));
 
-        Hyperlink forgotPasswordLink = new Hyperlink("Click here ");
+        Hyperlink forgotPasswordLink = new Hyperlink("Click Here!");
         forgotPasswordLink.setOnAction(e -> stage.setScene(forgotPasswordScene));
 
         TextFlow textFlow = new TextFlow(
@@ -72,7 +72,7 @@ public class Login {
                 registerLink,
                 new Text("\n"),
                 new Text("\t\t\t\t\t"),
-                new Text("Forgot password? "),
+                new Text("Forgot your password? "),
                 forgotPasswordLink
         );
 
@@ -124,15 +124,10 @@ public class Login {
     }
 
     private void createForgotPasswordScene(Stage stage) {
-        Hyperlink registerLink = new Hyperlink("Kembali");
-        registerLink.setOnAction(e -> stage.setScene(loginScene));
-        registerLink.setLayoutX(10);
-        registerLink.setLayoutY(10);
-        VBox back = new VBox(5);
-        back.getChildren().addAll(registerLink);
-        back.setAlignment(Pos.TOP_LEFT);
+        Hyperlink backToLoginLink = new Hyperlink("Back to Log In");
+        backToLoginLink.setOnAction(e -> stage.setScene(loginScene));
 
-        Label forgotPasswordLabel = new Label("Masukkan Alamat Email");
+        Label forgotPasswordLabel = new Label("Enter Email Address");
         TextField forgotPasswordEmailField = new TextField();
         forgotPasswordEmailField.setPromptText("Email");
 
@@ -140,11 +135,32 @@ public class Login {
         submitForgotPasswordButton.setOnAction(e -> handleForgotPassword(stage, forgotPasswordEmailField.getText()));
 
         VBox forgotPasswordLayout = new VBox(5);
-        forgotPasswordLayout.getChildren().addAll(back, forgotPasswordLabel, forgotPasswordEmailField, submitForgotPasswordButton);
+        forgotPasswordLayout.getChildren().addAll(backToLoginLink, forgotPasswordLabel, forgotPasswordEmailField, submitForgotPasswordButton);
         forgotPasswordLayout.setAlignment(Pos.CENTER);
         forgotPasswordLayout.setStyle("-fx-background-color: #EEF5FF; -fx-padding: 20;");
 
         forgotPasswordScene = new Scene(forgotPasswordLayout, 600, 700);
+    }
+
+    private void createChangePasswordScene(Stage stage) {
+        Label changePasswordLabel = new Label("Change Password");
+        changePasswordLabel.setStyle("-fx-font-size: 20");
+
+        PasswordField newPasswordField = new PasswordField();
+        newPasswordField.setPromptText("New Password");
+
+        PasswordField confirmNewPasswordField = new PasswordField();
+        confirmNewPasswordField.setPromptText("Confirm New Password");
+
+        Button changePasswordButton = new Button("Change Password");
+        changePasswordButton.setOnAction(e -> handleChangePassword(stage, newPasswordField.getText(), confirmNewPasswordField.getText()));
+
+        VBox changePasswordLayout = new VBox(10);
+        changePasswordLayout.getChildren().addAll(changePasswordLabel, newPasswordField, confirmNewPasswordField, changePasswordButton);
+        changePasswordLayout.setAlignment(Pos.CENTER);
+        changePasswordLayout.setStyle("-fx-background-color: #EEF5FF; -fx-padding: 20;");
+
+        changePasswordScene = new Scene(changePasswordLayout, 600, 700);
     }
 
     private void handleLogin(Stage stage, String emailOrUsername, String password) {
@@ -160,6 +176,7 @@ public class Login {
             if (rs.next()) {
                 String storedName = rs.getString("name");
                 showSuccessDialog("Login successful!");
+
                 mainApp.showMainScene(storedName, loginScene);
             } else {
                 showErrorDialog("Invalid email/username or password.");
@@ -169,7 +186,6 @@ public class Login {
             showErrorDialog("Error accessing the database.");
         }
     }
-
 
     private void handleRegistration(Stage stage, String fullName, String username, String email, String password, String confirmPassword) {
         if (fullName.isEmpty() || username.isEmpty() || email.isEmpty() || password.isEmpty() || confirmPassword.isEmpty()) {
@@ -182,15 +198,18 @@ public class Login {
             return;
         }
 
+        if (!isValidEmail(email)) {
+            showErrorDialog("Invalid email address.");
+            return;
+        }
+
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            // Fetch the maximum LOGIN_ID
             String fetchMaxIdSql = "SELECT NVL(MAX(LOGIN_ID), 0) + 1 AS NEW_ID FROM \"C4ISR PROJECT (BASIC) V2\".LOGIN";
             Statement stmt = conn.createStatement();
             ResultSet rs = stmt.executeQuery(fetchMaxIdSql);
             rs.next();
             int newLoginId = rs.getInt("NEW_ID");
 
-            // Insert new user with the generated LOGIN_ID
             String insertSql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".LOGIN (LOGIN_ID, NAME, USERNAME, EMAIL, PASSWORD) VALUES (?, ?, ?, ?, ?)";
             PreparedStatement pstmt = conn.prepareStatement(insertSql);
             pstmt.setInt(1, newLoginId);
@@ -208,19 +227,44 @@ public class Login {
         }
     }
 
-
     private void handleForgotPassword(Stage stage, String email) {
         if (isValidEmail(email)) {
             saveRequestData(email);
             showSuccessDialog("Request submitted. You will be contacted by customer service.");
-            stage.setScene(loginScene);
+
+            stage.setScene(changePasswordScene);
         } else {
             showErrorDialog("Invalid email address.");
         }
     }
 
+    private void handleChangePassword(Stage stage, String newPassword, String confirmPassword) {
+        if (!newPassword.equals(confirmPassword)) {
+            showErrorDialog("Passwords do not match.");
+            return;
+        }
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String updatePasswordSql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".LOGIN SET PASSWORD = ? WHERE EMAIL = ?";
+            PreparedStatement pstmt = conn.prepareStatement(updatePasswordSql);
+            pstmt.setString(1, newPassword);
+            pstmt.setString(2, emailField.getText());
+            int rowsUpdated = pstmt.executeUpdate();
+            if (rowsUpdated > 0) {
+                showSuccessDialog("Password changed successfully!");
+                stage.setScene(loginScene);
+            } else {
+                showErrorDialog("Failed to change password. Please try again.");
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            showErrorDialog("Error updating password.");
+        }
+    }
+
     private boolean isValidEmail(String email) {
-        return email.matches("[a-zA-Z0-9._%+-]+@(gmail\\.com|outlook\\.com|webmail\\.umm\\.ac\\.id)");
+        String emailRegex = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
+        return Pattern.compile(emailRegex).matcher(email).matches();
     }
 
     private void saveRequestData(String email) {

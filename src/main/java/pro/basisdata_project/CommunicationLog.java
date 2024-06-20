@@ -5,6 +5,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.sql.Connection;
@@ -99,13 +100,67 @@ public class CommunicationLog {
             platformsPlatformIdText.clear();
         });
 
+        Button editButton = new Button("Edit");
+        editButton.setOnAction(e -> {
+            CommunicationLog selectedLog = tableView.getSelectionModel().getSelectedItem();
+            if (selectedLog != null) {
+                String commId = commIdText.getText();
+                String message = messageText.getText();
+                String platformsPlatformId = platformsPlatformIdText.getText();
+
+                selectedLog.setCommId(commId);
+                selectedLog.setMessage(message);
+                selectedLog.setPlatformsPlatformId(platformsPlatformId);
+
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG SET message = ?, platforms_platform_id = ? WHERE comm_id = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, message);
+                    pstmt.setString(2, platformsPlatformId);
+                    pstmt.setString(3, commId);
+                    pstmt.executeUpdate();
+                    System.out.println("Communication Log updated in database.");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+
+                tableView.refresh();
+
+                commIdText.clear();
+                messageText.clear();
+                platformsPlatformIdText.clear();
+            }
+        });
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(e -> {
+            CommunicationLog selectedLog = tableView.getSelectionModel().getSelectedItem();
+            if (selectedLog != null) {
+                String commId = selectedLog.getCommId();
+
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG WHERE comm_id = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, commId);
+                    pstmt.executeUpdate();
+                    System.out.println("Communication Log deleted from database.");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+
+                tableView.getItems().remove(selectedLog);
+            }
+        });
+
         ObservableList<CommunicationLog> commLogList = fetchCommunicationLogsFromDatabase();
         tableView.setItems(commLogList);
+
+        HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
 
         vbox.getChildren().addAll(
                 commIdLabel, commIdText, messageLabel, messageText,
                 platformsPlatformIdLabel, platformsPlatformIdText,
-                tableView, createButton);
+                tableView, buttonBox);
 
         return vbox;
     }

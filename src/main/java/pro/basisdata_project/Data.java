@@ -5,6 +5,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.sql.Connection;
@@ -114,45 +115,121 @@ public class Data {
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            int dataId = Integer.parseInt(dataIdText.getText());
-            String timestamp = timestampText.getText();
-            String dataType = dataTypeText.getText();
-            String rawData = rawDataText.getText();
-            String processedData = processedDataText.getText();
-            int sensorsSensorId = Integer.parseInt(sensorsSensorIdText.getText());
+            try {
+                int dataId = Integer.parseInt(dataIdText.getText());
+                String timestamp = timestampText.getText();
+                String dataType = dataTypeText.getText();
+                String rawData = rawDataText.getText();
+                String processedData = processedDataText.getText();
+                int sensorsSensorId = Integer.parseInt(sensorsSensorIdText.getText());
 
-            Data data = new Data(dataId, timestamp, dataType, rawData, processedData, sensorsSensorId);
-            System.out.println("Data Created: " + data.getDataId());
+                Data data = new Data(dataId, timestamp, dataType, rawData, processedData, sensorsSensorId);
+                System.out.println("Data Created: " + data.getDataId());
 
-            // Save to Oracle database
-            try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".DATA (DATA_ID, TIMESTAMP, DATA_TYPE, RAW_DATA, PROCESSED_DATA, SENSORS_SENSOR_ID) VALUES (?, ?, ?, ?, ?, ?)";
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                pstmt.setInt(1, dataId);
-                pstmt.setString(2, timestamp);
-                pstmt.setString(3, dataType);
-                pstmt.setString(4, rawData);
-                pstmt.setString(5, processedData);
-                pstmt.setInt(6, sensorsSensorId);
-                pstmt.executeUpdate();
-                System.out.println("Data saved to database.");
-            } catch (SQLException ex) {
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".DATA (DATA_ID, TIMESTAMP, DATA_TYPE, RAW_DATA, PROCESSED_DATA, SENSORS_SENSOR_ID) VALUES (?, ?, ?, ?, ?, ?)";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setInt(1, dataId);
+                    pstmt.setString(2, timestamp);
+                    pstmt.setString(3, dataType);
+                    pstmt.setString(4, rawData);
+                    pstmt.setString(5, processedData);
+                    pstmt.setInt(6, sensorsSensorId);
+                    pstmt.executeUpdate();
+                    System.out.println("Data saved to database.");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+
+                tableView.getItems().add(data);
+
+                dataIdText.clear();
+                timestampText.clear();
+                dataTypeText.clear();
+                rawDataText.clear();
+                processedDataText.clear();
+                sensorsSensorIdText.clear();
+            } catch (NumberFormatException ex) {
                 ex.printStackTrace();
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setContentText("Invalid input data.");
+                alert.show();
             }
-
-            // Add new data to the table view
-            tableView.getItems().add(data);
-
-            // Clear input fields after adding data
-            dataIdText.clear();
-            timestampText.clear();
-            dataTypeText.clear();
-            rawDataText.clear();
-            processedDataText.clear();
-            sensorsSensorIdText.clear();
         });
 
-        // Fetch and display data from Oracle database
+        Button editButton = new Button("Edit");
+        editButton.setOnAction(e -> {
+            Data selectedData = tableView.getSelectionModel().getSelectedItem();
+            if (selectedData != null) {
+                try {
+                    int dataId = Integer.parseInt(dataIdText.getText());
+                    String timestamp = timestampText.getText();
+                    String dataType = dataTypeText.getText();
+                    String rawData = rawDataText.getText();
+                    String processedData = processedDataText.getText();
+                    int sensorsSensorId = Integer.parseInt(sensorsSensorIdText.getText());
+
+                    selectedData.setDataId(dataId);
+                    selectedData.setTimestamp(timestamp);
+                    selectedData.setDataType(dataType);
+                    selectedData.setRawData(rawData);
+                    selectedData.setProcessedData(processedData);
+                    selectedData.setSensorsSensorId(sensorsSensorId);
+
+                    try (Connection conn = OracleAPEXConnection.getConnection()) {
+                        String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".DATA SET TIMESTAMP = ?, DATA_TYPE = ?, RAW_DATA = ?, PROCESSED_DATA = ?, SENSORS_SENSOR_ID = ? WHERE DATA_ID = ?";
+                        PreparedStatement pstmt = conn.prepareStatement(sql);
+                        pstmt.setString(1, timestamp);
+                        pstmt.setString(2, dataType);
+                        pstmt.setString(3, rawData);
+                        pstmt.setString(4, processedData);
+                        pstmt.setInt(5, sensorsSensorId);
+                        pstmt.setInt(6, dataId);
+                        pstmt.executeUpdate();
+                        System.out.println("Data updated in database.");
+                    } catch (SQLException ex) {
+                        ex.printStackTrace();
+                    }
+
+                    tableView.refresh();
+
+                    dataIdText.clear();
+                    timestampText.clear();
+                    dataTypeText.clear();
+                    rawDataText.clear();
+                    processedDataText.clear();
+                    sensorsSensorIdText.clear();
+                } catch (NumberFormatException ex) {
+                    ex.printStackTrace();
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setContentText("Invalid input data.");
+                    alert.show();
+                }
+            }
+        });
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(e -> {
+            Data selectedData = tableView.getSelectionModel().getSelectedItem();
+            if (selectedData != null) {
+                int dataId = selectedData.getDataId();
+
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".DATA WHERE DATA_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setInt(1, dataId);
+                    pstmt.executeUpdate();
+                    System.out.println("Data deleted from database.");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+
+                tableView.getItems().remove(selectedData);
+            }
+        });
+
+        HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
+
         ObservableList<Data> dataList = fetchDataFromDatabase();
         tableView.setItems(dataList);
 
@@ -161,7 +238,7 @@ public class Data {
                 dataTypeLabel, dataTypeText, rawDataLabel, rawDataText,
                 processedDataLabel, processedDataText,
                 sensorsSensorIdLabel, sensorsSensorIdText,
-                tableView, createButton);
+                tableView, buttonBox);
 
         return vbox;
     }

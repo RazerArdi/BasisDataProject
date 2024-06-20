@@ -5,11 +5,9 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -86,6 +84,42 @@ public class Sea {
 
         tableView.getColumns().addAll(platformIdCol, taskCol, locationCol, commIdCol);
 
+        Button editButton = new Button("Edit");
+        editButton.setOnAction(e -> {
+            Sea selectedSea = tableView.getSelectionModel().getSelectedItem();
+            if (selectedSea != null) {
+                platformIdText.setText(selectedSea.getSeaPlatformId());
+                taskText.setText(selectedSea.getTask());
+                locationText.setText(selectedSea.getLocation());
+                commIdText.setText(selectedSea.getCommunicationLogCommId());
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Sea Platform Selected", "Please select a sea platform to edit.");
+            }
+        });
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(e -> {
+            Sea selectedSea = tableView.getSelectionModel().getSelectedItem();
+            if (selectedSea != null) {
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".SEA WHERE SEA_PLATFORM_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, selectedSea.getSeaPlatformId());
+                    int affected = pstmt.executeUpdate();
+                    if (affected > 0) {
+                        showAlert(Alert.AlertType.INFORMATION, "Delete Successful", "Sea Platform Deleted", "Sea Platform with ID " + selectedSea.getSeaPlatformId() + " has been deleted.");
+                        tableView.getItems().remove(selectedSea);
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Delete Failed", "Delete Operation Failed", "Failed to delete sea platform from database.");
+                    }
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Sea Platform Selected", "Please select a sea platform to delete.");
+            }
+        });
+
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             String platformId = platformIdText.getText();
@@ -118,15 +152,25 @@ public class Sea {
             commIdText.clear();
         });
 
+        HBox buttonBox = new HBox(10, editButton, deleteButton, createButton);
+
         ObservableList<Sea> seaList = fetchSeaPlatformsFromDatabase();
         tableView.setItems(seaList);
 
         vbox.getChildren().addAll(
                 platformIdLabel, platformIdText, taskLabel, taskText,
                 locationLabel, locationText, commIdLabel, commIdText,
-                tableView, createButton);
+                tableView, buttonBox);
 
         return vbox;
+    }
+
+    private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.showAndWait();
     }
 
     private static ObservableList<Sea> fetchSeaPlatformsFromDatabase() {

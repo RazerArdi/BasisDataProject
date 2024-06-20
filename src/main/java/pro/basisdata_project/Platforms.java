@@ -5,6 +5,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.sql.Connection;
@@ -19,7 +20,7 @@ public class Platforms {
     private String type;
     private String capability;
     private String lastMaintenance;
-    private String missionsMissionId; // Added field for Mission ID
+    private String missionsMissionId;
 
     public Platforms(String platformId, String platformName, String type, String capability, String lastMaintenance, String missionsMissionId) {
         this.platformId = platformId;
@@ -94,7 +95,7 @@ public class Platforms {
         Label lastMaintenanceLabel = new Label("Last Maintenance:");
         TextField lastMaintenanceText = new TextField();
         Label missionsMissionIdLabel = new Label("Mission ID:");
-        TextField missionsMissionIdText = new TextField(); // Input for Mission ID
+        TextField missionsMissionIdText = new TextField();
 
         TableView<Platforms> tableView = new TableView<>();
         TableColumn<Platforms, String> platformIdCol = new TableColumn<>("Platform ID");
@@ -107,10 +108,50 @@ public class Platforms {
         capabilityCol.setCellValueFactory(new PropertyValueFactory<>("capability"));
         TableColumn<Platforms, String> lastMaintenanceCol = new TableColumn<>("Last Maintenance");
         lastMaintenanceCol.setCellValueFactory(new PropertyValueFactory<>("lastMaintenance"));
-        TableColumn<Platforms, String> missionsMissionIdCol = new TableColumn<>("Mission ID"); // Added column
+        TableColumn<Platforms, String> missionsMissionIdCol = new TableColumn<>("Mission ID");
         missionsMissionIdCol.setCellValueFactory(new PropertyValueFactory<>("missionsMissionId"));
 
         tableView.getColumns().addAll(platformIdCol, platformNameCol, typeCol, capabilityCol, lastMaintenanceCol, missionsMissionIdCol);
+
+        Button editButton = new Button("Edit");
+        editButton.setOnAction(e -> {
+            Platforms selectedPlatform = tableView.getSelectionModel().getSelectedItem();
+            if (selectedPlatform != null) {
+                platformIdText.setText(selectedPlatform.getPlatformId());
+                platformNameText.setText(selectedPlatform.getPlatformName());
+                typeText.setText(selectedPlatform.getType());
+                capabilityText.setText(selectedPlatform.getCapability());
+                lastMaintenanceText.setText(selectedPlatform.getLastMaintenance());
+                missionsMissionIdText.setText(selectedPlatform.getMissionsMissionId());
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Platform Selected", "Please select a platform to edit.");
+            }
+        });
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(e -> {
+            Platforms selectedPlatform = tableView.getSelectionModel().getSelectedItem();
+            if (selectedPlatform != null) {
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".PLATFORMS WHERE PLATFORM_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, selectedPlatform.getPlatformId());
+                    int affected = pstmt.executeUpdate();
+                    if (affected > 0) {
+                        showAlert(Alert.AlertType.INFORMATION, "Delete Successful", "Platform Deleted", "Platform with ID " + selectedPlatform.getPlatformId() + " has been deleted.");
+                        tableView.getItems().remove(selectedPlatform);
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Delete Failed", "Delete Operation Failed", "Failed to delete platform from database.");
+                    }
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Platform Selected", "Please select a platform to delete.");
+            }
+        });
+
+        HBox buttonBox = new HBox(10, editButton, deleteButton);
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
@@ -119,7 +160,7 @@ public class Platforms {
             String type = typeText.getText();
             String capability = capabilityText.getText();
             String lastMaintenance = lastMaintenanceText.getText();
-            String missionsMissionId = missionsMissionIdText.getText(); // Retrieve Mission ID
+            String missionsMissionId = missionsMissionIdText.getText();
 
             Platforms platform = new Platforms(platformId, platformName, type, capability, lastMaintenance, missionsMissionId);
 
@@ -131,7 +172,7 @@ public class Platforms {
                 pstmt.setString(3, type);
                 pstmt.setString(4, capability);
                 pstmt.setString(5, lastMaintenance);
-                pstmt.setString(6, missionsMissionId); // Set Mission ID
+                pstmt.setString(6, missionsMissionId);
                 pstmt.executeUpdate();
                 System.out.println("Platform saved to database.");
             } catch (SQLException ex) {
@@ -155,10 +196,18 @@ public class Platforms {
                 platformIdLabel, platformIdText, platformNameLabel, platformNameText,
                 typeLabel, typeText, capabilityLabel, capabilityText,
                 lastMaintenanceLabel, lastMaintenanceText,
-                missionsMissionIdLabel, missionsMissionIdText, // Add Mission ID field to UI
-                tableView, createButton);
+                missionsMissionIdLabel, missionsMissionIdText,
+                tableView, buttonBox, createButton);
 
         return vbox;
+    }
+
+    private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.showAndWait();
     }
 
     private static ObservableList<Platforms> fetchPlatformsFromDatabase() {

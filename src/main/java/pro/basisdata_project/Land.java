@@ -5,6 +5,7 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
 import java.sql.Connection;
@@ -67,6 +68,42 @@ public class Land {
 
         tableView.getColumns().addAll(landIdCol, taskCol, locationCol, commIdCol);
 
+        Button editButton = new Button("Edit");
+        editButton.setOnAction(e -> {
+            Land selectedLand = tableView.getSelectionModel().getSelectedItem();
+            if (selectedLand != null) {
+                landIdText.setText(selectedLand.getLandId());
+                taskText.setText(selectedLand.getTask());
+                locationText.setText(selectedLand.getLocation());
+                commIdText.setText(selectedLand.getCommunicationLogCommId());
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Land Selected", "Please select a land to edit.");
+            }
+        });
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(e -> {
+            Land selectedLand = tableView.getSelectionModel().getSelectedItem();
+            if (selectedLand != null) {
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".LAND WHERE LAND_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, selectedLand.getLandId());
+                    int affected = pstmt.executeUpdate();
+                    if (affected > 0) {
+                        showAlert(Alert.AlertType.INFORMATION, "Delete Successful", "Land Deleted", "Land with ID " + selectedLand.getLandId() + " has been deleted.");
+                        tableView.getItems().remove(selectedLand);
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Delete Failed", "Delete Operation Failed", "Failed to delete land from database.");
+                    }
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Land Selected", "Please select a land to delete.");
+            }
+        });
+
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             String landId = landIdText.getText();
@@ -97,15 +134,25 @@ public class Land {
             commIdText.clear();
         });
 
+        HBox buttonBox = new HBox(10, editButton, deleteButton, createButton);
+
         ObservableList<Land> landList = fetchLandFromDatabase();
         tableView.setItems(landList);
 
         vbox.getChildren().addAll(
                 landIdLabel, landIdText, taskLabel, taskText,
                 locationLabel, locationText, commIdLabel, commIdText,
-                tableView, createButton);
+                tableView, buttonBox);
 
         return vbox;
+    }
+
+    private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.showAndWait();
     }
 
     private static ObservableList<Land> fetchLandFromDatabase() {
