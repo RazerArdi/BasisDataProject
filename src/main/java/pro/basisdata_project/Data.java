@@ -95,7 +95,9 @@ public class Data {
         Label processedDataLabel = new Label("Processed Data:");
         TextArea processedDataText = new TextArea();
         Label sensorsSensorIdLabel = new Label("Sensor ID:");
-        TextField sensorsSensorIdText = new TextField();
+        ComboBox<Integer> sensorsSensorIdComboBox = new ComboBox<>();
+        ObservableList<Integer> sensorIdList = fetchSensorIdsFromDatabase();
+        sensorsSensorIdComboBox.setItems(sensorIdList);
 
         TableView<Data> tableView = new TableView<>();
         TableColumn<Data, Integer> dataIdCol = new TableColumn<>("Data ID");
@@ -121,7 +123,7 @@ public class Data {
                 String dataType = dataTypeText.getText();
                 String rawData = rawDataText.getText();
                 String processedData = processedDataText.getText();
-                int sensorsSensorId = Integer.parseInt(sensorsSensorIdText.getText());
+                int sensorsSensorId = sensorsSensorIdComboBox.getValue();
 
                 Data data = new Data(dataId, timestamp, dataType, rawData, processedData, sensorsSensorId);
                 System.out.println("Data Created: " + data.getDataId());
@@ -148,7 +150,7 @@ public class Data {
                 dataTypeText.clear();
                 rawDataText.clear();
                 processedDataText.clear();
-                sensorsSensorIdText.clear();
+                sensorsSensorIdComboBox.setValue(null);
             } catch (NumberFormatException ex) {
                 ex.printStackTrace();
                 Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -167,7 +169,7 @@ public class Data {
                     String dataType = dataTypeText.getText();
                     String rawData = rawDataText.getText();
                     String processedData = processedDataText.getText();
-                    int sensorsSensorId = Integer.parseInt(sensorsSensorIdText.getText());
+                    int sensorsSensorId = sensorsSensorIdComboBox.getValue();
 
                     selectedData.setDataId(dataId);
                     selectedData.setTimestamp(timestamp);
@@ -198,7 +200,7 @@ public class Data {
                     dataTypeText.clear();
                     rawDataText.clear();
                     processedDataText.clear();
-                    sensorsSensorIdText.clear();
+                    sensorsSensorIdComboBox.setValue(null);
                 } catch (NumberFormatException ex) {
                     ex.printStackTrace();
                     Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -237,10 +239,29 @@ public class Data {
                 dataIdLabel, dataIdText, timestampLabel, timestampText,
                 dataTypeLabel, dataTypeText, rawDataLabel, rawDataText,
                 processedDataLabel, processedDataText,
-                sensorsSensorIdLabel, sensorsSensorIdText,
+                sensorsSensorIdLabel, sensorsSensorIdComboBox,
                 tableView, buttonBox);
 
         return vbox;
+    }
+
+    private static ObservableList<Integer> fetchSensorIdsFromDatabase() {
+        ObservableList<Integer> sensorIdList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT SENSOR_ID FROM \"C4ISR PROJECT (BASIC) V2\".SENSORS";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                int sensorId = rs.getInt("SENSOR_ID");
+                sensorIdList.add(sensorId);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return sensorIdList;
     }
 
     private static ObservableList<Data> fetchDataFromDatabase() {

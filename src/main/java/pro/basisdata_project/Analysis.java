@@ -81,9 +81,13 @@ public class Analysis {
         Label resultsLabel = new Label("Results:");
         TextField resultsText = new TextField();
         Label usersUserIdLabel = new Label("Users User ID:");
-        TextField usersUserIdText = new TextField();
+        ComboBox<String> usersUserIdComboBox = new ComboBox<>();
+        ObservableList<String> usersUserIdList = fetchUserIdsFromDatabase();
+        usersUserIdComboBox.setItems(usersUserIdList);
         Label dataDataIdLabel = new Label("Data ID:");
-        TextField dataDataIdText = new TextField();
+        ComboBox<Integer> dataDataIdComboBox = new ComboBox<>();
+        ObservableList<Integer> dataDataIdList = fetchDataIdsFromDatabase();
+        dataDataIdComboBox.setItems(dataDataIdList);
 
         TableView<Analysis> tableView = new TableView<>();
         TableColumn<Analysis, Integer> analysisIdCol = new TableColumn<>("Analysis ID");
@@ -104,8 +108,8 @@ public class Analysis {
             int analysisId = Integer.parseInt(analysisIdText.getText());
             String analysisType = analysisTypeText.getText();
             String results = resultsText.getText();
-            String usersUserId = usersUserIdText.getText();
-            int dataDataId = Integer.parseInt(dataDataIdText.getText());
+            String usersUserId = usersUserIdComboBox.getValue();
+            int dataDataId = dataDataIdComboBox.getValue();
 
             Analysis analysis = new Analysis(analysisId, analysisType, results, usersUserId, dataDataId);
             System.out.println("Analysis Created: " + analysis.getAnalysisId());
@@ -129,8 +133,8 @@ public class Analysis {
             analysisIdText.clear();
             analysisTypeText.clear();
             resultsText.clear();
-            usersUserIdText.clear();
-            dataDataIdText.clear();
+            usersUserIdComboBox.setValue(null);
+            dataDataIdComboBox.setValue(null);
         });
 
         Button editButton = new Button("Edit");
@@ -140,8 +144,8 @@ public class Analysis {
                 int analysisId = Integer.parseInt(analysisIdText.getText());
                 String analysisType = analysisTypeText.getText();
                 String results = resultsText.getText();
-                String usersUserId = usersUserIdText.getText();
-                int dataDataId = Integer.parseInt(dataDataIdText.getText());
+                String usersUserId = usersUserIdComboBox.getValue();
+                int dataDataId = dataDataIdComboBox.getValue();
 
                 selectedAnalysis.setAnalysisId(analysisId);
                 selectedAnalysis.setAnalysisType(analysisType);
@@ -168,8 +172,8 @@ public class Analysis {
                 analysisIdText.clear();
                 analysisTypeText.clear();
                 resultsText.clear();
-                usersUserIdText.clear();
-                dataDataIdText.clear();
+                usersUserIdComboBox.setValue(null);
+                dataDataIdComboBox.setValue(null);
             }
         });
 
@@ -199,10 +203,13 @@ public class Analysis {
         HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
 
         vbox.getChildren().addAll(
-                analysisIdLabel, analysisIdText, analysisTypeLabel, analysisTypeText,
-                resultsLabel, resultsText, usersUserIdLabel, usersUserIdText,
-                dataDataIdLabel, dataDataIdText,
-                tableView, buttonBox);
+                analysisIdLabel, analysisIdText,
+                analysisTypeLabel, analysisTypeText,
+                resultsLabel, resultsText,
+                usersUserIdLabel, usersUserIdComboBox,
+                dataDataIdLabel, dataDataIdComboBox,
+                tableView, buttonBox
+        );
 
         return vbox;
     }
@@ -231,4 +238,43 @@ public class Analysis {
 
         return analysisList;
     }
+
+    private static ObservableList<String> fetchUserIdsFromDatabase() {
+        ObservableList<String> userIdList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT USER_ID FROM \"C4ISR PROJECT (BASIC) V2\".USERS";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String userId = rs.getString("USER_ID");
+                userIdList.add(userId);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return userIdList;
+    }
+
+    private static ObservableList<Integer> fetchDataIdsFromDatabase() {
+        ObservableList<Integer> dataIdList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT DATA_ID FROM \"C4ISR PROJECT (BASIC) V2\".DATA";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                int dataId = rs.getInt("DATA_ID");
+                dataIdList.add(dataId);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return dataIdList;
+    }
+
 }

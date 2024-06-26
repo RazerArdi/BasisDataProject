@@ -70,7 +70,9 @@ public class Air {
         Label locationLabel = new Label("Location:");
         TextField locationText = new TextField();
         Label commIdLabel = new Label("Communication Log ID:");
-        TextField commIdText = new TextField();
+        ComboBox<String> commIdComboBox = new ComboBox<>();
+        ObservableList<String> commIdList = fetchCommIdsFromDatabase();
+        commIdComboBox.setItems(commIdList);
 
         TableView<Air> tableView = new TableView<>();
         TableColumn<Air, String> airIdCol = new TableColumn<>("Air ID");
@@ -88,7 +90,7 @@ public class Air {
             String airId = airIdText.getText();
             String task = taskText.getText();
             String location = locationText.getText();
-            String commId = commIdText.getText();
+            String commId = commIdComboBox.getValue();
 
             Air air = new Air(airId, task, location, commId);
 
@@ -110,7 +112,7 @@ public class Air {
             airIdText.clear();
             taskText.clear();
             locationText.clear();
-            commIdText.clear();
+            commIdComboBox.setValue(null);
         });
 
         Button editButton = new Button("Edit");
@@ -120,7 +122,7 @@ public class Air {
                 String airId = airIdText.getText();
                 String task = taskText.getText();
                 String location = locationText.getText();
-                String commId = commIdText.getText();
+                String commId = commIdComboBox.getValue();
 
                 selectedAir.setAirId(airId);
                 selectedAir.setTask(task);
@@ -145,7 +147,7 @@ public class Air {
                 airIdText.clear();
                 taskText.clear();
                 locationText.clear();
-                commIdText.clear();
+                commIdComboBox.setValue(null);
             }
         });
 
@@ -176,7 +178,7 @@ public class Air {
 
         vbox.getChildren().addAll(
                 airIdLabel, airIdText, taskLabel, taskText,
-                locationLabel, locationText, commIdLabel, commIdText,
+                locationLabel, locationText, commIdLabel, commIdComboBox,
                 tableView, buttonBox);
 
         return vbox;
@@ -204,5 +206,24 @@ public class Air {
         }
 
         return airList;
+    }
+
+    private static ObservableList<String> fetchCommIdsFromDatabase() {
+        ObservableList<String> commIdList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT COMM_ID FROM \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String commId = rs.getString("COMM_ID");
+                commIdList.add(commId);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return commIdList;
     }
 }

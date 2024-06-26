@@ -54,7 +54,10 @@ public class Land {
         Label locationLabel = new Label("Location:");
         TextField locationText = new TextField();
         Label commIdLabel = new Label("Communication Log ID:");
-        TextField commIdText = new TextField();
+        ComboBox<String> commIdComboBox = new ComboBox<>();
+
+        // Populate the ComboBox with COMM_IDs from the Communication Log table
+        loadCommIdsIntoComboBox(commIdComboBox);
 
         TableView<Land> tableView = new TableView<>();
         TableColumn<Land, String> landIdCol = new TableColumn<>("Land ID");
@@ -75,7 +78,7 @@ public class Land {
                 landIdText.setText(selectedLand.getLandId());
                 taskText.setText(selectedLand.getTask());
                 locationText.setText(selectedLand.getLocation());
-                commIdText.setText(selectedLand.getCommunicationLogCommId());
+                commIdComboBox.setValue(selectedLand.getCommunicationLogCommId());
             } else {
                 showAlert(Alert.AlertType.WARNING, "No Selection", "No Land Selected", "Please select a land to edit.");
             }
@@ -109,7 +112,7 @@ public class Land {
             String landId = landIdText.getText();
             String task = taskText.getText();
             String location = locationText.getText();
-            String commId = commIdText.getText();
+            String commId = commIdComboBox.getValue();
 
             Land land = new Land(landId, task, location, commId);
 
@@ -131,7 +134,7 @@ public class Land {
             landIdText.clear();
             taskText.clear();
             locationText.clear();
-            commIdText.clear();
+            commIdComboBox.setValue(null);
         });
 
         HBox buttonBox = new HBox(10, editButton, deleteButton, createButton);
@@ -141,7 +144,7 @@ public class Land {
 
         vbox.getChildren().addAll(
                 landIdLabel, landIdText, taskLabel, taskText,
-                locationLabel, locationText, commIdLabel, commIdText,
+                locationLabel, locationText, commIdLabel, commIdComboBox,
                 tableView, buttonBox);
 
         return vbox;
@@ -177,5 +180,24 @@ public class Land {
         }
 
         return landList;
+    }
+
+    private static void loadCommIdsIntoComboBox(ComboBox<String> commIdComboBox) {
+        ObservableList<String> commIds = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT COMM_ID FROM \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String commId = rs.getString("COMM_ID");
+                commIds.add(commId);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        commIdComboBox.setItems(commIds);
     }
 }

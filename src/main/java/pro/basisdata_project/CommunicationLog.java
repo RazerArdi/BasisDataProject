@@ -59,7 +59,9 @@ public class CommunicationLog {
         Label messageLabel = new Label("Message:");
         TextField messageText = new TextField();
         Label platformsPlatformIdLabel = new Label("Platform ID:");
-        TextField platformsPlatformIdText = new TextField();
+        ComboBox<String> platformsPlatformIdComboBox = new ComboBox<>();
+        ObservableList<String> platformIds = fetchPlatformIdsFromDatabase();
+        platformsPlatformIdComboBox.setItems(platformIds);
 
         TableView<CommunicationLog> tableView = new TableView<>();
         TableColumn<CommunicationLog, String> commIdCol = new TableColumn<>("Communication ID");
@@ -74,7 +76,7 @@ public class CommunicationLog {
         createButton.setOnAction(e -> {
             String commId = commIdText.getText();
             String message = messageText.getText();
-            String platformsPlatformId = platformsPlatformIdText.getText();
+            String platformsPlatformId = platformsPlatformIdComboBox.getValue();
 
             CommunicationLog log = new CommunicationLog(commId, message, platformsPlatformId);
             System.out.println("Communication Log Created: " + log.getCommId());
@@ -97,7 +99,7 @@ public class CommunicationLog {
 
             commIdText.clear();
             messageText.clear();
-            platformsPlatformIdText.clear();
+            platformsPlatformIdComboBox.setValue(null); // Clear ComboBox selection
         });
 
         Button editButton = new Button("Edit");
@@ -106,7 +108,7 @@ public class CommunicationLog {
             if (selectedLog != null) {
                 String commId = commIdText.getText();
                 String message = messageText.getText();
-                String platformsPlatformId = platformsPlatformIdText.getText();
+                String platformsPlatformId = platformsPlatformIdComboBox.getValue();
 
                 selectedLog.setCommId(commId);
                 selectedLog.setMessage(message);
@@ -128,7 +130,7 @@ public class CommunicationLog {
 
                 commIdText.clear();
                 messageText.clear();
-                platformsPlatformIdText.clear();
+                platformsPlatformIdComboBox.setValue(null); // Clear ComboBox selection
             }
         });
 
@@ -159,10 +161,29 @@ public class CommunicationLog {
 
         vbox.getChildren().addAll(
                 commIdLabel, commIdText, messageLabel, messageText,
-                platformsPlatformIdLabel, platformsPlatformIdText,
+                platformsPlatformIdLabel, platformsPlatformIdComboBox,
                 tableView, buttonBox);
 
         return vbox;
+    }
+
+    private static ObservableList<String> fetchPlatformIdsFromDatabase() {
+        ObservableList<String> platformIds = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT PLATFORM_ID FROM \"C4ISR PROJECT (BASIC) V2\".PLATFORMS";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String platformId = rs.getString("PLATFORM_ID");
+                platformIds.add(platformId);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return platformIds;
     }
 
     private static ObservableList<CommunicationLog> fetchCommunicationLogsFromDatabase() {

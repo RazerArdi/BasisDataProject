@@ -84,7 +84,9 @@ public class Assignments {
         Label endDateLabel = new Label("End Date:");
         DatePicker endDatePicker = new DatePicker();
         Label personnelPersonnelIdLabel = new Label("Personnel ID:");
-        TextField personnelPersonnelIdText = new TextField();
+        ComboBox<String> personnelPersonnelIdComboBox = new ComboBox<>();
+        ObservableList<String> personnelIds = fetchPersonnelIdsFromDatabaseAssignments();
+        personnelPersonnelIdComboBox.setItems(personnelIds);
 
         TableView<Assignments> tableView = new TableView<>();
         TableColumn<Assignments, String> assignmentIdCol = new TableColumn<>("Assignment ID");
@@ -106,7 +108,7 @@ public class Assignments {
             String role = roleText.getText();
             LocalDate startDate = startDatePicker.getValue();
             LocalDate endDate = endDatePicker.getValue();
-            String personnelPersonnelId = personnelPersonnelIdText.getText();
+            String personnelPersonnelId = personnelPersonnelIdComboBox.getValue();
 
             Assignments assignment = new Assignments(assignmentId, role, startDate, endDate, personnelPersonnelId);
             System.out.println("Assignment Created: " + assignment.getAssignmentId());
@@ -131,7 +133,7 @@ public class Assignments {
             roleText.clear();
             startDatePicker.setValue(null);
             endDatePicker.setValue(null);
-            personnelPersonnelIdText.clear();
+            personnelPersonnelIdComboBox.setValue(null);
         });
 
         Button editButton = new Button("Edit");
@@ -142,7 +144,7 @@ public class Assignments {
                 String role = roleText.getText();
                 LocalDate startDate = startDatePicker.getValue();
                 LocalDate endDate = endDatePicker.getValue();
-                String personnelPersonnelId = personnelPersonnelIdText.getText();
+                String personnelPersonnelId = personnelPersonnelIdComboBox.getValue();
 
                 selectedAssignment.setAssignmentId(assignmentId);
                 selectedAssignment.setRole(role);
@@ -170,7 +172,7 @@ public class Assignments {
                 roleText.clear();
                 startDatePicker.setValue(null);
                 endDatePicker.setValue(null);
-                personnelPersonnelIdText.clear();
+                personnelPersonnelIdComboBox.setValue(null);
             }
         });
 
@@ -198,11 +200,10 @@ public class Assignments {
         tableView.setItems(assignmentList);
 
         HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
-
         vbox.getChildren().addAll(
                 assignmentIdLabel, assignmentIdText, roleLabel, roleText,
                 startDateLabel, startDatePicker, endDateLabel, endDatePicker,
-                personnelPersonnelIdLabel, personnelPersonnelIdText,
+                personnelPersonnelIdLabel, personnelPersonnelIdComboBox,
                 tableView, buttonBox);
 
         return vbox;
@@ -231,5 +232,23 @@ public class Assignments {
         }
 
         return assignmentList;
+    }
+    private static ObservableList<String> fetchPersonnelIdsFromDatabaseAssignments() {
+        ObservableList<String> personnelIds = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT PERSONNEL_ID FROM \"C4ISR PROJECT (BASIC) V2\".PERSONNEL";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String personnelId = rs.getString("PERSONNEL_ID");
+                personnelIds.add(personnelId);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return personnelIds;
     }
 }

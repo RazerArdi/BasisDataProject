@@ -12,6 +12,8 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 public class Equipments {
 
@@ -105,9 +107,13 @@ public class Equipments {
         Label locationLabel = new Label("Location:");
         TextField locationText = new TextField();
         Label lastMaintenanceLabel = new Label("Last Maintenance:");
-        TextField lastMaintenanceText = new TextField();
+        DatePicker lastMaintenancePicker = new DatePicker();
         Label sensorIdLabel = new Label("Sensor ID:");
-        TextField sensorIdText = new TextField();
+        ComboBox<String> sensorIdComboBox = new ComboBox<>();
+
+        // Populate sensor ID ComboBox
+        ObservableList<String> sensorIdList = fetchSensorIdsFromDatabase();
+        sensorIdComboBox.setItems(sensorIdList);
 
         TableView<Equipments> tableView = new TableView<>();
         TableColumn<Equipments, String> equipmentIdCol = new TableColumn<>("Equipment ID");
@@ -140,10 +146,12 @@ public class Equipments {
             String type = typeText.getText();
             String status = statusText.getText();
             String location = locationText.getText();
-            String lastMaintenance = lastMaintenanceText.getText();
-            String sensorId = sensorIdText.getText();
+            LocalDate lastMaintenance = lastMaintenancePicker.getValue();
+            String sensorId = sensorIdComboBox.getValue();
 
-            Equipments equipment = new Equipments(equipmentId, name, type, status, location, lastMaintenance, sensorId);
+            String lastMaintenanceStr = lastMaintenance != null ? lastMaintenance.format(DateTimeFormatter.ISO_DATE) : "";
+
+            Equipments equipment = new Equipments(equipmentId, name, type, status, location, lastMaintenanceStr, sensorId);
             System.out.println("Equipment Created: " + equipment.getEquipmentId());
 
             try (Connection conn = OracleAPEXConnection.getConnection()) {
@@ -154,7 +162,7 @@ public class Equipments {
                 pstmt.setString(3, type);
                 pstmt.setString(4, status);
                 pstmt.setString(5, location);
-                pstmt.setString(6, lastMaintenance);
+                pstmt.setString(6, lastMaintenanceStr);
                 pstmt.setString(7, sensorId);
                 pstmt.executeUpdate();
                 System.out.println("Equipment saved to database.");
@@ -169,8 +177,8 @@ public class Equipments {
             typeText.clear();
             statusText.clear();
             locationText.clear();
-            lastMaintenanceText.clear();
-            sensorIdText.clear();
+            lastMaintenancePicker.setValue(null);
+            sensorIdComboBox.setValue(null);
         });
 
         editButton.setOnAction(e -> {
@@ -181,8 +189,8 @@ public class Equipments {
                 typeText.setText(selectedEquipment.getType());
                 statusText.setText(selectedEquipment.getStatus());
                 locationText.setText(selectedEquipment.getLocation());
-                lastMaintenanceText.setText(selectedEquipment.getLastMaintenance());
-                sensorIdText.setText(selectedEquipment.getSensorId());
+                lastMaintenancePicker.setValue(LocalDate.parse(selectedEquipment.getLastMaintenance(), DateTimeFormatter.ISO_DATE));
+                sensorIdComboBox.setValue(selectedEquipment.getSensorId());
             } else {
                 showAlert(Alert.AlertType.WARNING, "No Selection", "No Equipment Selected", "Please select an equipment to edit.");
             }
@@ -213,8 +221,8 @@ public class Equipments {
         vbox.getChildren().addAll(
                 equipmentIdLabel, equipmentIdText, nameLabel, nameText,
                 typeLabel, typeText, statusLabel, statusText, locationLabel,
-                locationText, lastMaintenanceLabel, lastMaintenanceText,
-                sensorIdLabel, sensorIdText, tableView, buttonBox);
+                locationText, lastMaintenanceLabel, lastMaintenancePicker,
+                sensorIdLabel, sensorIdComboBox, tableView, buttonBox);
 
         return vbox;
     }
@@ -244,6 +252,25 @@ public class Equipments {
         }
 
         return equipmentList;
+    }
+
+    private static ObservableList<String> fetchSensorIdsFromDatabase() {
+        ObservableList<String> sensorIdList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT SENSOR_ID FROM \"C4ISR PROJECT (BASIC) V2\".SENSORS";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String sensorId = rs.getString("SENSOR_ID");
+                sensorIdList.add(sensorId);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return sensorIdList;
     }
 
     private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {

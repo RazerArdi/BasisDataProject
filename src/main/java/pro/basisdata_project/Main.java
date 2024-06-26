@@ -28,7 +28,6 @@ public class Main extends Application {
 
         stage.setTitle("SYSTEM");
 
-        // Check database connection
         boolean isConnected = OracleAPEXConnection.isConnectionSuccessful();
         Alert alert = new Alert(isConnected ? AlertType.INFORMATION : AlertType.ERROR);
         alert.setTitle("Database Connection Status");

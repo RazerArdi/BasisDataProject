@@ -70,7 +70,9 @@ public class Sea {
         Label locationLabel = new Label("Location:");
         TextField locationText = new TextField();
         Label commIdLabel = new Label("Communication Log ID:");
-        TextField commIdText = new TextField();
+        ComboBox<String> commIdComboBox = new ComboBox<>();
+        ObservableList<String> commLogIds = fetchCommunicationLogIdsFromDatabase();
+        commIdComboBox.setItems(commLogIds);
 
         TableView<Sea> tableView = new TableView<>();
         TableColumn<Sea, String> platformIdCol = new TableColumn<>("Platform ID");
@@ -91,7 +93,7 @@ public class Sea {
                 platformIdText.setText(selectedSea.getSeaPlatformId());
                 taskText.setText(selectedSea.getTask());
                 locationText.setText(selectedSea.getLocation());
-                commIdText.setText(selectedSea.getCommunicationLogCommId());
+                commIdComboBox.setValue(selectedSea.getCommunicationLogCommId());
             } else {
                 showAlert(Alert.AlertType.WARNING, "No Selection", "No Sea Platform Selected", "Please select a sea platform to edit.");
             }
@@ -125,31 +127,19 @@ public class Sea {
             String platformId = platformIdText.getText();
             String task = taskText.getText();
             String location = locationText.getText();
-            String commId = commIdText.getText();
+            String commId = commIdComboBox.getValue();
 
             Sea sea = new Sea(platformId, task, location, commId);
             System.out.println("Sea Platform Created: " + sea.getSeaPlatformId());
 
-            try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".SEA (SEA_PLATFORM_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID) " +
-                        "VALUES (?, ?, ?, ?)";
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                pstmt.setString(1, platformId);
-                pstmt.setString(2, task);
-                pstmt.setString(3, location);
-                pstmt.setString(4, commId);
-                pstmt.executeUpdate();
-                System.out.println("Sea platform saved to database.");
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
+            saveSeaPlatformToDatabase(sea);
 
             tableView.getItems().add(sea);
 
             platformIdText.clear();
             taskText.clear();
             locationText.clear();
-            commIdText.clear();
+            commIdComboBox.setValue(null);
         });
 
         HBox buttonBox = new HBox(10, editButton, deleteButton, createButton);
@@ -159,7 +149,7 @@ public class Sea {
 
         vbox.getChildren().addAll(
                 platformIdLabel, platformIdText, taskLabel, taskText,
-                locationLabel, locationText, commIdLabel, commIdText,
+                locationLabel, locationText, commIdLabel, commIdComboBox,
                 tableView, buttonBox);
 
         return vbox;
@@ -171,6 +161,21 @@ public class Sea {
         alert.setHeaderText(headerText);
         alert.setContentText(contentText);
         alert.showAndWait();
+    }
+
+    private static void saveSeaPlatformToDatabase(Sea sea) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".SEA (SEA_PLATFORM_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID) VALUES (?, ?, ?, ?)";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, sea.getSeaPlatformId());
+            pstmt.setString(2, sea.getTask());
+            pstmt.setString(3, sea.getLocation());
+            pstmt.setString(4, sea.getCommunicationLogCommId());
+            pstmt.executeUpdate();
+            System.out.println("Sea platform saved to database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
     }
 
     private static ObservableList<Sea> fetchSeaPlatformsFromDatabase() {
@@ -195,5 +200,24 @@ public class Sea {
         }
 
         return seaList;
+    }
+
+    private static ObservableList<String> fetchCommunicationLogIdsFromDatabase() {
+        ObservableList<String> commLogIds = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT COMM_ID FROM \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String commId = rs.getString("COMM_ID");
+                commLogIds.add(commId);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return commLogIds;
     }
 }

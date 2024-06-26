@@ -70,7 +70,9 @@ public class Space {
         Label locationLabel = new Label("Location (Optional):");
         TextField locationText = new TextField();
         Label commIdLabel = new Label("Communication Log ID:");
-        TextField commIdText = new TextField();
+        ComboBox<String> commIdComboBox = new ComboBox<>();
+        ObservableList<String> commLogIds = fetchCommunicationLogIdsFromDatabase();
+        commIdComboBox.setItems(commLogIds);
 
         TableView<Space> tableView = new TableView<>();
         TableColumn<Space, Integer> spaceIdCol = new TableColumn<>("Space ID");
@@ -91,7 +93,7 @@ public class Space {
                 spaceIdText.setText(String.valueOf(selectedSpace.getSpaceId()));
                 taskText.setText(selectedSpace.getTask());
                 locationText.setText(selectedSpace.getLocation());
-                commIdText.setText(selectedSpace.getCommunicationLogCommId());
+                commIdComboBox.setValue(selectedSpace.getCommunicationLogCommId());
             } else {
                 showAlert(Alert.AlertType.WARNING, "No Selection", "No Space Selected", "Please select a space to edit.");
             }
@@ -125,7 +127,7 @@ public class Space {
             int spaceId = Integer.parseInt(spaceIdText.getText());
             String task = taskText.getText();
             String location = locationText.getText();
-            String commId = commIdText.getText();
+            String commId = commIdComboBox.getValue();
 
             Space space = new Space(spaceId, task, location, commId);
             System.out.println("Space Created: " + space.getSpaceId());
@@ -137,7 +139,7 @@ public class Space {
             spaceIdText.clear();
             taskText.clear();
             locationText.clear();
-            commIdText.clear();
+            commIdComboBox.setValue(null);
         });
 
         HBox buttonBox = new HBox(10, editButton, deleteButton, createButton);
@@ -147,7 +149,7 @@ public class Space {
 
         vbox.getChildren().addAll(
                 spaceIdLabel, spaceIdText, taskLabel, taskText,
-                locationLabel, locationText, commIdLabel, commIdText,
+                locationLabel, locationText, commIdLabel, commIdComboBox,
                 tableView, buttonBox);
 
         return vbox;
@@ -198,5 +200,24 @@ public class Space {
         }
 
         return spaceList;
+    }
+
+    private static ObservableList<String> fetchCommunicationLogIdsFromDatabase() {
+        ObservableList<String> commLogIds = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT COMM_ID FROM \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String commId = rs.getString("COMM_ID");
+                commLogIds.add(commId);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return commLogIds;
     }
 }

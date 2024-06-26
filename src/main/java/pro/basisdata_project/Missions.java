@@ -91,13 +91,14 @@ public class Missions {
         Label descriptionLabel = new Label("Description:");
         TextField descriptionText = new TextField();
         Label startDateLabel = new Label("Start Date:");
-        TextField startDateText = new TextField();
+        DatePicker startDatePicker = new DatePicker();
         Label endDateLabel = new Label("End Date:");
-        TextField endDateText = new TextField();
+        DatePicker endDatePicker = new DatePicker();
         Label statusLabel = new Label("Status:");
-        TextField statusText = new TextField();
-
+        ComboBox<String> statusComboBox = new ComboBox<>();
+        statusComboBox.getItems().addAll("Submission", "Parliamentary Approval", "In Progress", "Completed");
         TableView<Missions> tableView = new TableView<>();
+
         TableColumn<Missions, Integer> missionIdCol = new TableColumn<>("Mission ID");
         missionIdCol.setCellValueFactory(new PropertyValueFactory<>("missionId"));
         TableColumn<Missions, String> missionNameCol = new TableColumn<>("Mission Name");
@@ -120,9 +121,9 @@ public class Missions {
                 missionIdText.setText(String.valueOf(selectedMission.getMissionId()));
                 missionNameText.setText(selectedMission.getMissionName());
                 descriptionText.setText(selectedMission.getDescription());
-                startDateText.setText(selectedMission.getStartDate());
-                endDateText.setText(selectedMission.getEndDate());
-                statusText.setText(selectedMission.getStatus());
+                statusLabel.setText(selectedMission.getStartDate());
+                endDateLabel.setText(selectedMission.getEndDate());
+                startDateLabel.setText(selectedMission.getStatus());
             } else {
                 showAlert(Alert.AlertType.WARNING, "No Selection", "No Mission Selected", "Please select a mission to edit.");
             }
@@ -158,9 +159,9 @@ public class Missions {
             int missionId = Integer.parseInt(missionIdText.getText());
             String missionName = missionNameText.getText();
             String description = descriptionText.getText();
-            String startDate = startDateText.getText();
-            String endDate = endDateText.getText();
-            String status = statusText.getText();
+            String startDate = startDatePicker.getValue().toString(); // Get selected date as string
+            String endDate = endDatePicker.getValue().toString(); // Get selected date as string
+            String status = statusComboBox.getValue(); // Get selected status from ComboBox
 
             Missions mission = new Missions(missionId, missionName, description, startDate, endDate, status);
 
@@ -184,9 +185,9 @@ public class Missions {
             missionIdText.clear();
             missionNameText.clear();
             descriptionText.clear();
-            startDateText.clear();
-            endDateText.clear();
-            statusText.clear();
+            startDatePicker.setValue(null);
+            endDatePicker.setValue(null);
+            statusComboBox.setValue(null);
         });
 
         ObservableList<Missions> missionList = fetchMissionsFromDatabase();
@@ -194,8 +195,8 @@ public class Missions {
 
         vbox.getChildren().addAll(
                 missionIdLabel, missionIdText, missionNameLabel, missionNameText,
-                descriptionLabel, descriptionText, startDateLabel, startDateText,
-                endDateLabel, endDateText, statusLabel, statusText,
+                descriptionLabel, descriptionText, startDateLabel, startDatePicker,
+                endDateLabel, endDatePicker, statusLabel, statusComboBox,
                 tableView, buttonBox, createButton);
 
         return vbox;
