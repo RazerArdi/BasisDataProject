@@ -5,11 +5,9 @@ import javafx.collections.ObservableList;
 import javafx.geometry.Insets;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
 import java.sql.*;
 
 public class Users {
@@ -100,9 +98,25 @@ public class Users {
 
         tableView.getColumns().addAll(userIdCol, nameCol, roleCol, accessLevelCol, lastLoginCol);
 
+        CheckBox autoGenerateIdCheckBox = new CheckBox("Auto Generate ID");
+        autoGenerateIdCheckBox.setSelected(true);
+
+        HBox userIdBox = new HBox();
+        userIdBox.getChildren().addAll(userIdText, autoGenerateIdCheckBox);
+        userIdBox.setSpacing(10);
+
+        autoGenerateIdCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                userIdText.setDisable(true);
+                userIdText.clear();
+            } else {
+                userIdText.setDisable(false);
+            }
+        });
+
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            String userId = userIdText.getText();
+            String userId = autoGenerateIdCheckBox.isSelected() ? "AUTO_GENERATED" : userIdText.getText();
             String name = nameText.getText();
             String role = roleText.getText();
             int accessLevel = accessLevelComboBox.getValue();
@@ -110,8 +124,6 @@ public class Users {
             long lastLogin = lastLoginPicker.getValue().toEpochDay();
 
             Users user = new Users(userId, name, role, accessLevel, lastLogin);
-            System.out.println("User Created: " + user.getUserId());
-
 
             try (Connection conn = OracleAPEXConnection.getConnection()) {
                 String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".USERS (USER_ID, NAME, ROLE, ACCESS_LEVEL, LAST_LOGIN) VALUES (?, ?, ?, ?, ?)";
@@ -140,7 +152,7 @@ public class Users {
         tableView.setItems(usersList);
 
         vbox.getChildren().addAll(
-                userIdLabel, userIdText, nameLabel, nameText,
+                userIdLabel, userIdBox, nameLabel, nameText,
                 roleLabel, roleText, accessLevelLabel, accessLevelComboBox,
                 lastLoginLabel, lastLoginPicker,
                 tableView, createButton);

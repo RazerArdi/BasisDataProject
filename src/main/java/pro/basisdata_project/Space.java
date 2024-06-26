@@ -74,6 +74,15 @@ public class Space {
         ObservableList<String> commLogIds = fetchCommunicationLogIdsFromDatabase();
         commIdComboBox.setItems(commLogIds);
 
+
+        HBox spaceIdBox = new HBox();
+        spaceIdBox.getChildren().addAll(
+                spaceIdText,
+                new Label("Auto Generated:"),
+                createAutoGenerateCheckBox(spaceIdText)
+        );
+        spaceIdBox.setSpacing(5);
+
         TableView<Space> tableView = new TableView<>();
         TableColumn<Space, Integer> spaceIdCol = new TableColumn<>("Space ID");
         spaceIdCol.setCellValueFactory(new PropertyValueFactory<>("spaceId"));
@@ -129,6 +138,12 @@ public class Space {
             String location = locationText.getText();
             String commId = commIdComboBox.getValue();
 
+            if (!isAutoGenerateChecked(spaceIdText)) {
+                spaceId = Integer.parseInt(spaceIdText.getText());
+            } else {
+                spaceId = -1;
+            }
+
             Space space = new Space(spaceId, task, location, commId);
             System.out.println("Space Created: " + space.getSpaceId());
 
@@ -148,11 +163,30 @@ public class Space {
         tableView.setItems(spaceList);
 
         vbox.getChildren().addAll(
-                spaceIdLabel, spaceIdText, taskLabel, taskText,
+                spaceIdLabel, spaceIdBox,
+                taskLabel, taskText,
                 locationLabel, locationText, commIdLabel, commIdComboBox,
                 tableView, buttonBox);
 
         return vbox;
+    }
+
+    private static CheckBox createAutoGenerateCheckBox(TextField spaceIdText) {
+        CheckBox checkBox = new CheckBox();
+        checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                spaceIdText.setDisable(true);
+                spaceIdText.clear();
+            } else {
+                spaceIdText.setDisable(false);
+            }
+        });
+        return checkBox;
+    }
+
+    private static boolean isAutoGenerateChecked(TextField spaceIdText) {
+        CheckBox checkBox = (CheckBox) spaceIdText.getParent().getChildrenUnmodifiable().get(2);
+        return checkBox.isSelected();
     }
 
     private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {

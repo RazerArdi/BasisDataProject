@@ -12,16 +12,17 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDate;
 
 public class MaintenanceLogs {
     private String maintenanceId;
-    private String date;
+    private LocalDate date;
     private String description;
     private String equipmentId;
     private String platformId;
     private String personnelId;
 
-    public MaintenanceLogs(String maintenanceId, String date, String description, String equipmentId, String platformId, String personnelId) {
+    public MaintenanceLogs(String maintenanceId, LocalDate date, String description, String equipmentId, String platformId, String personnelId) {
         this.maintenanceId = maintenanceId;
         this.date = date;
         this.description = description;
@@ -38,11 +39,11 @@ public class MaintenanceLogs {
         this.maintenanceId = maintenanceId;
     }
 
-    public String getDate() {
+    public LocalDate getDate() {
         return date;
     }
 
-    public void setDate(String date) {
+    public void setDate(LocalDate date) {
         this.date = date;
     }
 
@@ -85,6 +86,15 @@ public class MaintenanceLogs {
 
         Label maintenanceIdLabel = new Label("Maintenance ID:");
         TextField maintenanceIdText = new TextField();
+        CheckBox autoGenerateCheckbox = new CheckBox("Auto Generate");
+        autoGenerateCheckbox.setSelected(true); // Default auto-generate is checked
+        autoGenerateCheckbox.setOnAction(e -> {
+            maintenanceIdText.setDisable(autoGenerateCheckbox.isSelected());
+            if (autoGenerateCheckbox.isSelected()) {
+                maintenanceIdText.setText(""); // Clear text field if auto-generate is checked
+            }
+        });
+
         Label dateLabel = new Label("Date:");
         DatePicker dateText = new DatePicker();
         Label descriptionLabel = new Label("Description:");
@@ -108,7 +118,7 @@ public class MaintenanceLogs {
         TableView<MaintenanceLogs> tableView = new TableView<>();
         TableColumn<MaintenanceLogs, String> maintenanceIdCol = new TableColumn<>("Maintenance ID");
         maintenanceIdCol.setCellValueFactory(new PropertyValueFactory<>("maintenanceId"));
-        TableColumn<MaintenanceLogs, String> dateCol = new TableColumn<>("Date");
+        TableColumn<MaintenanceLogs, LocalDate> dateCol = new TableColumn<>("Date");
         dateCol.setCellValueFactory(new PropertyValueFactory<>("date"));
         TableColumn<MaintenanceLogs, String> descriptionCol = new TableColumn<>("Description");
         descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
@@ -128,7 +138,7 @@ public class MaintenanceLogs {
             if (newSelection != null) {
                 MaintenanceLogs selectedMaintenanceLog = tableView.getSelectionModel().getSelectedItem();
                 maintenanceIdText.setText(selectedMaintenanceLog.getMaintenanceId());
-                dateText.setValue(selectedMaintenanceLog.getDate() != null ? dateText.getConverter().fromString(selectedMaintenanceLog.getDate()) : null);
+                dateText.setValue(selectedMaintenanceLog.getDate());
                 descriptionText.setText(selectedMaintenanceLog.getDescription());
                 equipmentIdCombo.setValue(selectedMaintenanceLog.getEquipmentId());
                 platformIdCombo.setValue(selectedMaintenanceLog.getPlatformId());
@@ -149,21 +159,25 @@ public class MaintenanceLogs {
 
         createButton.setOnAction(e -> {
             String maintenanceId = maintenanceIdText.getText();
-            String date = dateText.getValue().toString();
+            LocalDate date = dateText.getValue();
             String description = descriptionText.getText();
             String equipmentId = equipmentIdCombo.getValue();
             String platformId = platformIdCombo.getValue();
             String personnelId = personnelIdCombo.getValue();
 
+            if (autoGenerateCheckbox.isSelected()) {
+                maintenanceId = "-1"; // Set to -1 for auto-generation
+            }
+
             MaintenanceLogs maintenanceLog = new MaintenanceLogs(maintenanceId, date, description, equipmentId, platformId, personnelId);
             System.out.println("Maintenance Log Created: " + maintenanceLog.getMaintenanceId());
 
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC)\".MAINTENANCE_LOGS (MAINTENANCE_ID, \"DATE\", DESCRIPTION, EQUIPMENT_EQUIPMENT_ID, PLATFORM_PLATFORM_ID, PERSONNEL_PERSONNEL_ID) " +
-                        "VALUES (?, TO_DATE(?, 'YYYY-MM-DD'), ?, ?, ?, ?)";
+                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".MAINTENANCE_LOGS (MAINTENANCE_ID, \"DATE\", DESCRIPTION, EQUIPMENT_EQUIPMENT_ID, PLATFORMS_PLATFORM_ID, PERSONNEL_PERSONNEL_ID) " +
+                        "VALUES (?, ?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, maintenanceId);
-                pstmt.setString(2, date);
+                pstmt.setDate(2, java.sql.Date.valueOf(date));
                 pstmt.setString(3, description);
                 pstmt.setString(4, equipmentId);
                 pstmt.setString(5, platformId);
@@ -192,19 +206,23 @@ public class MaintenanceLogs {
             }
 
             String newMaintenanceId = maintenanceIdText.getText();
-            String newDate = dateText.getValue().toString();
+            LocalDate newDate = dateText.getValue();
             String newDescription = descriptionText.getText();
             String newEquipmentId = equipmentIdCombo.getValue();
             String newPlatformId = platformIdCombo.getValue();
             String newPersonnelId = personnelIdCombo.getValue();
 
+            if (autoGenerateCheckbox.isSelected()) {
+                newMaintenanceId = "-1"; // Set to -1 for auto-generation
+            }
+
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "UPDATE \"C4ISR PROJECT (BASIC)\".MAINTENANCE_LOGS SET MAINTENANCE_ID = ?, \"DATE\" = TO_DATE(?, 'YYYY-MM-DD'), " +
-                        "DESCRIPTION = ?, EQUIPMENT_EQUIPMENT_ID = ?, PLATFORM_PLATFORM_ID = ?, PERSONNEL_PERSONNEL_ID = ? " +
+                String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".MAINTENANCE_LOGS SET MAINTENANCE_ID = ?, \"DATE\" = ?, " +
+                        "DESCRIPTION = ?, EQUIPMENT_EQUIPMENT_ID = ?, PLATFORMS_PLATFORM_ID = ?, PERSONNEL_PERSONNEL_ID = ? " +
                         "WHERE MAINTENANCE_ID = ?";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, newMaintenanceId);
-                pstmt.setString(2, newDate);
+                pstmt.setDate(2, java.sql.Date.valueOf(newDate));
                 pstmt.setString(3, newDescription);
                 pstmt.setString(4, newEquipmentId);
                 pstmt.setString(5, newPlatformId);
@@ -238,7 +256,7 @@ public class MaintenanceLogs {
             }
 
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "DELETE FROM \"C4ISR PROJECT (BASIC)\".MAINTENANCE_LOGS WHERE MAINTENANCE_ID = ?";
+                String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".MAINTENANCE_LOGS WHERE MAINTENANCE_ID = ?";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
                 pstmt.setString(1, selectedMaintenanceLog.getMaintenanceId());
                 int deleted = pstmt.executeUpdate();
@@ -258,7 +276,7 @@ public class MaintenanceLogs {
         buttonsBox.getChildren().addAll(createButton, editButton, deleteButton);
 
         vbox.getChildren().addAll(
-                maintenanceIdLabel, maintenanceIdText, dateLabel, dateText,
+                maintenanceIdLabel, maintenanceIdText, autoGenerateCheckbox, dateLabel, dateText,
                 descriptionLabel, descriptionText, equipmentIdLabel, equipmentIdCombo,
                 platformIdLabel, platformIdCombo, personnelIdLabel, personnelIdCombo, tableView, buttonsBox);
 
@@ -338,10 +356,10 @@ public class MaintenanceLogs {
 
             while (rs.next()) {
                 String maintenanceId = rs.getString("MAINTENANCE_ID");
-                String date = rs.getString("Date");
+                LocalDate date = rs.getDate("Date").toLocalDate();
                 String description = rs.getString("DESCRIPTION");
-                String equipmentId = rs.getString("EQUIPMENT_ID");
-                String platformId = rs.getString("PLATFORM_ID");
+                String equipmentId = rs.getString("EQUIPMENT_EQUIPMENT_ID");
+                String platformId = rs.getString("PLATFORMS_PLATFORM_ID");
                 String personnelId = rs.getString("PERSONNEL_PERSONNEL_ID");
 
                 MaintenanceLogs maintenanceLog = new MaintenanceLogs(maintenanceId, date, description, equipmentId, platformId, personnelId);

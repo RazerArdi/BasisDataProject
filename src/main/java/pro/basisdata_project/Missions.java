@@ -86,6 +86,18 @@ public class Missions {
 
         Label missionIdLabel = new Label("Mission ID:");
         TextField missionIdText = new TextField();
+        CheckBox autoGenerateIdCheckBox = new CheckBox("Auto Generate ID");
+
+        autoGenerateIdCheckBox.selectedProperty().addListener((obs, wasSelected, isSelected) -> {
+            if (isSelected) {
+                missionIdText.setEditable(false);
+                missionIdText.setText("Auto Generated");
+            } else {
+                missionIdText.setEditable(true);
+                missionIdText.clear();
+            }
+        });
+
         Label missionNameLabel = new Label("Mission Name:");
         TextField missionNameText = new TextField();
         Label descriptionLabel = new Label("Description:");
@@ -121,9 +133,9 @@ public class Missions {
                 missionIdText.setText(String.valueOf(selectedMission.getMissionId()));
                 missionNameText.setText(selectedMission.getMissionName());
                 descriptionText.setText(selectedMission.getDescription());
-                statusLabel.setText(selectedMission.getStartDate());
-                endDateLabel.setText(selectedMission.getEndDate());
-                startDateLabel.setText(selectedMission.getStatus());
+                statusComboBox.setValue(selectedMission.getStatus());
+                startDatePicker.setValue(selectedMission.getStartDate() != null ? startDatePicker.getConverter().fromString(selectedMission.getStartDate()) : null);
+                endDatePicker.setValue(selectedMission.getEndDate() != null ? endDatePicker.getConverter().fromString(selectedMission.getEndDate()) : null);
             } else {
                 showAlert(Alert.AlertType.WARNING, "No Selection", "No Mission Selected", "Please select a mission to edit.");
             }
@@ -156,7 +168,12 @@ public class Missions {
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            int missionId = Integer.parseInt(missionIdText.getText());
+            int missionId;
+            if (autoGenerateIdCheckBox.isSelected()) {
+                missionId = -1; // Set to -1 or any negative value to indicate auto generation
+            } else {
+                missionId = Integer.parseInt(missionIdText.getText());
+            }
             String missionName = missionNameText.getText();
             String description = descriptionText.getText();
             String startDate = startDatePicker.getValue().toString(); // Get selected date as string
@@ -168,7 +185,11 @@ public class Missions {
             try (Connection conn = OracleAPEXConnection.getConnection()) {
                 String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".MISSIONS (MISSION_ID, MISSION_NAME, DESCRIPTION, START_DATE, END_DATE, STATUS) VALUES (?, ?, ?, ?, ?, ?)";
                 PreparedStatement pstmt = conn.prepareStatement(sql);
-                pstmt.setInt(1, missionId);
+                if (autoGenerateIdCheckBox.isSelected()) {
+                    pstmt.setNull(1, java.sql.Types.INTEGER); // Set to NULL for auto increment in database
+                } else {
+                    pstmt.setInt(1, missionId);
+                }
                 pstmt.setString(2, missionName);
                 pstmt.setString(3, description);
                 pstmt.setString(4, startDate);
@@ -188,13 +209,14 @@ public class Missions {
             startDatePicker.setValue(null);
             endDatePicker.setValue(null);
             statusComboBox.setValue(null);
+            autoGenerateIdCheckBox.setSelected(false); // Reset checkbox after creation
         });
 
         ObservableList<Missions> missionList = fetchMissionsFromDatabase();
         tableView.setItems(missionList);
 
         vbox.getChildren().addAll(
-                missionIdLabel, missionIdText, missionNameLabel, missionNameText,
+                missionIdLabel, missionIdText, autoGenerateIdCheckBox, missionNameLabel, missionNameText,
                 descriptionLabel, descriptionText, startDateLabel, startDatePicker,
                 endDateLabel, endDatePicker, statusLabel, statusComboBox,
                 tableView, buttonBox, createButton);
@@ -227,6 +249,7 @@ public class Missions {
                 String status = rs.getString("STATUS");
 
                 Missions mission = new Missions(missionId, missionName, description, startDate, endDate, status);
+
                 missionList.add(mission);
             }
         } catch (SQLException ex) {

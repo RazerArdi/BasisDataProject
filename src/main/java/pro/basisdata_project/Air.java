@@ -74,6 +74,17 @@ public class Air {
         ObservableList<String> commIdList = fetchCommIdsFromDatabase();
         commIdComboBox.setItems(commIdList);
 
+        CheckBox autoIncrementCheckBox = new CheckBox("Auto Increment");
+        autoIncrementCheckBox.setSelected(true);
+        HBox airIdBox = new HBox();
+        airIdBox.getChildren().addAll(
+                airIdText,
+                new Label("Auto Generated:"),
+                createAutoGenerateCheckBox(airIdText) // Membuat CheckBox untuk auto-generate
+        );
+        airIdBox.setSpacing(5);
+
+
         TableView<Air> tableView = new TableView<>();
         TableColumn<Air, String> airIdCol = new TableColumn<>("Air ID");
         airIdCol.setCellValueFactory(new PropertyValueFactory<>("airId"));
@@ -91,6 +102,13 @@ public class Air {
             String task = taskText.getText();
             String location = locationText.getText();
             String commId = commIdComboBox.getValue();
+
+            if (!isAutoGenerateChecked(airIdText)) {
+                airId = airIdText.getText();
+            } else {
+                // Mode auto-generate, tandai sebagai "AUTO_GENERATED"
+                airId = "AUTO_GENERATED";
+            }
 
             Air air = new Air(airId, task, location, commId);
 
@@ -177,11 +195,33 @@ public class Air {
         HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
 
         vbox.getChildren().addAll(
-                airIdLabel, airIdText, taskLabel, taskText,
-                locationLabel, locationText, commIdLabel, commIdComboBox,
-                tableView, buttonBox);
+                airIdLabel, airIdBox,
+                taskLabel, taskText,
+                locationLabel, locationText,
+                commIdLabel, commIdComboBox,
+                tableView, createButton);
 
         return vbox;
+    }
+
+    private static CheckBox createAutoGenerateCheckBox(TextField airIdText) {
+        CheckBox checkBox = new CheckBox();
+        checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                // Centang, nonaktifkan input manual
+                airIdText.setDisable(true);
+                airIdText.clear(); // Bersihkan nilai yang mungkin sudah diisi
+            } else {
+                // Tidak tercentang, aktifkan kembali input manual
+                airIdText.setDisable(false);
+            }
+        });
+        return checkBox;
+    }
+
+    private static boolean isAutoGenerateChecked(TextField airIdText) {
+        CheckBox checkBox = (CheckBox) airIdText.getParent().getChildrenUnmodifiable().get(2); // Menyesuaikan indeks CheckBox
+        return checkBox.isSelected();
     }
 
     private static ObservableList<Air> fetchAirFromDatabase() {

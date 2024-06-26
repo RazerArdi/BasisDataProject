@@ -63,6 +63,17 @@ public class CommunicationLog {
         ObservableList<String> platformIds = fetchPlatformIdsFromDatabase();
         platformsPlatformIdComboBox.setItems(platformIds);
 
+        CheckBox autoIncrementCheckBox = new CheckBox("Auto Increment");
+        autoIncrementCheckBox.setSelected(true);
+
+        HBox commIdBox = new HBox();
+        commIdBox.getChildren().addAll(
+                commIdText,
+                new Label("Auto Generated:"),
+                createAutoGenerateCheckBox(commIdText) // Create auto-generate checkbox for Comm ID
+        );
+        commIdBox.setSpacing(5);
+
         TableView<CommunicationLog> tableView = new TableView<>();
         TableColumn<CommunicationLog, String> commIdCol = new TableColumn<>("Communication ID");
         commIdCol.setCellValueFactory(new PropertyValueFactory<>("commId"));
@@ -78,8 +89,13 @@ public class CommunicationLog {
             String message = messageText.getText();
             String platformsPlatformId = platformsPlatformIdComboBox.getValue();
 
+            if (!isAutoGenerateChecked(commIdText)) {
+                commId = commIdText.getText();
+            } else {
+                commId = "AUTO_GENERATED"; // Set as auto-generated
+            }
+
             CommunicationLog log = new CommunicationLog(commId, message, platformsPlatformId);
-            System.out.println("Communication Log Created: " + log.getCommId());
 
             // Save to Oracle database
             try (Connection conn = OracleAPEXConnection.getConnection()) {
@@ -89,7 +105,6 @@ public class CommunicationLog {
                 pstmt.setString(2, message);
                 pstmt.setString(3, platformsPlatformId);
                 pstmt.executeUpdate();
-
                 System.out.println("Communication Log saved to database.");
             } catch (SQLException ex) {
                 ex.printStackTrace();
@@ -160,11 +175,32 @@ public class CommunicationLog {
         HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
 
         vbox.getChildren().addAll(
-                commIdLabel, commIdText, messageLabel, messageText,
+                commIdLabel, commIdBox, // Add commIdBox instead of commIdText
+                messageLabel, messageText,
                 platformsPlatformIdLabel, platformsPlatformIdComboBox,
                 tableView, buttonBox);
 
         return vbox;
+    }
+
+    private static CheckBox createAutoGenerateCheckBox(TextField commIdText) {
+        CheckBox checkBox = new CheckBox();
+        checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                // Checkbox checked, disable manual input
+                commIdText.setDisable(true);
+                commIdText.clear(); // Clear any possibly entered value
+            } else {
+                // Checkbox unchecked, enable manual input
+                commIdText.setDisable(false);
+            }
+        });
+        return checkBox;
+    }
+
+    private static boolean isAutoGenerateChecked(TextField commIdText) {
+        CheckBox checkBox = (CheckBox) commIdText.getParent().getChildrenUnmodifiable().get(2); // Adjust CheckBox index
+        return checkBox.isSelected();
     }
 
     private static ObservableList<String> fetchPlatformIdsFromDatabase() {

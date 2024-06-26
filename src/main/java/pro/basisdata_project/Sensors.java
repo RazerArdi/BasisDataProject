@@ -76,6 +76,19 @@ public class Sensors {
 
         Label sensorIdLabel = new Label("Sensor ID:");
         TextField sensorIdText = new TextField();
+        CheckBox autoGenerateIdCheckBox = new CheckBox("Auto Generate ID");
+        autoGenerateIdCheckBox.setSelected(true);
+        sensorIdText.setDisable(true);
+
+        autoGenerateIdCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            sensorIdText.setDisable(newValue);
+            if (newValue) {
+                sensorIdText.setText("Auto Generated");
+            } else {
+                sensorIdText.clear();
+            }
+        });
+
         Label typeLabel = new Label("Type:");
         TextField typeText = new TextField();
         Label locationLabel = new Label("Location:");
@@ -110,6 +123,7 @@ public class Sensors {
                 locationText.setText(selectedSensor.getLocation());
                 statusChoice.setValue(selectedSensor.getStatus());
                 lastMaintenancePicker.setValue(selectedSensor.getLastMaintenance());
+                autoGenerateIdCheckBox.setSelected(false);
             } else {
                 showAlert(Alert.AlertType.WARNING, "No Selection", "No Sensor Selected", "Please select a sensor to edit.");
             }
@@ -140,16 +154,19 @@ public class Sensors {
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            int sensorId = Integer.parseInt(sensorIdText.getText());
+            Integer sensorId = autoGenerateIdCheckBox.isSelected() ? null : Integer.parseInt(sensorIdText.getText());
             String type = typeText.getText();
             String location = locationText.getText();
             String status = statusChoice.getValue();
             LocalDate lastMaintenance = lastMaintenancePicker.getValue();
 
-            Sensors sensor = new Sensors(sensorId, type, location, status, lastMaintenance);
-            System.out.println("Sensor Created: " + sensor.getSensorId());
+            Sensors sensor = new Sensors(sensorId != null ? sensorId : 0, type, location, status, lastMaintenance);
 
-            saveSensorToDatabase(sensor);
+            saveSensorToDatabase(sensor, autoGenerateIdCheckBox.isSelected());
+
+            if (autoGenerateIdCheckBox.isSelected()) {
+                sensor.setSensorId(fetchLastInsertedSensorId());
+            }
 
             tableView.getItems().add(sensor);
 
@@ -158,6 +175,7 @@ public class Sensors {
             locationText.clear();
             statusChoice.setValue(null);
             lastMaintenancePicker.getEditor().clear();
+            autoGenerateIdCheckBox.setSelected(true);
         });
 
         HBox buttonBox = new HBox(10, editButton, deleteButton, createButton);
@@ -166,7 +184,7 @@ public class Sensors {
         tableView.setItems(sensorList);
 
         vbox.getChildren().addAll(
-                sensorIdLabel, sensorIdText, typeLabel, typeText,
+                sensorIdLabel, sensorIdText, autoGenerateIdCheckBox, typeLabel, typeText,
                 locationLabel, locationText, statusLabel, statusChoice,
                 lastMaintenanceLabel, lastMaintenancePicker,
                 tableView, buttonBox);
@@ -182,21 +200,43 @@ public class Sensors {
         alert.showAndWait();
     }
 
-    private static void saveSensorToDatabase(Sensors sensor) {
+    private static void saveSensorToDatabase(Sensors sensor, boolean autoGenerateId) {
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".SENSORS (SENSOR_ID, TYPE, LOCATION, STATUS, LAST_MAINTENANCE) " +
-                    "VALUES (?, ?, ?, ?, ?)";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setInt(1, sensor.getSensorId());
-            pstmt.setString(2, sensor.getType());
-            pstmt.setString(3, sensor.getLocation());
-            pstmt.setString(4, sensor.getStatus());
-            pstmt.setDate(5, java.sql.Date.valueOf(sensor.getLastMaintenance()));
+            String sql;
+            if (autoGenerateId) {
+                sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".SENSORS (TYPE, LOCATION, STATUS, LAST_MAINTENANCE) " +
+                        "VALUES (?, ?, ?, ?)";
+            } else {
+                sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".SENSORS (SENSOR_ID, TYPE, LOCATION, STATUS, LAST_MAINTENANCE) " +
+                        "VALUES (?, ?, ?, ?, ?)";
+            }
+            PreparedStatement pstmt = conn.prepareStatement(sql, new String[]{"SENSOR_ID"});
+            int parameterIndex = 1;
+            if (!autoGenerateId) {
+                pstmt.setInt(parameterIndex++, sensor.getSensorId());
+            }
+            pstmt.setString(parameterIndex++, sensor.getType());
+            pstmt.setString(parameterIndex++, sensor.getLocation());
+            pstmt.setString(parameterIndex++, sensor.getStatus());
+            pstmt.setDate(parameterIndex, java.sql.Date.valueOf(sensor.getLastMaintenance()));
             pstmt.executeUpdate();
-            System.out.println("Sensor saved to database.");
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
+    }
+
+    private static int fetchLastInsertedSensorId() {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT SENSOR_ID_SEQ.currval FROM dual";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return 0;
     }
 
     private static ObservableList<Sensors> fetchSensorsFromDatabase() {

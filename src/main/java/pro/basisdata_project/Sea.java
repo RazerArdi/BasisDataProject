@@ -65,6 +65,15 @@ public class Sea {
 
         Label platformIdLabel = new Label("Platform ID:");
         TextField platformIdText = new TextField();
+        CheckBox autoGenerateCheckbox = new CheckBox("Auto Generate");
+        autoGenerateCheckbox.setSelected(true);
+        autoGenerateCheckbox.setOnAction(e -> {
+            platformIdText.setDisable(autoGenerateCheckbox.isSelected());
+            if (autoGenerateCheckbox.isSelected()) {
+                platformIdText.clear();
+            }
+        });
+
         Label taskLabel = new Label("Task:");
         TextField taskText = new TextField();
         Label locationLabel = new Label("Location:");
@@ -124,7 +133,12 @@ public class Sea {
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            String platformId = platformIdText.getText();
+            String platformId;
+            if (autoGenerateCheckbox.isSelected()) {
+                platformId = "AUTO_GENERATED";
+            } else {
+                platformId = platformIdText.getText();
+            }
             String task = taskText.getText();
             String location = locationText.getText();
             String commId = commIdComboBox.getValue();
@@ -148,8 +162,10 @@ public class Sea {
         tableView.setItems(seaList);
 
         vbox.getChildren().addAll(
-                platformIdLabel, platformIdText, taskLabel, taskText,
-                locationLabel, locationText, commIdLabel, commIdComboBox,
+                platformIdLabel, new HBox(10, platformIdText, autoGenerateCheckbox),
+                taskLabel, taskText,
+                locationLabel, locationText,
+                commIdLabel, commIdComboBox,
                 tableView, buttonBox);
 
         return vbox;

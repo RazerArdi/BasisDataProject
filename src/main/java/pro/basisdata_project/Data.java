@@ -99,6 +99,16 @@ public class Data {
         ObservableList<Integer> sensorIdList = fetchSensorIdsFromDatabase();
         sensorsSensorIdComboBox.setItems(sensorIdList);
 
+        CheckBox autoIncrementCheckBox = new CheckBox("Auto Increment");
+        autoIncrementCheckBox.setSelected(true);
+        HBox dataIdBox = new HBox();
+        dataIdBox.getChildren().addAll(
+                dataIdText,
+                new Label("Auto Generated:"),
+                createAutoGenerateCheckBox(dataIdText) // Create CheckBox for auto-generate
+        );
+        dataIdBox.setSpacing(5);
+
         TableView<Data> tableView = new TableView<>();
         TableColumn<Data, Integer> dataIdCol = new TableColumn<>("Data ID");
         dataIdCol.setCellValueFactory(new PropertyValueFactory<>("dataId"));
@@ -118,7 +128,13 @@ public class Data {
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             try {
-                int dataId = Integer.parseInt(dataIdText.getText());
+                int dataId;
+                if (!isAutoGenerateChecked(dataIdText)) {
+                    dataId = Integer.parseInt(dataIdText.getText());
+                } else {
+                    // Auto generate mode, set as a placeholder
+                    dataId = -1; // Replace with your auto-generation logic
+                }
                 String timestamp = timestampText.getText();
                 String dataType = dataTypeText.getText();
                 String rawData = rawDataText.getText();
@@ -164,7 +180,13 @@ public class Data {
             Data selectedData = tableView.getSelectionModel().getSelectedItem();
             if (selectedData != null) {
                 try {
-                    int dataId = Integer.parseInt(dataIdText.getText());
+                    int dataId;
+                    if (!isAutoGenerateChecked(dataIdText)) {
+                        dataId = Integer.parseInt(dataIdText.getText());
+                    } else {
+                        // Auto generate mode, set as a placeholder
+                        dataId = -1; // Replace with your auto-generation logic
+                    }
                     String timestamp = timestampText.getText();
                     String dataType = dataTypeText.getText();
                     String rawData = rawDataText.getText();
@@ -236,13 +258,35 @@ public class Data {
         tableView.setItems(dataList);
 
         vbox.getChildren().addAll(
-                dataIdLabel, dataIdText, timestampLabel, timestampText,
-                dataTypeLabel, dataTypeText, rawDataLabel, rawDataText,
+                dataIdLabel, dataIdBox,
+                timestampLabel, timestampText,
+                dataTypeLabel, dataTypeText,
+                rawDataLabel, rawDataText,
                 processedDataLabel, processedDataText,
                 sensorsSensorIdLabel, sensorsSensorIdComboBox,
                 tableView, buttonBox);
 
         return vbox;
+    }
+
+    private static CheckBox createAutoGenerateCheckBox(TextField dataIdText) {
+        CheckBox checkBox = new CheckBox();
+        checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                // Checked, disable manual input
+                dataIdText.setDisable(true);
+                dataIdText.clear(); // Clear existing text if any
+            } else {
+                // Unchecked, enable manual input
+                dataIdText.setDisable(false);
+            }
+        });
+        return checkBox;
+    }
+
+    private static boolean isAutoGenerateChecked(TextField dataIdText) {
+        CheckBox checkBox = (CheckBox) dataIdText.getParent().getChildrenUnmodifiable().get(2); // Assuming structure, adjust as per your UI setup
+        return checkBox.isSelected();
     }
 
     private static ObservableList<Integer> fetchSensorIdsFromDatabase() {

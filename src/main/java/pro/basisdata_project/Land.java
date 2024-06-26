@@ -49,6 +49,15 @@ public class Land {
 
         Label landIdLabel = new Label("Land ID:");
         TextField landIdText = new TextField();
+        CheckBox autoGenerateCheckbox = new CheckBox("Auto Generate");
+        autoGenerateCheckbox.setSelected(true); // Default to auto generate
+        autoGenerateCheckbox.setOnAction(e -> {
+            landIdText.setDisable(autoGenerateCheckbox.isSelected());
+            if (autoGenerateCheckbox.isSelected()) {
+                landIdText.clear();
+            }
+        });
+
         Label taskLabel = new Label("Task:");
         TextField taskText = new TextField();
         Label locationLabel = new Label("Location:");
@@ -109,7 +118,12 @@ public class Land {
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            String landId = landIdText.getText();
+            String landId;
+            if (autoGenerateCheckbox.isSelected()) {
+                landId = "AUTO_GENERATED";
+            } else {
+                landId = landIdText.getText();
+            }
             String task = taskText.getText();
             String location = locationText.getText();
             String commId = commIdComboBox.getValue();
@@ -143,7 +157,8 @@ public class Land {
         tableView.setItems(landList);
 
         vbox.getChildren().addAll(
-                landIdLabel, landIdText, taskLabel, taskText,
+                landIdLabel, new HBox(10, landIdText, autoGenerateCheckbox),
+                taskLabel, taskText,
                 locationLabel, locationText, commIdLabel, commIdComboBox,
                 tableView, buttonBox);
 

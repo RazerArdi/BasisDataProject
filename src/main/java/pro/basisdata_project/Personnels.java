@@ -86,6 +86,19 @@ public class Personnels {
 
         Label personnelIdLabel = new Label("Personnel ID:");
         TextField personnelIdText = new TextField();
+        CheckBox autoGenerateIdCheckBox = new CheckBox("Auto Generate ID");
+        autoGenerateIdCheckBox.setSelected(true);
+        personnelIdText.setDisable(true);
+
+        autoGenerateIdCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            personnelIdText.setDisable(newValue);
+            if (newValue) {
+                personnelIdText.setText("Auto Generated");
+            } else {
+                personnelIdText.clear();
+            }
+        });
+
         Label personnelNameLabel = new Label("Personnel Name:");
         TextField personnelNameText = new TextField();
         Label rankLabel = new Label("Rank:");
@@ -123,6 +136,7 @@ public class Personnels {
                 specialtyText.setText(selectedPersonnel.getSpecialty());
                 currentAssignmentText.setText(selectedPersonnel.getCurrentAssignment());
                 contactInfoText.setText(selectedPersonnel.getContactInfo());
+                autoGenerateIdCheckBox.setSelected(false);
             } else {
                 showAlert(Alert.AlertType.WARNING, "No Selection", "No Personnel Selected", "Please select a personnel to edit.");
             }
@@ -155,45 +169,60 @@ public class Personnels {
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            String personnelId = personnelIdText.getText();
+            String personnelId = autoGenerateIdCheckBox.isSelected() ? null : personnelIdText.getText();
             String personnelName = personnelNameText.getText();
             String rank = rankText.getText();
             String specialty = specialtyText.getText();
             String currentAssignment = currentAssignmentText.getText();
             String contactInfo = contactInfoText.getText();
 
-            Personnels personnel = new Personnels(personnelId, personnelName, rank, specialty, currentAssignment, contactInfo);
-
             try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".PERSONNEL (PERSONNEL_ID, Personnel_Name, RANK, SPECIALTY, CURRENT_ASSIGNMENT, CONTACT_INFO) VALUES (?, ?, ?, ?, ?, ?)";
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                pstmt.setString(1, personnelId);
-                pstmt.setString(2, personnelName);
-                pstmt.setString(3, rank);
-                pstmt.setString(4, specialty);
-                pstmt.setString(5, currentAssignment);
-                pstmt.setString(6, contactInfo);
+                String sql;
+                if (autoGenerateIdCheckBox.isSelected()) {
+                    sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".PERSONNEL (Personnel_Name, RANK, SPECIALTY, CURRENT_ASSIGNMENT, CONTACT_INFO) VALUES (?, ?, ?, ?, ?)";
+                } else {
+                    sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".PERSONNEL (PERSONNEL_ID, Personnel_Name, RANK, SPECIALTY, CURRENT_ASSIGNMENT, CONTACT_INFO) VALUES (?, ?, ?, ?, ?, ?)";
+                }
+                PreparedStatement pstmt = conn.prepareStatement(sql, new String[] {"PERSONNEL_ID"});
+                int parameterIndex = 1;
+                if (!autoGenerateIdCheckBox.isSelected()) {
+                    pstmt.setString(parameterIndex++, personnelId);
+                }
+                pstmt.setString(parameterIndex++, personnelName);
+                pstmt.setString(parameterIndex++, rank);
+                pstmt.setString(parameterIndex++, specialty);
+                pstmt.setString(parameterIndex++, currentAssignment);
+                pstmt.setString(parameterIndex++, contactInfo);
                 pstmt.executeUpdate();
-                System.out.println("Personnel saved to database.");
+
+                if (autoGenerateIdCheckBox.isSelected()) {
+                    ResultSet rs = pstmt.getGeneratedKeys();
+                    if (rs.next()) {
+                        personnelId = rs.getString(1);
+                    }
+                }
+
+                Personnels personnel = new Personnels(personnelId, personnelName, rank, specialty, currentAssignment, contactInfo);
+                tableView.getItems().add(personnel);
+
+                personnelIdText.clear();
+                personnelNameText.clear();
+                rankText.clear();
+                specialtyText.clear();
+                currentAssignmentText.clear();
+                contactInfoText.clear();
+                autoGenerateIdCheckBox.setSelected(true);
+
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
-
-            tableView.getItems().add(personnel);
-
-            personnelIdText.clear();
-            personnelNameText.clear();
-            rankText.clear();
-            specialtyText.clear();
-            currentAssignmentText.clear();
-            contactInfoText.clear();
         });
 
         ObservableList<Personnels> personnelList = fetchPersonnelsFromDatabase();
         tableView.setItems(personnelList);
 
         vbox.getChildren().addAll(
-                personnelIdLabel, personnelIdText, personnelNameLabel, personnelNameText,
+                personnelIdLabel, personnelIdText, autoGenerateIdCheckBox, personnelNameLabel, personnelNameText,
                 rankLabel, rankText, specialtyLabel, specialtyText,
                 currentAssignmentLabel, currentAssignmentText, contactInfoLabel, contactInfoText,
                 tableView, buttonBox, createButton);
@@ -224,12 +253,11 @@ public class Personnels {
                 String specialty = rs.getString("SPECIALTY");
                 String currentAssignment = rs.getString("CURRENT_ASSIGNMENT");
                 String contactInfo = rs.getString("CONTACT_INFO");
-
                 Personnels personnel = new Personnels(personnelId, personnelName, rank, specialty, currentAssignment, contactInfo);
                 personnelList.add(personnel);
             }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
 
         return personnelList;

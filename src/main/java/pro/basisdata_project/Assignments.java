@@ -88,6 +88,16 @@ public class Assignments {
         ObservableList<String> personnelIds = fetchPersonnelIdsFromDatabaseAssignments();
         personnelPersonnelIdComboBox.setItems(personnelIds);
 
+        CheckBox autoIncrementCheckBox = new CheckBox("Auto Increment");
+        autoIncrementCheckBox.setSelected(true);
+        HBox assignmentIdBox = new HBox();
+        assignmentIdBox.getChildren().addAll(
+                assignmentIdText,
+                new Label("Auto Generated:"),
+                createAutoGenerateCheckBox(assignmentIdText) // Membuat CheckBox untuk auto-generate
+        );
+        assignmentIdBox.setSpacing(5);
+
         TableView<Assignments> tableView = new TableView<>();
         TableColumn<Assignments, String> assignmentIdCol = new TableColumn<>("Assignment ID");
         assignmentIdCol.setCellValueFactory(new PropertyValueFactory<>("assignmentId"));
@@ -110,8 +120,14 @@ public class Assignments {
             LocalDate endDate = endDatePicker.getValue();
             String personnelPersonnelId = personnelPersonnelIdComboBox.getValue();
 
+            if (!isAutoGenerateChecked(assignmentIdText)) {
+                assignmentId = assignmentIdText.getText();
+            } else {
+                // Mode auto-generate, tandai sebagai "AUTO_GENERATED"
+                assignmentId = "AUTO_GENERATED";
+            }
+
             Assignments assignment = new Assignments(assignmentId, role, startDate, endDate, personnelPersonnelId);
-            System.out.println("Assignment Created: " + assignment.getAssignmentId());
 
             try (Connection conn = OracleAPEXConnection.getConnection()) {
                 String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".ASSIGNMENTS (ASSIGNMENT_ID, ROLE, START_DATE, END_DATE, PERSONNEL_PERSONNEL_ID) VALUES (?, ?, ?, ?, ?)";
@@ -201,12 +217,32 @@ public class Assignments {
 
         HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
         vbox.getChildren().addAll(
-                assignmentIdLabel, assignmentIdText, roleLabel, roleText,
+                assignmentIdLabel, assignmentIdBox, roleLabel, roleText,
                 startDateLabel, startDatePicker, endDateLabel, endDatePicker,
                 personnelPersonnelIdLabel, personnelPersonnelIdComboBox,
                 tableView, buttonBox);
 
         return vbox;
+    }
+
+    private static CheckBox createAutoGenerateCheckBox(TextField assignmentIdText) {
+        CheckBox checkBox = new CheckBox();
+        checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            if (newValue) {
+                // Centang, nonaktifkan input manual
+                assignmentIdText.setDisable(true);
+                assignmentIdText.clear(); // Bersihkan nilai yang mungkin sudah diisi
+            } else {
+                // Tidak tercentang, aktifkan kembali input manual
+                assignmentIdText.setDisable(false);
+            }
+        });
+        return checkBox;
+    }
+
+    private static boolean isAutoGenerateChecked(TextField assignmentIdText) {
+        CheckBox checkBox = (CheckBox) assignmentIdText.getParent().getChildrenUnmodifiable().get(2); // Menyesuaikan indeks CheckBox
+        return checkBox.isSelected();
     }
 
     private static ObservableList<Assignments> fetchAssignmentsFromDatabase() {
@@ -233,6 +269,7 @@ public class Assignments {
 
         return assignmentList;
     }
+
     private static ObservableList<String> fetchPersonnelIdsFromDatabaseAssignments() {
         ObservableList<String> personnelIds = FXCollections.observableArrayList();
 

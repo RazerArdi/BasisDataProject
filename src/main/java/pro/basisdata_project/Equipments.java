@@ -98,6 +98,19 @@ public class Equipments {
 
         Label equipmentIdLabel = new Label("Equipment ID:");
         TextField equipmentIdText = new TextField();
+        CheckBox autoGenerateIdCheckBox = new CheckBox("Auto Generate ID");
+        autoGenerateIdCheckBox.setSelected(true);
+        equipmentIdText.setDisable(true);
+
+        autoGenerateIdCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            equipmentIdText.setDisable(newValue);
+            if (newValue) {
+                equipmentIdText.setText("Auto Generated");
+            } else {
+                equipmentIdText.clear();
+            }
+        });
+
         Label nameLabel = new Label("Name:");
         TextField nameText = new TextField();
         Label typeLabel = new Label("Type:");
@@ -141,7 +154,7 @@ public class Equipments {
         buttonBox.getChildren().addAll(createButton, editButton, deleteButton);
 
         createButton.setOnAction(e -> {
-            String equipmentId = equipmentIdText.getText();
+            String equipmentId = autoGenerateIdCheckBox.isSelected() ? null : equipmentIdText.getText();
             String name = nameText.getText();
             String type = typeText.getText();
             String status = statusText.getText();
@@ -151,23 +164,12 @@ public class Equipments {
 
             String lastMaintenanceStr = lastMaintenance != null ? lastMaintenance.format(DateTimeFormatter.ISO_DATE) : "";
 
-            Equipments equipment = new Equipments(equipmentId, name, type, status, location, lastMaintenanceStr, sensorId);
-            System.out.println("Equipment Created: " + equipment.getEquipmentId());
+            Equipments equipment = new Equipments(equipmentId != null ? equipmentId : "", name, type, status, location, lastMaintenanceStr, sensorId);
 
-            try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".EQUIPMENT (EQUIPMENT_ID, NAME, TYPE, STATUS, LOCATION, LAST_MAINTENANCE, SENSORS_SENSOR_ID) VALUES (?, ?, ?, ?, ?, ?, ?)";
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                pstmt.setString(1, equipmentId);
-                pstmt.setString(2, name);
-                pstmt.setString(3, type);
-                pstmt.setString(4, status);
-                pstmt.setString(5, location);
-                pstmt.setString(6, lastMaintenanceStr);
-                pstmt.setString(7, sensorId);
-                pstmt.executeUpdate();
-                System.out.println("Equipment saved to database.");
-            } catch (SQLException ex) {
-                ex.printStackTrace();
+            saveEquipmentToDatabase(equipment, autoGenerateIdCheckBox.isSelected());
+
+            if (autoGenerateIdCheckBox.isSelected()) {
+                equipment.setEquipmentId(fetchLastInsertedEquipmentId());
             }
 
             tableView.getItems().add(equipment);
@@ -178,7 +180,8 @@ public class Equipments {
             statusText.clear();
             locationText.clear();
             lastMaintenancePicker.setValue(null);
-            sensorIdComboBox.setValue(null);
+            sensorIdComboBox.setValue(null); // Clear ComboBox selection
+            autoGenerateIdCheckBox.setSelected(true);
         });
 
         editButton.setOnAction(e -> {
@@ -191,6 +194,7 @@ public class Equipments {
                 locationText.setText(selectedEquipment.getLocation());
                 lastMaintenancePicker.setValue(LocalDate.parse(selectedEquipment.getLastMaintenance(), DateTimeFormatter.ISO_DATE));
                 sensorIdComboBox.setValue(selectedEquipment.getSensorId());
+                autoGenerateIdCheckBox.setSelected(false);
             } else {
                 showAlert(Alert.AlertType.WARNING, "No Selection", "No Equipment Selected", "Please select an equipment to edit.");
             }
@@ -203,10 +207,13 @@ public class Equipments {
                     String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".EQUIPMENT WHERE EQUIPMENT_ID = ?";
                     PreparedStatement pstmt = conn.prepareStatement(sql);
                     pstmt.setString(1, selectedEquipment.getEquipmentId());
-                    pstmt.executeUpdate();
-                    System.out.println("Equipment deleted from database.");
-
-                    tableView.getItems().remove(selectedEquipment);
+                    int affected = pstmt.executeUpdate();
+                    if (affected > 0) {
+                        showAlert(Alert.AlertType.INFORMATION, "Delete Successful", "Equipment Deleted", "Equipment with ID " + selectedEquipment.getEquipmentId() + " has been deleted.");
+                        tableView.getItems().remove(selectedEquipment);
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Delete Failed", "Delete Operation Failed", "Failed to delete equipment from database.");
+                    }
                 } catch (SQLException ex) {
                     ex.printStackTrace();
                 }
@@ -219,12 +226,57 @@ public class Equipments {
         tableView.setItems(equipmentList);
 
         vbox.getChildren().addAll(
-                equipmentIdLabel, equipmentIdText, nameLabel, nameText,
+                equipmentIdLabel, equipmentIdText, autoGenerateIdCheckBox, nameLabel, nameText,
                 typeLabel, typeText, statusLabel, statusText, locationLabel,
                 locationText, lastMaintenanceLabel, lastMaintenancePicker,
                 sensorIdLabel, sensorIdComboBox, tableView, buttonBox);
 
         return vbox;
+    }
+
+    private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.showAndWait();
+    }
+
+    private static void saveEquipmentToDatabase(Equipments equipment, boolean autoGenerateId) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql;
+            if (autoGenerateId) {
+                sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".EQUIPMENT (NAME, TYPE, STATUS, LOCATION, LAST_MAINTENANCE, SENSORS_SENSOR_ID) VALUES (?, ?, ?, ?, ?, ?)";
+            } else {
+                sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".EQUIPMENT (EQUIPMENT_ID, NAME, TYPE, STATUS, LOCATION, LAST_MAINTENANCE, SENSORS_SENSOR_ID) VALUES (?, ?, ?, ?, ?, ?, ?)";
+            }
+
+            PreparedStatement pstmt = conn.prepareStatement(sql, autoGenerateId ? new String[]{"EQUIPMENT_ID"} : null);
+
+            int parameterIndex = 1;
+            if (!autoGenerateId) {
+                pstmt.setString(parameterIndex++, equipment.getEquipmentId());
+            }
+            pstmt.setString(parameterIndex++, equipment.getName());
+            pstmt.setString(parameterIndex++, equipment.getType());
+            pstmt.setString(parameterIndex++, equipment.getStatus());
+            pstmt.setString(parameterIndex++, equipment.getLocation());
+            pstmt.setString(parameterIndex++, equipment.getLastMaintenance());
+            pstmt.setString(parameterIndex++, equipment.getSensorId());
+
+            pstmt.executeUpdate();
+
+            if (autoGenerateId) {
+                ResultSet generatedKeys = pstmt.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    equipment.setEquipmentId(generatedKeys.getString(1));
+                }
+            }
+
+            System.out.println("Equipment saved to database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
     }
 
     private static ObservableList<Equipments> fetchEquipmentsFromDatabase() {
@@ -273,11 +325,21 @@ public class Equipments {
         return sensorIdList;
     }
 
-    private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
-        Alert alert = new Alert(alertType);
-        alert.setTitle(title);
-        alert.setHeaderText(headerText);
-        alert.setContentText(contentText);
-        alert.showAndWait();
+    private static String fetchLastInsertedEquipmentId() {
+        String lastInsertedId = null;
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT EQUIPMENT_ID FROM \"C4ISR PROJECT (BASIC) V2\".EQUIPMENT ORDER BY EQUIPMENT_ID DESC FETCH FIRST 1 ROW ONLY";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                lastInsertedId = rs.getString("EQUIPMENT_ID");
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return lastInsertedId;
     }
 }

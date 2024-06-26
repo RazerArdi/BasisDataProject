@@ -86,6 +86,19 @@ public class Platforms {
 
         Label platformIdLabel = new Label("Platform ID:");
         TextField platformIdText = new TextField();
+        CheckBox autoGenerateIdCheckBox = new CheckBox("Auto Generate ID");
+        autoGenerateIdCheckBox.setSelected(true);
+        platformIdText.setDisable(true);
+
+        autoGenerateIdCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
+            platformIdText.setDisable(newValue);
+            if (newValue) {
+                platformIdText.setText("Auto Generated");
+            } else {
+                platformIdText.clear();
+            }
+        });
+
         Label platformNameLabel = new Label("Platform Name:");
         TextField platformNameText = new TextField();
         Label typeLabel = new Label("Type:");
@@ -125,6 +138,7 @@ public class Platforms {
                 capabilityText.setText(selectedPlatform.getCapability());
                 lastMaintenanceText.setText(selectedPlatform.getLastMaintenance());
                 missionsMissionIdComboBox.setValue(selectedPlatform.getMissionsMissionId());
+                autoGenerateIdCheckBox.setSelected(false);
             } else {
                 showAlert(Alert.AlertType.WARNING, "No Selection", "No Platform Selected", "Please select a platform to edit.");
             }
@@ -153,20 +167,22 @@ public class Platforms {
             }
         });
 
-        HBox buttonBox = new HBox(10, editButton, deleteButton);
-
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            String platformId = platformIdText.getText();
+            String platformId = autoGenerateIdCheckBox.isSelected() ? null : platformIdText.getText();
             String platformName = platformNameText.getText();
             String type = typeText.getText();
             String capability = capabilityText.getText();
             String lastMaintenance = lastMaintenanceText.getText();
             String missionsMissionId = missionsMissionIdComboBox.getValue();
 
-            Platforms platform = new Platforms(platformId, platformName, type, capability, lastMaintenance, missionsMissionId);
+            Platforms platform = new Platforms(platformId != null ? platformId : "", platformName, type, capability, lastMaintenance, missionsMissionId);
 
-            savePlatformToDatabase(platform);
+            savePlatformToDatabase(platform, autoGenerateIdCheckBox.isSelected());
+
+            if (autoGenerateIdCheckBox.isSelected()) {
+                platform.setPlatformId(fetchLastInsertedPlatformId());
+            }
 
             tableView.getItems().add(platform);
 
@@ -176,17 +192,20 @@ public class Platforms {
             capabilityText.clear();
             lastMaintenanceText.clear();
             missionsMissionIdComboBox.setValue(null); // Clear ComboBox selection
+            autoGenerateIdCheckBox.setSelected(true);
         });
+
+        HBox buttonBox = new HBox(10, editButton, deleteButton, createButton);
 
         ObservableList<Platforms> platformList = fetchPlatformsFromDatabase();
         tableView.setItems(platformList);
 
         vbox.getChildren().addAll(
-                platformIdLabel, platformIdText, platformNameLabel, platformNameText,
+                platformIdLabel, platformIdText, autoGenerateIdCheckBox, platformNameLabel, platformNameText,
                 typeLabel, typeText, capabilityLabel, capabilityText,
                 lastMaintenanceLabel, lastMaintenanceText,
                 missionsMissionIdLabel, missionsMissionIdComboBox,
-                tableView, buttonBox, createButton);
+                tableView, buttonBox);
 
         return vbox;
     }
@@ -199,17 +218,35 @@ public class Platforms {
         alert.showAndWait();
     }
 
-    private static void savePlatformToDatabase(Platforms platform) {
+    private static void savePlatformToDatabase(Platforms platform, boolean autoGenerateId) {
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".PLATFORMS (PLATFORM_ID, PLATFORM_NAME, TYPE, CAPABILITY, LAST_MAINTENANCE, MISSIONS_MISSION_ID) VALUES (?, ?, ?, ?, ?, ?)";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            pstmt.setString(1, platform.getPlatformId());
-            pstmt.setString(2, platform.getPlatformName());
-            pstmt.setString(3, platform.getType());
-            pstmt.setString(4, platform.getCapability());
-            pstmt.setString(5, platform.getLastMaintenance());
-            pstmt.setString(6, platform.getMissionsMissionId());
+            String sql;
+            if (autoGenerateId) {
+                sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".PLATFORMS (PLATFORM_NAME, TYPE, CAPABILITY, LAST_MAINTENANCE, MISSIONS_MISSION_ID) " +
+                        "VALUES (?, ?, ?, ?, ?)";
+            } else {
+                sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".PLATFORMS (PLATFORM_ID, PLATFORM_NAME, TYPE, CAPABILITY, LAST_MAINTENANCE, MISSIONS_MISSION_ID) " +
+                        "VALUES (?, ?, ?, ?, ?, ?)";
+            }
+            PreparedStatement pstmt = conn.prepareStatement(sql, new String[]{"PLATFORM_ID"});
+            int parameterIndex = 1;
+            if (!autoGenerateId) {
+                pstmt.setString(parameterIndex++, platform.getPlatformId());
+            }
+            pstmt.setString(parameterIndex++, platform.getPlatformName());
+            pstmt.setString(parameterIndex++, platform.getType());
+            pstmt.setString(parameterIndex++, platform.getCapability());
+            pstmt.setString(parameterIndex++, platform.getLastMaintenance());
+            pstmt.setString(parameterIndex++, platform.getMissionsMissionId());
             pstmt.executeUpdate();
+
+            if (autoGenerateId) {
+                ResultSet generatedKeys = pstmt.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    platform.setPlatformId(generatedKeys.getString(1));
+                }
+            }
+
             System.out.println("Platform saved to database.");
         } catch (SQLException ex) {
             ex.printStackTrace();
@@ -259,5 +296,23 @@ public class Platforms {
         }
 
         return missionIds;
+    }
+
+    private static String fetchLastInsertedPlatformId() {
+        String lastInsertedId = null;
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT PLATFORM_ID FROM \"C4ISR PROJECT (BASIC) V2\".PLATFORMS ORDER BY PLATFORM_ID DESC FETCH FIRST 1 ROW ONLY";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            if (rs.next()) {
+                lastInsertedId = rs.getString("PLATFORM_ID");
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return lastInsertedId;
     }
 }

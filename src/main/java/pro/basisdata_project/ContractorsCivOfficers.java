@@ -229,7 +229,6 @@ public class ContractorsCivOfficers {
                 } catch (SQLException ex) {
                     ex.printStackTrace();
                 }
-
                 tableView.getItems().remove(selectedPersonnel);
             }
         });

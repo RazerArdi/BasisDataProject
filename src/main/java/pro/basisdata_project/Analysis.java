@@ -76,6 +76,15 @@ public class Analysis {
 
         Label analysisIdLabel = new Label("Analysis ID:");
         TextField analysisIdText = new TextField();
+        CheckBox autoGenerateCheckbox = new CheckBox("Auto Generate");
+        autoGenerateCheckbox.setSelected(true); // Default to auto generate
+        autoGenerateCheckbox.setOnAction(e -> {
+            analysisIdText.setDisable(autoGenerateCheckbox.isSelected());
+            if (autoGenerateCheckbox.isSelected()) {
+                analysisIdText.clear();
+            }
+        });
+
         Label analysisTypeLabel = new Label("Analysis Type:");
         TextField analysisTypeText = new TextField();
         Label resultsLabel = new Label("Results:");
@@ -105,14 +114,18 @@ public class Analysis {
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            int analysisId = Integer.parseInt(analysisIdText.getText());
+            int analysisId;
+            if (autoGenerateCheckbox.isSelected()) {
+                analysisId = -1; // Use a placeholder value for auto generation
+            } else {
+                analysisId = Integer.parseInt(analysisIdText.getText());
+            }
             String analysisType = analysisTypeText.getText();
             String results = resultsText.getText();
             String usersUserId = usersUserIdComboBox.getValue();
             int dataDataId = dataDataIdComboBox.getValue();
 
             Analysis analysis = new Analysis(analysisId, analysisType, results, usersUserId, dataDataId);
-            System.out.println("Analysis Created: " + analysis.getAnalysisId());
 
             try (Connection conn = OracleAPEXConnection.getConnection()) {
                 String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".ANALYSIS (ANALYSIS_ID, ANALYSIS_TYPE, RESULTS, USERS_USER_ID, DATA_DATA_ID) VALUES (?, ?, ?, ?, ?)";
@@ -141,7 +154,12 @@ public class Analysis {
         editButton.setOnAction(e -> {
             Analysis selectedAnalysis = tableView.getSelectionModel().getSelectedItem();
             if (selectedAnalysis != null) {
-                int analysisId = Integer.parseInt(analysisIdText.getText());
+                int analysisId;
+                if (autoGenerateCheckbox.isSelected()) {
+                    analysisId = -1; // Use a placeholder value for auto generation
+                } else {
+                    analysisId = Integer.parseInt(analysisIdText.getText());
+                }
                 String analysisType = analysisTypeText.getText();
                 String results = resultsText.getText();
                 String usersUserId = usersUserIdComboBox.getValue();
@@ -203,7 +221,7 @@ public class Analysis {
         HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
 
         vbox.getChildren().addAll(
-                analysisIdLabel, analysisIdText,
+                analysisIdLabel, new HBox(10, analysisIdText, autoGenerateCheckbox),
                 analysisTypeLabel, analysisTypeText,
                 resultsLabel, resultsText,
                 usersUserIdLabel, usersUserIdComboBox,
@@ -276,5 +294,5 @@ public class Analysis {
 
         return dataIdList;
     }
-
 }
+
