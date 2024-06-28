@@ -84,7 +84,7 @@ public class Missions {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
-        Label missionIdLabel = new Label("Mission ID:");
+        Label missionIdLabel = new Label("Mission ID *:");
         TextField missionIdText = new TextField();
         CheckBox autoGenerateIdCheckBox = new CheckBox("Auto Generate ID");
 
@@ -98,15 +98,16 @@ public class Missions {
             }
         });
 
-        Label missionNameLabel = new Label("Mission Name:");
+        Label missionNameLabel = new Label("Mission Name *:");
         TextField missionNameText = new TextField();
         Label descriptionLabel = new Label("Description:");
-        TextField descriptionText = new TextField();
+        TextArea descriptionText = new TextArea();
+        descriptionText.setWrapText(true);
         Label startDateLabel = new Label("Start Date:");
         DatePicker startDatePicker = new DatePicker();
         Label endDateLabel = new Label("End Date:");
         DatePicker endDatePicker = new DatePicker();
-        Label statusLabel = new Label("Status:");
+        Label statusLabel = new Label("Status *:");
         ComboBox<String> statusComboBox = new ComboBox<>();
         statusComboBox.getItems().addAll("Submission", "Parliamentary Approval", "In Progress", "Completed");
         TableView<Missions> tableView = new TableView<>();
@@ -126,45 +127,8 @@ public class Missions {
 
         tableView.getColumns().addAll(missionIdCol, missionNameCol, descriptionCol, startDateCol, endDateCol, statusCol);
 
-        Button editButton = new Button("Edit");
-        editButton.setOnAction(e -> {
-            Missions selectedMission = tableView.getSelectionModel().getSelectedItem();
-            if (selectedMission != null) {
-                missionIdText.setText(String.valueOf(selectedMission.getMissionId()));
-                missionNameText.setText(selectedMission.getMissionName());
-                descriptionText.setText(selectedMission.getDescription());
-                statusComboBox.setValue(selectedMission.getStatus());
-                startDatePicker.setValue(selectedMission.getStartDate() != null ? startDatePicker.getConverter().fromString(selectedMission.getStartDate()) : null);
-                endDatePicker.setValue(selectedMission.getEndDate() != null ? endDatePicker.getConverter().fromString(selectedMission.getEndDate()) : null);
-            } else {
-                showAlert(Alert.AlertType.WARNING, "No Selection", "No Mission Selected", "Please select a mission to edit.");
-            }
-        });
-
-        Button deleteButton = new Button("Delete");
-        deleteButton.setOnAction(e -> {
-            Missions selectedMission = tableView.getSelectionModel().getSelectedItem();
-            if (selectedMission != null) {
-                try (Connection conn = OracleAPEXConnection.getConnection()) {
-                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".MISSIONS WHERE MISSION_ID = ?";
-                    PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.setInt(1, selectedMission.getMissionId());
-                    int affected = pstmt.executeUpdate();
-                    if (affected > 0) {
-                        showAlert(Alert.AlertType.INFORMATION, "Delete Successful", "Mission Deleted", "Mission with ID " + selectedMission.getMissionId() + " has been deleted.");
-                        tableView.getItems().remove(selectedMission);
-                    } else {
-                        showAlert(Alert.AlertType.ERROR, "Delete Failed", "Delete Operation Failed", "Failed to delete mission from database.");
-                    }
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            } else {
-                showAlert(Alert.AlertType.WARNING, "No Selection", "No Mission Selected", "Please select a mission to delete.");
-            }
-        });
-
-        HBox buttonBox = new HBox(10, editButton, deleteButton);
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red");
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
@@ -172,13 +136,23 @@ public class Missions {
             if (autoGenerateIdCheckBox.isSelected()) {
                 missionId = -1; // Set to -1 or any negative value to indicate auto generation
             } else {
-                missionId = Integer.parseInt(missionIdText.getText());
+                try {
+                    missionId = Integer.parseInt(missionIdText.getText());
+                } catch (NumberFormatException ex) {
+                    errorLabel.setText("Fields marked with * are required!");
+                    return;
+                }
             }
             String missionName = missionNameText.getText();
             String description = descriptionText.getText();
-            String startDate = startDatePicker.getValue().toString(); // Get selected date as string
-            String endDate = endDatePicker.getValue().toString(); // Get selected date as string
-            String status = statusComboBox.getValue(); // Get selected status from ComboBox
+            String startDate = startDatePicker.getValue() != null ? startDatePicker.getValue().toString() : null;
+            String endDate = endDatePicker.getValue() != null ? endDatePicker.getValue().toString() : null;
+            String status = statusComboBox.getValue();
+
+            if (missionName.isEmpty() || status == null) {
+                errorLabel.setText("Fields marked with * are required!");
+                return;
+            }
 
             Missions mission = new Missions(missionId, missionName, description, startDate, endDate, status);
 
@@ -210,26 +184,22 @@ public class Missions {
             endDatePicker.setValue(null);
             statusComboBox.setValue(null);
             autoGenerateIdCheckBox.setSelected(false); // Reset checkbox after creation
+            errorLabel.setText("");
         });
 
         ObservableList<Missions> missionList = fetchMissionsFromDatabase();
         tableView.setItems(missionList);
 
+        HBox buttonBox = new HBox(10);
+        buttonBox.getChildren().addAll(createButton);
+
         vbox.getChildren().addAll(
                 missionIdLabel, missionIdText, autoGenerateIdCheckBox, missionNameLabel, missionNameText,
                 descriptionLabel, descriptionText, startDateLabel, startDatePicker,
                 endDateLabel, endDatePicker, statusLabel, statusComboBox,
-                tableView, buttonBox, createButton);
+                errorLabel, tableView, buttonBox);
 
         return vbox;
-    }
-
-    private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
-        Alert alert = new Alert(alertType);
-        alert.setTitle(title);
-        alert.setHeaderText(headerText);
-        alert.setContentText(contentText);
-        alert.showAndWait();
     }
 
     private static ObservableList<Missions> fetchMissionsFromDatabase() {

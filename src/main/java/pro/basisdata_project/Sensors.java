@@ -74,7 +74,7 @@ public class Sensors {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
-        Label sensorIdLabel = new Label("Sensor ID:");
+        Label sensorIdLabel = new Label("Sensor ID *:");
         TextField sensorIdText = new TextField();
         CheckBox autoGenerateIdCheckBox = new CheckBox("Auto Generate ID");
         autoGenerateIdCheckBox.setSelected(true);
@@ -89,15 +89,15 @@ public class Sensors {
             }
         });
 
-        Label typeLabel = new Label("Type:");
+        Label typeLabel = new Label("Type *:");
         TextField typeText = new TextField();
-        Label locationLabel = new Label("Location:");
+        Label locationLabel = new Label("Location *:");
         TextField locationText = new TextField();
-        Label statusLabel = new Label("Status:");
+        Label statusLabel = new Label("Status *:");
         ChoiceBox<String> statusChoice = new ChoiceBox<>();
         statusChoice.getItems().addAll("Active", "Inactive", "Passive");
 
-        Label lastMaintenanceLabel = new Label("Last Maintenance:");
+        Label lastMaintenanceLabel = new Label("Last Maintenance *:");
         DatePicker lastMaintenancePicker = new DatePicker();
 
         TableView<Sensors> tableView = new TableView<>();
@@ -113,6 +113,9 @@ public class Sensors {
         lastMaintenanceCol.setCellValueFactory(new PropertyValueFactory<>("lastMaintenance"));
 
         tableView.getColumns().addAll(sensorIdCol, typeCol, locationCol, statusCol, lastMaintenanceCol);
+
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red");
 
         Button editButton = new Button("Edit");
         editButton.setOnAction(e -> {
@@ -154,6 +157,11 @@ public class Sensors {
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
+            if (typeText.getText().isEmpty() || locationText.getText().isEmpty() || statusChoice.getValue() == null || lastMaintenancePicker.getValue() == null) {
+                errorLabel.setText("Fields marked with * are required!");
+                return;
+            }
+
             Integer sensorId = autoGenerateIdCheckBox.isSelected() ? null : Integer.parseInt(sensorIdText.getText());
             String type = typeText.getText();
             String location = locationText.getText();
@@ -176,6 +184,7 @@ public class Sensors {
             statusChoice.setValue(null);
             lastMaintenancePicker.getEditor().clear();
             autoGenerateIdCheckBox.setSelected(true);
+            errorLabel.setText("");
         });
 
         HBox buttonBox = new HBox(10, editButton, deleteButton, createButton);
@@ -184,9 +193,12 @@ public class Sensors {
         tableView.setItems(sensorList);
 
         vbox.getChildren().addAll(
-                sensorIdLabel, sensorIdText, autoGenerateIdCheckBox, typeLabel, typeText,
-                locationLabel, locationText, statusLabel, statusChoice,
+                sensorIdLabel, sensorIdText, autoGenerateIdCheckBox,
+                typeLabel, typeText,
+                locationLabel, locationText,
+                statusLabel, statusChoice,
                 lastMaintenanceLabel, lastMaintenancePicker,
+                errorLabel,
                 tableView, buttonBox);
 
         return vbox;

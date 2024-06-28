@@ -84,7 +84,7 @@ public class MaintenanceLogs {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
-        Label maintenanceIdLabel = new Label("Maintenance ID:");
+        Label maintenanceIdLabel = new Label("Maintenance ID *:");
         TextField maintenanceIdText = new TextField();
         CheckBox autoGenerateCheckbox = new CheckBox("Auto Generate");
         autoGenerateCheckbox.setSelected(true); // Default auto-generate is checked
@@ -95,15 +95,17 @@ public class MaintenanceLogs {
             }
         });
 
-        Label dateLabel = new Label("Date:");
+        Label dateLabel = new Label("Date *:");
         DatePicker dateText = new DatePicker();
         Label descriptionLabel = new Label("Description:");
-        TextField descriptionText = new TextField();
-        Label equipmentIdLabel = new Label("Equipment ID:");
+        TextArea descriptionText = new TextArea();
+        descriptionText.setWrapText(true);
+        descriptionText.setMaxHeight(100);
+        Label equipmentIdLabel = new Label("Equipment ID *:");
         ComboBox<String> equipmentIdCombo = new ComboBox<>();
-        Label platformIdLabel = new Label("Platform ID:");
+        Label platformIdLabel = new Label("Platform ID *:");
         ComboBox<String> platformIdCombo = new ComboBox<>();
-        Label personnelIdLabel = new Label("Personnel ID:");
+        Label personnelIdLabel = new Label("Personnel ID *:");
         ComboBox<String> personnelIdCombo = new ComboBox<>();
 
         ObservableList<String> equipmentIds = fetchEquipmentIds();
@@ -131,32 +133,10 @@ public class MaintenanceLogs {
 
         tableView.getColumns().addAll(maintenanceIdCol, dateCol, descriptionCol, equipmentIdCol, platformIdCol, personnelIdCol);
 
-        ObservableList<MaintenanceLogs> maintenanceLogsList = fetchMaintenanceLogsFromDatabase();
-        tableView.setItems(maintenanceLogsList);
-
-        tableView.getSelectionModel().selectedItemProperty().addListener((obs, oldSelection, newSelection) -> {
-            if (newSelection != null) {
-                MaintenanceLogs selectedMaintenanceLog = tableView.getSelectionModel().getSelectedItem();
-                maintenanceIdText.setText(selectedMaintenanceLog.getMaintenanceId());
-                dateText.setValue(selectedMaintenanceLog.getDate());
-                descriptionText.setText(selectedMaintenanceLog.getDescription());
-                equipmentIdCombo.setValue(selectedMaintenanceLog.getEquipmentId());
-                platformIdCombo.setValue(selectedMaintenanceLog.getPlatformId());
-                personnelIdCombo.setValue(selectedMaintenanceLog.getPersonnelId());
-            } else {
-                maintenanceIdText.clear();
-                dateText.getEditor().clear();
-                descriptionText.clear();
-                equipmentIdCombo.getSelectionModel().clearSelection();
-                platformIdCombo.getSelectionModel().clearSelection();
-                personnelIdCombo.getSelectionModel().clearSelection();
-            }
-        });
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red");
 
         Button createButton = new Button("Create");
-        Button editButton = new Button("Edit");
-        Button deleteButton = new Button("Delete");
-
         createButton.setOnAction(e -> {
             String maintenanceId = maintenanceIdText.getText();
             LocalDate date = dateText.getValue();
@@ -165,8 +145,13 @@ public class MaintenanceLogs {
             String platformId = platformIdCombo.getValue();
             String personnelId = personnelIdCombo.getValue();
 
+            if (maintenanceId.isEmpty() || date == null || equipmentId.isEmpty() || platformId.isEmpty() || personnelId.isEmpty()) {
+                errorLabel.setText("Fields marked with * are required!");
+                return;
+            }
+
             if (autoGenerateCheckbox.isSelected()) {
-                maintenanceId = "-1"; // Set to -1 for auto-generation
+                maintenanceId = "AUTO_GENERATED"; // Set to AUTO_GENERATED for auto-generation
             }
 
             MaintenanceLogs maintenanceLog = new MaintenanceLogs(maintenanceId, date, description, equipmentId, platformId, personnelId);
@@ -196,8 +181,10 @@ public class MaintenanceLogs {
             equipmentIdCombo.getSelectionModel().clearSelection();
             platformIdCombo.getSelectionModel().clearSelection();
             personnelIdCombo.getSelectionModel().clearSelection();
+            errorLabel.setText("");
         });
 
+        Button editButton = new Button("Edit");
         editButton.setOnAction(e -> {
             MaintenanceLogs selectedMaintenanceLog = tableView.getSelectionModel().getSelectedItem();
             if (selectedMaintenanceLog == null) {
@@ -213,7 +200,7 @@ public class MaintenanceLogs {
             String newPersonnelId = personnelIdCombo.getValue();
 
             if (autoGenerateCheckbox.isSelected()) {
-                newMaintenanceId = "-1"; // Set to -1 for auto-generation
+                newMaintenanceId = "AUTO_GENERATED"; // Set to AUTO_GENERATED for auto-generation
             }
 
             try (Connection conn = OracleAPEXConnection.getConnection()) {
@@ -237,17 +224,25 @@ public class MaintenanceLogs {
                     selectedMaintenanceLog.setEquipmentId(newEquipmentId);
                     selectedMaintenanceLog.setPlatformId(newPlatformId);
                     selectedMaintenanceLog.setPersonnelId(newPersonnelId);
-
                     tableView.refresh();
-                    System.out.println("Maintenance log updated successfully.");
+                    System.out.println("Maintenance log updated: " + selectedMaintenanceLog.getMaintenanceId());
                 } else {
-                    showAlert(Alert.AlertType.ERROR, "Update Failed", "Update Maintenance Log Failed", "Failed to update maintenance log.");
+                    System.out.println("Failed to update maintenance log.");
                 }
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
+
+            maintenanceIdText.clear();
+            dateText.getEditor().clear();
+            descriptionText.clear();
+            equipmentIdCombo.getSelectionModel().clearSelection();
+            platformIdCombo.getSelectionModel().clearSelection();
+            personnelIdCombo.getSelectionModel().clearSelection();
+            errorLabel.setText("");
         });
 
+        Button deleteButton = new Button("Delete");
         deleteButton.setOnAction(e -> {
             MaintenanceLogs selectedMaintenanceLog = tableView.getSelectionModel().getSelectedItem();
             if (selectedMaintenanceLog == null) {
@@ -263,24 +258,77 @@ public class MaintenanceLogs {
 
                 if (deleted > 0) {
                     tableView.getItems().remove(selectedMaintenanceLog);
-                    System.out.println("Maintenance log deleted successfully.");
+                    System.out.println("Maintenance log deleted: " + selectedMaintenanceLog.getMaintenanceId());
                 } else {
-                    showAlert(Alert.AlertType.ERROR, "Delete Failed", "Delete Maintenance Log Failed", "Failed to delete maintenance log.");
+                    System.out.println("Failed to delete maintenance log.");
                 }
             } catch (SQLException ex) {
                 ex.printStackTrace();
             }
+
+            maintenanceIdText.clear();
+            dateText.getEditor().clear();
+            descriptionText.clear();
+            equipmentIdCombo.getSelectionModel().clearSelection();
+            platformIdCombo.getSelectionModel().clearSelection();
+            personnelIdCombo.getSelectionModel().clearSelection();
+            errorLabel.setText("");
         });
 
-        HBox buttonsBox = new HBox(10);
-        buttonsBox.getChildren().addAll(createButton, editButton, deleteButton);
+        HBox buttonBox = new HBox(10);
+        buttonBox.getChildren().addAll(createButton, editButton, deleteButton);
 
-        vbox.getChildren().addAll(
-                maintenanceIdLabel, maintenanceIdText, autoGenerateCheckbox, dateLabel, dateText,
-                descriptionLabel, descriptionText, equipmentIdLabel, equipmentIdCombo,
-                platformIdLabel, platformIdCombo, personnelIdLabel, personnelIdCombo, tableView, buttonsBox);
+        vbox.getChildren().addAll(maintenanceIdLabel, new HBox(maintenanceIdText, autoGenerateCheckbox),
+                dateLabel, dateText, descriptionLabel, descriptionText,
+                equipmentIdLabel, equipmentIdCombo, platformIdLabel, platformIdCombo,
+                personnelIdLabel, personnelIdCombo, errorLabel, buttonBox, tableView);
 
         return vbox;
+    }
+
+    private static ObservableList<String> fetchEquipmentIds() {
+        ObservableList<String> equipmentIds = FXCollections.observableArrayList();
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT EQUIPMENT_ID FROM \"C4ISR PROJECT (BASIC) V2\".EQUIPMENT";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                equipmentIds.add(rs.getString("EQUIPMENT_ID"));
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return equipmentIds;
+    }
+
+    private static ObservableList<String> fetchPlatformIds() {
+        ObservableList<String> platformIds = FXCollections.observableArrayList();
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT PLATFORM_ID FROM \"C4ISR PROJECT (BASIC) V2\".PLATFORMS";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                platformIds.add(rs.getString("PLATFORM_ID"));
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return platformIds;
+    }
+
+    private static ObservableList<String> fetchPersonnelIds() {
+        ObservableList<String> personnelIds = FXCollections.observableArrayList();
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT PERSONNEL_ID FROM \"C4ISR PROJECT (BASIC) V2\".PERSONNEL";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                personnelIds.add(rs.getString("PERSONNEL_ID"));
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return personnelIds;
     }
 
     private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
@@ -289,86 +337,5 @@ public class MaintenanceLogs {
         alert.setHeaderText(headerText);
         alert.setContentText(contentText);
         alert.showAndWait();
-    }
-
-    private static ObservableList<String> fetchEquipmentIds() {
-        ObservableList<String> equipmentIds = FXCollections.observableArrayList();
-
-        try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT EQUIPMENT_ID FROM \"C4ISR PROJECT (BASIC)\".EQUIPMENT";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                equipmentIds.add(rs.getString("EQUIPMENT_ID"));
-            }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-        }
-
-        return equipmentIds;
-    }
-
-    private static ObservableList<String> fetchPlatformIds() {
-        ObservableList<String> platformIds = FXCollections.observableArrayList();
-
-        try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT PLATFORM_ID FROM \"C4ISR PROJECT (BASIC) V2\".PLATFORMS";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                platformIds.add(rs.getString("PLATFORM_ID"));
-            }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-        }
-
-        return platformIds;
-    }
-
-    private static ObservableList<String> fetchPersonnelIds() {
-        ObservableList<String> personnelIds = FXCollections.observableArrayList();
-
-        try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT PERSONNEL_ID FROM \"C4ISR PROJECT (BASIC)\".PERSONNEL";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                personnelIds.add(rs.getString("PERSONNEL_ID"));
-            }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-        }
-
-        return personnelIds;
-    }
-
-    private static ObservableList<MaintenanceLogs> fetchMaintenanceLogsFromDatabase() {
-        ObservableList<MaintenanceLogs> maintenanceLogsList = FXCollections.observableArrayList();
-
-        try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT MAINTENANCE_ID, \"Date\", DESCRIPTION, EQUIPMENT_EQUIPMENT_ID, PLATFORMS_PLATFORM_ID, PERSONNEL_PERSONNEL_ID " +
-                    "FROM \"C4ISR PROJECT (BASIC) V2\".MAINTENANCE_LOGS";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                String maintenanceId = rs.getString("MAINTENANCE_ID");
-                LocalDate date = rs.getDate("Date").toLocalDate();
-                String description = rs.getString("DESCRIPTION");
-                String equipmentId = rs.getString("EQUIPMENT_EQUIPMENT_ID");
-                String platformId = rs.getString("PLATFORMS_PLATFORM_ID");
-                String personnelId = rs.getString("PERSONNEL_PERSONNEL_ID");
-
-                MaintenanceLogs maintenanceLog = new MaintenanceLogs(maintenanceId, date, description, equipmentId, platformId, personnelId);
-                maintenanceLogsList.add(maintenanceLog);
-            }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-        }
-
-        return maintenanceLogsList;
     }
 }

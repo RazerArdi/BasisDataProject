@@ -71,17 +71,17 @@ public class Users {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
-        Label userIdLabel = new Label("User ID:");
+        Label userIdLabel = new Label("User ID *:");
         TextField userIdText = new TextField();
-        Label nameLabel = new Label("Name:");
+        Label nameLabel = new Label("Name *:");
         TextField nameText = new TextField();
-        Label roleLabel = new Label("Role:");
+        Label roleLabel = new Label("Role *:");
         TextField roleText = new TextField();
-        Label accessLevelLabel = new Label("Access Level:");
+        Label accessLevelLabel = new Label("Access Level *:");
         ComboBox<Integer> accessLevelComboBox = new ComboBox<>();
         accessLevelComboBox.getItems().addAll(1, 2, 3, 4, 5);
         accessLevelComboBox.setValue(1); // Default value
-        Label lastLoginLabel = new Label("Last Login:");
+        Label lastLoginLabel = new Label("Last Login *:");
         DatePicker lastLoginPicker = new DatePicker();
 
         TableView<Users> tableView = new TableView<>();
@@ -102,7 +102,7 @@ public class Users {
         autoGenerateIdCheckBox.setSelected(true);
 
         HBox userIdBox = new HBox();
-        userIdBox.getChildren().addAll(userIdText, autoGenerateIdCheckBox);
+        userIdBox.getChildren().addAll(userIdText, new Label("*"), autoGenerateIdCheckBox);
         userIdBox.setSpacing(10);
 
         autoGenerateIdCheckBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
@@ -114,6 +114,9 @@ public class Users {
             }
         });
 
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red");
+
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             String userId = autoGenerateIdCheckBox.isSelected() ? "AUTO_GENERATED" : userIdText.getText();
@@ -121,7 +124,13 @@ public class Users {
             String role = roleText.getText();
             int accessLevel = accessLevelComboBox.getValue();
             java.time.LocalDate lastLoginDate = lastLoginPicker.getValue();
-            long lastLogin = lastLoginPicker.getValue().toEpochDay();
+
+            if (userId.isEmpty() || name.isEmpty() || role.isEmpty() || lastLoginDate == null) {
+                errorLabel.setText("Fields marked with * are required!");
+                return;
+            }
+
+            long lastLogin = lastLoginDate.toEpochDay();
 
             Users user = new Users(userId, name, role, accessLevel, lastLogin);
 
@@ -146,7 +155,71 @@ public class Users {
             roleText.clear();
             accessLevelComboBox.setValue(1);
             lastLoginPicker.getEditor().clear();
+            errorLabel.setText("");
         });
+
+        Button editButton = new Button("Edit");
+        editButton.setOnAction(e -> {
+            Users selectedUser = tableView.getSelectionModel().getSelectedItem();
+            if (selectedUser != null) {
+                String userId = autoGenerateIdCheckBox.isSelected() ? "AUTO_GENERATED" : userIdText.getText();
+                String name = nameText.getText();
+                String role = roleText.getText();
+                int accessLevel = accessLevelComboBox.getValue();
+                java.time.LocalDate lastLoginDate = lastLoginPicker.getValue();
+
+                selectedUser.setUserId(userId);
+                selectedUser.setName(name);
+                selectedUser.setRole(role);
+                selectedUser.setAccessLevel(accessLevel);
+                selectedUser.setLastLogin(lastLoginDate.toEpochDay());
+
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".USERS SET NAME = ?, ROLE = ?, ACCESS_LEVEL = ?, LAST_LOGIN = ? WHERE USER_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, name);
+                    pstmt.setString(2, role);
+                    pstmt.setInt(3, accessLevel);
+                    pstmt.setDate(4, Date.valueOf(lastLoginDate));
+                    pstmt.setString(5, userId);
+                    pstmt.executeUpdate();
+                    System.out.println("User updated in database.");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+
+                tableView.refresh();
+
+                userIdText.clear();
+                nameText.clear();
+                roleText.clear();
+                accessLevelComboBox.setValue(1);
+                lastLoginPicker.getEditor().clear();
+            }
+        });
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(e -> {
+            Users selectedUser = tableView.getSelectionModel().getSelectedItem();
+            if (selectedUser != null) {
+                String userId = selectedUser.getUserId();
+
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".USERS WHERE USER_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, userId);
+                    pstmt.executeUpdate();
+                    System.out.println("User deleted from database.");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+
+                tableView.getItems().remove(selectedUser);
+            }
+        });
+
+
+        HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
 
         ObservableList<Users> usersList = fetchUsersFromDatabase();
         tableView.setItems(usersList);
@@ -155,10 +228,12 @@ public class Users {
                 userIdLabel, userIdBox, nameLabel, nameText,
                 roleLabel, roleText, accessLevelLabel, accessLevelComboBox,
                 lastLoginLabel, lastLoginPicker,
-                tableView, createButton);
+                errorLabel, tableView, buttonBox);
 
         return vbox;
     }
+
+
 
     private static ObservableList<Users> fetchUsersFromDatabase() {
         ObservableList<Users> usersList = FXCollections.observableArrayList();

@@ -54,11 +54,11 @@ public class CommunicationLog {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
-        Label commIdLabel = new Label("Communication ID:");
+        Label commIdLabel = new Label("Communication ID *:");
         TextField commIdText = new TextField();
-        Label messageLabel = new Label("Message:");
+        Label messageLabel = new Label("Message *:");
         TextField messageText = new TextField();
-        Label platformsPlatformIdLabel = new Label("Platform ID:");
+        Label platformsPlatformIdLabel = new Label("Platform ID *:");
         ComboBox<String> platformsPlatformIdComboBox = new ComboBox<>();
         ObservableList<String> platformIds = fetchPlatformIdsFromDatabase();
         platformsPlatformIdComboBox.setItems(platformIds);
@@ -70,7 +70,7 @@ public class CommunicationLog {
         commIdBox.getChildren().addAll(
                 commIdText,
                 new Label("Auto Generated:"),
-                createAutoGenerateCheckBox(commIdText) // Create auto-generate checkbox for Comm ID
+                createAutoGenerateCheckBox(commIdText)
         );
         commIdBox.setSpacing(5);
 
@@ -83,16 +83,24 @@ public class CommunicationLog {
         platformsPlatformIdCol.setCellValueFactory(new PropertyValueFactory<>("platformsPlatformId"));
         tableView.getColumns().addAll(commIdCol, messageCol, platformsPlatformIdCol);
 
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red");
+
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             String commId = commIdText.getText();
             String message = messageText.getText();
             String platformsPlatformId = platformsPlatformIdComboBox.getValue();
 
+            if (commId.isEmpty() || message.isEmpty() || platformsPlatformId == null) {
+                errorLabel.setText("Fields marked with * are required!");
+                return;
+            }
+
             if (!isAutoGenerateChecked(commIdText)) {
                 commId = commIdText.getText();
             } else {
-                commId = "AUTO_GENERATED"; // Set as auto-generated
+                commId = "AUTO_GENERATED";
             }
 
             CommunicationLog log = new CommunicationLog(commId, message, platformsPlatformId);
@@ -115,6 +123,7 @@ public class CommunicationLog {
             commIdText.clear();
             messageText.clear();
             platformsPlatformIdComboBox.setValue(null); // Clear ComboBox selection
+            errorLabel.setText("");
         });
 
         Button editButton = new Button("Edit");
@@ -178,7 +187,7 @@ public class CommunicationLog {
                 commIdLabel, commIdBox, // Add commIdBox instead of commIdText
                 messageLabel, messageText,
                 platformsPlatformIdLabel, platformsPlatformIdComboBox,
-                tableView, buttonBox);
+                errorLabel, tableView, buttonBox);
 
         return vbox;
     }

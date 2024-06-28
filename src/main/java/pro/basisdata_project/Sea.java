@@ -63,7 +63,7 @@ public class Sea {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
-        Label platformIdLabel = new Label("Platform ID:");
+        Label platformIdLabel = new Label("Platform ID *:");
         TextField platformIdText = new TextField();
         CheckBox autoGenerateCheckbox = new CheckBox("Auto Generate");
         autoGenerateCheckbox.setSelected(true);
@@ -74,14 +74,17 @@ public class Sea {
             }
         });
 
-        Label taskLabel = new Label("Task:");
+        Label taskLabel = new Label("Task *:");
         TextField taskText = new TextField();
         Label locationLabel = new Label("Location:");
         TextField locationText = new TextField();
-        Label commIdLabel = new Label("Communication Log ID:");
+        Label commIdLabel = new Label("Communication Log ID *:");
         ComboBox<String> commIdComboBox = new ComboBox<>();
         ObservableList<String> commLogIds = fetchCommunicationLogIdsFromDatabase();
         commIdComboBox.setItems(commLogIds);
+
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red");
 
         TableView<Sea> tableView = new TableView<>();
         TableColumn<Sea, String> platformIdCol = new TableColumn<>("Platform ID");
@@ -143,6 +146,11 @@ public class Sea {
             String location = locationText.getText();
             String commId = commIdComboBox.getValue();
 
+            if (platformId.isEmpty() || task.isEmpty() || commId.isEmpty()) {
+                errorLabel.setText("Fields marked with * are required!");
+                return;
+            }
+
             Sea sea = new Sea(platformId, task, location, commId);
             System.out.println("Sea Platform Created: " + sea.getSeaPlatformId());
 
@@ -154,6 +162,7 @@ public class Sea {
             taskText.clear();
             locationText.clear();
             commIdComboBox.setValue(null);
+            errorLabel.setText("");
         });
 
         HBox buttonBox = new HBox(10, editButton, deleteButton, createButton);
@@ -166,7 +175,7 @@ public class Sea {
                 taskLabel, taskText,
                 locationLabel, locationText,
                 commIdLabel, commIdComboBox,
-                tableView, buttonBox);
+                errorLabel, tableView, buttonBox);
 
         return vbox;
     }

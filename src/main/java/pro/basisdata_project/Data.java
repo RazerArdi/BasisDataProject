@@ -84,17 +84,17 @@ public class Data {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
-        Label dataIdLabel = new Label("Data ID:");
+        Label dataIdLabel = new Label("Data ID *:");
         TextField dataIdText = new TextField();
-        Label timestampLabel = new Label("Timestamp:");
+        Label timestampLabel = new Label("Timestamp *:");
         TextField timestampText = new TextField();
-        Label dataTypeLabel = new Label("Data Type:");
+        Label dataTypeLabel = new Label("Data Type *:");
         TextField dataTypeText = new TextField();
         Label rawDataLabel = new Label("Raw Data:");
         TextArea rawDataText = new TextArea();
         Label processedDataLabel = new Label("Processed Data:");
         TextArea processedDataText = new TextArea();
-        Label sensorsSensorIdLabel = new Label("Sensor ID:");
+        Label sensorsSensorIdLabel = new Label("Sensor ID *:");
         ComboBox<Integer> sensorsSensorIdComboBox = new ComboBox<>();
         ObservableList<Integer> sensorIdList = fetchSensorIdsFromDatabase();
         sensorsSensorIdComboBox.setItems(sensorIdList);
@@ -105,7 +105,7 @@ public class Data {
         dataIdBox.getChildren().addAll(
                 dataIdText,
                 new Label("Auto Generated:"),
-                createAutoGenerateCheckBox(dataIdText) // Create CheckBox for auto-generate
+                createAutoGenerateCheckBox(dataIdText)
         );
         dataIdBox.setSpacing(5);
 
@@ -125,12 +125,29 @@ public class Data {
 
         tableView.getColumns().addAll(dataIdCol, timestampCol, dataTypeCol, rawDataCol, processedDataCol, sensorsSensorIdCol);
 
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red");
+
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             try {
                 int dataId;
                 if (!isAutoGenerateChecked(dataIdText)) {
-                    dataId = Integer.parseInt(dataIdText.getText());
+                    String dataIdStr = dataIdText.getText().trim();  // Trim to remove any leading/trailing whitespace
+                    if (dataIdStr.isEmpty()) {
+                        // Handle case where Data ID is empty
+                        errorLabel.setText("Data ID is required!");
+                        return;
+                    }
+                    try {
+                        dataId = Integer.parseInt(dataIdStr);
+                    } catch (NumberFormatException ex) {
+                        ex.printStackTrace();
+                        Alert alert = new Alert(Alert.AlertType.ERROR);
+                        alert.setContentText("Invalid input data ID.");
+                        alert.show();
+                        return;
+                    }
                 } else {
                     // Auto generate mode, set as a placeholder
                     dataId = -1; // Replace with your auto-generation logic
@@ -140,6 +157,11 @@ public class Data {
                 String rawData = rawDataText.getText();
                 String processedData = processedDataText.getText();
                 int sensorsSensorId = sensorsSensorIdComboBox.getValue();
+
+                if (dataIdText.getText().isEmpty() || timestampText.getText().isEmpty() || dataTypeText.getText().isEmpty() || sensorsSensorIdComboBox.getValue() == null) {
+                    errorLabel.setText("Fields marked with * are required!");
+                    return;
+                }
 
                 Data data = new Data(dataId, timestamp, dataType, rawData, processedData, sensorsSensorId);
                 System.out.println("Data Created: " + data.getDataId());
@@ -167,6 +189,7 @@ public class Data {
                 rawDataText.clear();
                 processedDataText.clear();
                 sensorsSensorIdComboBox.setValue(null);
+                errorLabel.setText("");
             } catch (NumberFormatException ex) {
                 ex.printStackTrace();
                 Alert alert = new Alert(Alert.AlertType.ERROR);
@@ -252,10 +275,10 @@ public class Data {
             }
         });
 
-        HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
-
         ObservableList<Data> dataList = fetchDataFromDatabase();
         tableView.setItems(dataList);
+
+        HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
 
         vbox.getChildren().addAll(
                 dataIdLabel, dataIdBox,
@@ -263,59 +286,34 @@ public class Data {
                 dataTypeLabel, dataTypeText,
                 rawDataLabel, rawDataText,
                 processedDataLabel, processedDataText,
-                sensorsSensorIdLabel, sensorsSensorIdComboBox,
-                tableView, buttonBox);
+                sensorsSensorIdLabel, sensorsSensorIdComboBox,errorLabel,
+                buttonBox, tableView
+        );
 
         return vbox;
     }
 
-    private static CheckBox createAutoGenerateCheckBox(TextField dataIdText) {
-        CheckBox checkBox = new CheckBox();
-        checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue) {
-                // Checked, disable manual input
-                dataIdText.setDisable(true);
-                dataIdText.clear(); // Clear existing text if any
-            } else {
-                // Unchecked, enable manual input
-                dataIdText.setDisable(false);
-            }
-        });
-        return checkBox;
-    }
-
-    private static boolean isAutoGenerateChecked(TextField dataIdText) {
-        CheckBox checkBox = (CheckBox) dataIdText.getParent().getChildrenUnmodifiable().get(2); // Assuming structure, adjust as per your UI setup
-        return checkBox.isSelected();
-    }
-
     private static ObservableList<Integer> fetchSensorIdsFromDatabase() {
-        ObservableList<Integer> sensorIdList = FXCollections.observableArrayList();
-
+        ObservableList<Integer> sensorIds = FXCollections.observableArrayList();
         try (Connection conn = OracleAPEXConnection.getConnection()) {
             String sql = "SELECT SENSOR_ID FROM \"C4ISR PROJECT (BASIC) V2\".SENSORS";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
-
             while (rs.next()) {
-                int sensorId = rs.getInt("SENSOR_ID");
-                sensorIdList.add(sensorId);
+                sensorIds.add(rs.getInt("SENSOR_ID"));
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
-
-        return sensorIdList;
+        return sensorIds;
     }
 
     private static ObservableList<Data> fetchDataFromDatabase() {
         ObservableList<Data> dataList = FXCollections.observableArrayList();
-
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT DATA_ID, TIMESTAMP, DATA_TYPE, RAW_DATA, PROCESSED_DATA, SENSORS_SENSOR_ID FROM \"C4ISR PROJECT (BASIC) V2\".DATA";
+            String sql = "SELECT * FROM \"C4ISR PROJECT (BASIC) V2\".DATA";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
-
             while (rs.next()) {
                 int dataId = rs.getInt("DATA_ID");
                 String timestamp = rs.getString("TIMESTAMP");
@@ -323,14 +321,30 @@ public class Data {
                 String rawData = rs.getString("RAW_DATA");
                 String processedData = rs.getString("PROCESSED_DATA");
                 int sensorsSensorId = rs.getInt("SENSORS_SENSOR_ID");
-
                 Data data = new Data(dataId, timestamp, dataType, rawData, processedData, sensorsSensorId);
                 dataList.add(data);
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
-
         return dataList;
+    }
+
+    private static CheckBox createAutoGenerateCheckBox(TextField dataIdText) {
+        CheckBox autoGenerateCheckBox = new CheckBox();
+        autoGenerateCheckBox.setOnAction(e -> {
+            if (autoGenerateCheckBox.isSelected()) {
+                dataIdText.setEditable(false);
+                dataIdText.setText("");
+            } else {
+                dataIdText.setEditable(true);
+            }
+        });
+        return autoGenerateCheckBox;
+    }
+
+    private static boolean isAutoGenerateChecked(TextField dataIdText) {
+        CheckBox checkBox = (CheckBox) dataIdText.getParent().getChildrenUnmodifiable().get(2);
+        return checkBox.isSelected();
     }
 }

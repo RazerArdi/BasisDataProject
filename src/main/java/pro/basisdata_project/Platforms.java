@@ -84,7 +84,7 @@ public class Platforms {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
-        Label platformIdLabel = new Label("Platform ID:");
+        Label platformIdLabel = new Label("Platform ID *:");
         TextField platformIdText = new TextField();
         CheckBox autoGenerateIdCheckBox = new CheckBox("Auto Generate ID");
         autoGenerateIdCheckBox.setSelected(true);
@@ -99,18 +99,21 @@ public class Platforms {
             }
         });
 
-        Label platformNameLabel = new Label("Platform Name:");
+        Label platformNameLabel = new Label("Platform Name *:");
         TextField platformNameText = new TextField();
-        Label typeLabel = new Label("Type:");
+        Label typeLabel = new Label("Type *:");
         TextField typeText = new TextField();
-        Label capabilityLabel = new Label("Capability:");
+        Label capabilityLabel = new Label("Capability *:");
         TextField capabilityText = new TextField();
         Label lastMaintenanceLabel = new Label("Last Maintenance:");
         TextField lastMaintenanceText = new TextField();
-        Label missionsMissionIdLabel = new Label("Mission ID:");
+        Label missionsMissionIdLabel = new Label("Mission ID *:");
         ComboBox<String> missionsMissionIdComboBox = new ComboBox<>();
         ObservableList<String> missionIds = fetchMissionIdsFromDatabase();
         missionsMissionIdComboBox.setItems(missionIds);
+
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red");
 
         TableView<Platforms> tableView = new TableView<>();
         TableColumn<Platforms, String> platformIdCol = new TableColumn<>("Platform ID");
@@ -176,6 +179,11 @@ public class Platforms {
             String lastMaintenance = lastMaintenanceText.getText();
             String missionsMissionId = missionsMissionIdComboBox.getValue();
 
+            if (platformName.isEmpty() || type.isEmpty() || capability.isEmpty() || missionsMissionId == null) {
+                errorLabel.setText("Fields marked with * are required!");
+                return;
+            }
+
             Platforms platform = new Platforms(platformId != null ? platformId : "", platformName, type, capability, lastMaintenance, missionsMissionId);
 
             savePlatformToDatabase(platform, autoGenerateIdCheckBox.isSelected());
@@ -193,6 +201,7 @@ public class Platforms {
             lastMaintenanceText.clear();
             missionsMissionIdComboBox.setValue(null); // Clear ComboBox selection
             autoGenerateIdCheckBox.setSelected(true);
+            errorLabel.setText("");
         });
 
         HBox buttonBox = new HBox(10, editButton, deleteButton, createButton);
@@ -205,7 +214,7 @@ public class Platforms {
                 typeLabel, typeText, capabilityLabel, capabilityText,
                 lastMaintenanceLabel, lastMaintenanceText,
                 missionsMissionIdLabel, missionsMissionIdComboBox,
-                tableView, buttonBox);
+                errorLabel, tableView, buttonBox);
 
         return vbox;
     }

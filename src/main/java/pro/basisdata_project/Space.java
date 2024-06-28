@@ -63,22 +63,24 @@ public class Space {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
-        Label spaceIdLabel = new Label("Space ID:");
+        Label spaceIdLabel = new Label("Space ID *:");
         TextField spaceIdText = new TextField();
-        Label taskLabel = new Label("Task:");
+        Label taskLabel = new Label("Task *:");
         TextField taskText = new TextField();
         Label locationLabel = new Label("Location (Optional):");
         TextField locationText = new TextField();
-        Label commIdLabel = new Label("Communication Log ID:");
+        Label commIdLabel = new Label("Communication Log ID *:");
         ComboBox<String> commIdComboBox = new ComboBox<>();
         ObservableList<String> commLogIds = fetchCommunicationLogIdsFromDatabase();
         commIdComboBox.setItems(commLogIds);
 
+        CheckBox autoIncrementCheckBox = new CheckBox("Auto Increment");
+        autoIncrementCheckBox.setSelected(true);
 
         HBox spaceIdBox = new HBox();
         spaceIdBox.getChildren().addAll(
                 spaceIdText,
-                new Label("Auto Generated:"),
+                new Label("* Auto Generated:"),
                 createAutoGenerateCheckBox(spaceIdText)
         );
         spaceIdBox.setSpacing(5);
@@ -95,8 +97,49 @@ public class Space {
 
         tableView.getColumns().addAll(spaceIdCol, taskCol, locationCol, commIdCol);
 
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red");
+
+        Button createButton = new Button("Create");
+        createButton.setOnAction(e -> {
+            int spaceId = -1; // default value
+            if (!isAutoGenerateChecked(spaceIdText)) {
+                try {
+                    spaceId = Integer.parseInt(spaceIdText.getText());
+                } catch (NumberFormatException ex) {
+                    errorLabel.setText("Space ID must be a valid number!");
+                    return;
+                }
+            }
+
+            String task = taskText.getText();
+            String location = locationText.getText();
+            String commId = commIdComboBox.getValue();
+
+            if (task.isEmpty() || commId.isEmpty()) {
+                errorLabel.setText("Fields marked with * are required!");
+                return;
+            }
+
+            if (!isAutoGenerateChecked(spaceIdText) && spaceIdText.getText().isEmpty()) {
+                errorLabel.setText("Space ID must be provided or auto-generated!");
+                return;
+            }
+
+            Space space = new Space(spaceId, task, location, commId);
+            saveSpaceToDatabase(space);
+            tableView.getItems().add(space);
+
+            spaceIdText.clear();
+            taskText.clear();
+            locationText.clear();
+            commIdComboBox.setValue(null);
+            errorLabel.setText("");
+        });
+
         Button editButton = new Button("Edit");
         editButton.setOnAction(e -> {
+            // Logika untuk tombol Edit
             Space selectedSpace = tableView.getSelectionModel().getSelectedItem();
             if (selectedSpace != null) {
                 spaceIdText.setText(String.valueOf(selectedSpace.getSpaceId()));
@@ -110,6 +153,7 @@ public class Space {
 
         Button deleteButton = new Button("Delete");
         deleteButton.setOnAction(e -> {
+            // Logika untuk tombol Delete
             Space selectedSpace = tableView.getSelectionModel().getSelectedItem();
             if (selectedSpace != null) {
                 try (Connection conn = OracleAPEXConnection.getConnection()) {
@@ -131,42 +175,14 @@ public class Space {
             }
         });
 
-        Button createButton = new Button("Create");
-        createButton.setOnAction(e -> {
-            int spaceId = Integer.parseInt(spaceIdText.getText());
-            String task = taskText.getText();
-            String location = locationText.getText();
-            String commId = commIdComboBox.getValue();
-
-            if (!isAutoGenerateChecked(spaceIdText)) {
-                spaceId = Integer.parseInt(spaceIdText.getText());
-            } else {
-                spaceId = -1;
-            }
-
-            Space space = new Space(spaceId, task, location, commId);
-            System.out.println("Space Created: " + space.getSpaceId());
-
-            saveSpaceToDatabase(space);
-
-            tableView.getItems().add(space);
-
-            spaceIdText.clear();
-            taskText.clear();
-            locationText.clear();
-            commIdComboBox.setValue(null);
-        });
-
         HBox buttonBox = new HBox(10, editButton, deleteButton, createButton);
-
-        ObservableList<Space> spaceList = fetchSpacesFromDatabase();
-        tableView.setItems(spaceList);
 
         vbox.getChildren().addAll(
                 spaceIdLabel, spaceIdBox,
                 taskLabel, taskText,
-                locationLabel, locationText, commIdLabel, commIdComboBox,
-                tableView, buttonBox);
+                locationLabel, locationText,
+                commIdLabel, commIdComboBox,
+                errorLabel, tableView, buttonBox);
 
         return vbox;
     }

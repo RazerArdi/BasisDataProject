@@ -30,16 +30,32 @@ public class Land {
         return landId;
     }
 
+    public void setLandId(String landId) {
+        this.landId = landId;
+    }
+
     public String getTask() {
         return task;
+    }
+
+    public void setTask(String task) {
+        this.task = task;
     }
 
     public String getLocation() {
         return location;
     }
 
+    public void setLocation(String location) {
+        this.location = location;
+    }
+
     public String getCommunicationLogCommId() {
         return communicationLogCommId;
+    }
+
+    public void setCommunicationLogCommId(String communicationLogCommId) {
+        this.communicationLogCommId = communicationLogCommId;
     }
 
     public static VBox getLandUI() {
@@ -47,7 +63,7 @@ public class Land {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
-        Label landIdLabel = new Label("Land ID:");
+        Label landIdLabel = new Label("Land ID *:");
         TextField landIdText = new TextField();
         CheckBox autoGenerateCheckbox = new CheckBox("Auto Generate");
         autoGenerateCheckbox.setSelected(true); // Default to auto generate
@@ -58,11 +74,11 @@ public class Land {
             }
         });
 
-        Label taskLabel = new Label("Task:");
+        Label taskLabel = new Label("Task *:");
         TextField taskText = new TextField();
         Label locationLabel = new Label("Location:");
         TextField locationText = new TextField();
-        Label commIdLabel = new Label("Communication Log ID:");
+        Label commIdLabel = new Label("Communication Log ID *:");
         ComboBox<String> commIdComboBox = new ComboBox<>();
 
         // Populate the ComboBox with COMM_IDs from the Communication Log table
@@ -80,41 +96,8 @@ public class Land {
 
         tableView.getColumns().addAll(landIdCol, taskCol, locationCol, commIdCol);
 
-        Button editButton = new Button("Edit");
-        editButton.setOnAction(e -> {
-            Land selectedLand = tableView.getSelectionModel().getSelectedItem();
-            if (selectedLand != null) {
-                landIdText.setText(selectedLand.getLandId());
-                taskText.setText(selectedLand.getTask());
-                locationText.setText(selectedLand.getLocation());
-                commIdComboBox.setValue(selectedLand.getCommunicationLogCommId());
-            } else {
-                showAlert(Alert.AlertType.WARNING, "No Selection", "No Land Selected", "Please select a land to edit.");
-            }
-        });
-
-        Button deleteButton = new Button("Delete");
-        deleteButton.setOnAction(e -> {
-            Land selectedLand = tableView.getSelectionModel().getSelectedItem();
-            if (selectedLand != null) {
-                try (Connection conn = OracleAPEXConnection.getConnection()) {
-                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".LAND WHERE LAND_ID = ?";
-                    PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.setString(1, selectedLand.getLandId());
-                    int affected = pstmt.executeUpdate();
-                    if (affected > 0) {
-                        showAlert(Alert.AlertType.INFORMATION, "Delete Successful", "Land Deleted", "Land with ID " + selectedLand.getLandId() + " has been deleted.");
-                        tableView.getItems().remove(selectedLand);
-                    } else {
-                        showAlert(Alert.AlertType.ERROR, "Delete Failed", "Delete Operation Failed", "Failed to delete land from database.");
-                    }
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            } else {
-                showAlert(Alert.AlertType.WARNING, "No Selection", "No Land Selected", "Please select a land to delete.");
-            }
-        });
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red");
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
@@ -127,6 +110,11 @@ public class Land {
             String task = taskText.getText();
             String location = locationText.getText();
             String commId = commIdComboBox.getValue();
+
+            if (task.isEmpty() || commId.isEmpty() || (landId.isEmpty() && !autoGenerateCheckbox.isSelected())) {
+                errorLabel.setText("Fields marked with * are required!");
+                return;
+            }
 
             Land land = new Land(landId, task, location, commId);
 
@@ -149,9 +137,72 @@ public class Land {
             taskText.clear();
             locationText.clear();
             commIdComboBox.setValue(null);
+            errorLabel.setText("");
         });
 
-        HBox buttonBox = new HBox(10, editButton, deleteButton, createButton);
+        Button editButton = new Button("Edit");
+        editButton.setOnAction(e -> {
+            Land selectedLand = tableView.getSelectionModel().getSelectedItem();
+            if (selectedLand != null) {
+                String landId = landIdText.getText();
+                String task = taskText.getText();
+                String location = locationText.getText();
+                String commId = commIdComboBox.getValue();
+
+                if (task.isEmpty() || commId.isEmpty() || (landId.isEmpty() && !autoGenerateCheckbox.isSelected())) {
+                    errorLabel.setText("Fields marked with * are required!");
+                    return;
+                }
+
+                selectedLand.setLandId(landId);
+                selectedLand.setTask(task);
+                selectedLand.setLocation(location);
+                selectedLand.setCommunicationLogCommId(commId);
+
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".LAND SET TASK = ?, LOCATION = ?, COMMUNICATION_LOG_COMM_ID = ? WHERE LAND_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, task);
+                    pstmt.setString(2, location);
+                    pstmt.setString(3, commId);
+                    pstmt.setString(4, landId);
+                    pstmt.executeUpdate();
+                    System.out.println("Land updated in database.");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+
+                tableView.refresh();
+
+                landIdText.clear();
+                taskText.clear();
+                locationText.clear();
+                commIdComboBox.setValue(null);
+                errorLabel.setText("");
+            }
+        });
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(e -> {
+            Land selectedLand = tableView.getSelectionModel().getSelectedItem();
+            if (selectedLand != null) {
+                String landId = selectedLand.getLandId();
+
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".LAND WHERE LAND_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, landId);
+                    pstmt.executeUpdate();
+                    System.out.println("Land deleted from database.");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+
+                tableView.getItems().remove(selectedLand);
+            }
+        });
+
+        HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
 
         ObservableList<Land> landList = fetchLandFromDatabase();
         tableView.setItems(landList);
@@ -159,8 +210,9 @@ public class Land {
         vbox.getChildren().addAll(
                 landIdLabel, new HBox(10, landIdText, autoGenerateCheckbox),
                 taskLabel, taskText,
-                locationLabel, locationText, commIdLabel, commIdComboBox,
-                tableView, buttonBox);
+                locationLabel, locationText,
+                commIdLabel, commIdComboBox,
+                errorLabel, tableView, buttonBox);
 
         return vbox;
     }

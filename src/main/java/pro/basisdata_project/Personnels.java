@@ -99,16 +99,19 @@ public class Personnels {
             }
         });
 
-        Label personnelNameLabel = new Label("Personnel Name:");
+        Label personnelNameLabel = new Label("Personnel Name *:");
         TextField personnelNameText = new TextField();
-        Label rankLabel = new Label("Rank:");
+        Label rankLabel = new Label("Rank *:");
         TextField rankText = new TextField();
-        Label specialtyLabel = new Label("Specialty:");
+        Label specialtyLabel = new Label("Specialty *:");
         TextField specialtyText = new TextField();
-        Label currentAssignmentLabel = new Label("Current Assignment:");
+        Label currentAssignmentLabel = new Label("Current Assignment *:");
         TextField currentAssignmentText = new TextField();
-        Label contactInfoLabel = new Label("Contact Info:");
+        Label contactInfoLabel = new Label("Contact Info *:");
         TextField contactInfoText = new TextField();
+
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red");
 
         TableView<Personnels> tableView = new TableView<>();
         TableColumn<Personnels, String> personnelIdCol = new TableColumn<>("Personnel ID");
@@ -176,6 +179,11 @@ public class Personnels {
             String currentAssignment = currentAssignmentText.getText();
             String contactInfo = contactInfoText.getText();
 
+            if (personnelName.isEmpty() || rank.isEmpty() || specialty.isEmpty() || currentAssignment.isEmpty() || contactInfo.isEmpty()) {
+                errorLabel.setText("Fields marked with * are required!");
+                return;
+            }
+
             try (Connection conn = OracleAPEXConnection.getConnection()) {
                 String sql;
                 if (autoGenerateIdCheckBox.isSelected()) {
@@ -212,6 +220,7 @@ public class Personnels {
                 currentAssignmentText.clear();
                 contactInfoText.clear();
                 autoGenerateIdCheckBox.setSelected(true);
+                errorLabel.setText("");
 
             } catch (SQLException ex) {
                 ex.printStackTrace();
@@ -222,30 +231,25 @@ public class Personnels {
         tableView.setItems(personnelList);
 
         vbox.getChildren().addAll(
-                personnelIdLabel, personnelIdText, autoGenerateIdCheckBox, personnelNameLabel, personnelNameText,
-                rankLabel, rankText, specialtyLabel, specialtyText,
-                currentAssignmentLabel, currentAssignmentText, contactInfoLabel, contactInfoText,
-                tableView, buttonBox, createButton);
+                personnelIdLabel, personnelIdText, autoGenerateIdCheckBox,
+                personnelNameLabel, personnelNameText,
+                rankLabel, rankText,
+                specialtyLabel, specialtyText,
+                currentAssignmentLabel, currentAssignmentText,
+                contactInfoLabel, contactInfoText,
+                errorLabel, createButton, buttonBox, tableView
+
+        );
 
         return vbox;
     }
 
-    private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
-        Alert alert = new Alert(alertType);
-        alert.setTitle(title);
-        alert.setHeaderText(headerText);
-        alert.setContentText(contentText);
-        alert.showAndWait();
-    }
-
     private static ObservableList<Personnels> fetchPersonnelsFromDatabase() {
         ObservableList<Personnels> personnelList = FXCollections.observableArrayList();
-
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT PERSONNEL_ID, Personnel_Name, RANK, SPECIALTY, CURRENT_ASSIGNMENT, CONTACT_INFO FROM \"C4ISR PROJECT (BASIC) V2\".PERSONNEL";
+            String sql = "SELECT * FROM \"C4ISR PROJECT (BASIC) V2\".PERSONNEL";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
-
             while (rs.next()) {
                 String personnelId = rs.getString("PERSONNEL_ID");
                 String personnelName = rs.getString("Personnel_Name");
@@ -256,10 +260,17 @@ public class Personnels {
                 Personnels personnel = new Personnels(personnelId, personnelName, rank, specialty, currentAssignment, contactInfo);
                 personnelList.add(personnel);
             }
-        } catch (SQLException e) {
-            e.printStackTrace();
+        } catch (SQLException ex) {
+            ex.printStackTrace();
         }
-
         return personnelList;
+    }
+
+    private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.showAndWait();
     }
 }

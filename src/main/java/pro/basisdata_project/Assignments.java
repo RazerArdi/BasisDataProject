@@ -7,6 +7,7 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import pro.basisdata_project.OracleAPEXConnection;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -75,15 +76,15 @@ public class Assignments {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
-        Label assignmentIdLabel = new Label("Assignment ID:");
+        Label assignmentIdLabel = new Label("Assignment ID *:");
         TextField assignmentIdText = new TextField();
-        Label roleLabel = new Label("Role:");
+        Label roleLabel = new Label("Role *:");
         TextField roleText = new TextField();
-        Label startDateLabel = new Label("Start Date:");
+        Label startDateLabel = new Label("Start Date *:");
         DatePicker startDatePicker = new DatePicker();
-        Label endDateLabel = new Label("End Date:");
+        Label endDateLabel = new Label("End Date *:");
         DatePicker endDatePicker = new DatePicker();
-        Label personnelPersonnelIdLabel = new Label("Personnel ID:");
+        Label personnelPersonnelIdLabel = new Label("Personnel ID *:");
         ComboBox<String> personnelPersonnelIdComboBox = new ComboBox<>();
         ObservableList<String> personnelIds = fetchPersonnelIdsFromDatabaseAssignments();
         personnelPersonnelIdComboBox.setItems(personnelIds);
@@ -94,7 +95,7 @@ public class Assignments {
         assignmentIdBox.getChildren().addAll(
                 assignmentIdText,
                 new Label("Auto Generated:"),
-                createAutoGenerateCheckBox(assignmentIdText) // Membuat CheckBox untuk auto-generate
+                createAutoGenerateCheckBox(assignmentIdText)
         );
         assignmentIdBox.setSpacing(5);
 
@@ -112,6 +113,9 @@ public class Assignments {
 
         tableView.getColumns().addAll(assignmentIdCol, roleCol, startDateCol, endDateCol, personnelPersonnelIdCol);
 
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red");
+
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             String assignmentId = assignmentIdText.getText();
@@ -120,10 +124,14 @@ public class Assignments {
             LocalDate endDate = endDatePicker.getValue();
             String personnelPersonnelId = personnelPersonnelIdComboBox.getValue();
 
+            if (assignmentId.isEmpty() || role.isEmpty() || startDate == null || endDate == null || personnelPersonnelId == null) {
+                errorLabel.setText("Fields marked with * are required!");
+                return;
+            }
+
             if (!isAutoGenerateChecked(assignmentIdText)) {
                 assignmentId = assignmentIdText.getText();
             } else {
-                // Mode auto-generate, tandai sebagai "AUTO_GENERATED"
                 assignmentId = "AUTO_GENERATED";
             }
 
@@ -150,6 +158,7 @@ public class Assignments {
             startDatePicker.setValue(null);
             endDatePicker.setValue(null);
             personnelPersonnelIdComboBox.setValue(null);
+            errorLabel.setText("");
         });
 
         Button editButton = new Button("Edit");
@@ -220,7 +229,7 @@ public class Assignments {
                 assignmentIdLabel, assignmentIdBox, roleLabel, roleText,
                 startDateLabel, startDatePicker, endDateLabel, endDatePicker,
                 personnelPersonnelIdLabel, personnelPersonnelIdComboBox,
-                tableView, buttonBox);
+                errorLabel, tableView, buttonBox);
 
         return vbox;
     }
@@ -229,11 +238,9 @@ public class Assignments {
         CheckBox checkBox = new CheckBox();
         checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) {
-                // Centang, nonaktifkan input manual
                 assignmentIdText.setDisable(true);
-                assignmentIdText.clear(); // Bersihkan nilai yang mungkin sudah diisi
+                assignmentIdText.clear();
             } else {
-                // Tidak tercentang, aktifkan kembali input manual
                 assignmentIdText.setDisable(false);
             }
         });
@@ -241,7 +248,7 @@ public class Assignments {
     }
 
     private static boolean isAutoGenerateChecked(TextField assignmentIdText) {
-        CheckBox checkBox = (CheckBox) assignmentIdText.getParent().getChildrenUnmodifiable().get(2); // Menyesuaikan indeks CheckBox
+        CheckBox checkBox = (CheckBox) assignmentIdText.getParent().getChildrenUnmodifiable().get(2);
         return checkBox.isSelected();
     }
 

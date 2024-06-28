@@ -63,13 +63,13 @@ public class Air {
         vbox.setPadding(new Insets(10));
         vbox.setSpacing(10);
 
-        Label airIdLabel = new Label("Air ID:");
+        Label airIdLabel = new Label("Air ID *:");
         TextField airIdText = new TextField();
         Label taskLabel = new Label("Task:");
         TextField taskText = new TextField();
         Label locationLabel = new Label("Location:");
         TextField locationText = new TextField();
-        Label commIdLabel = new Label("Communication Log ID:");
+        Label commIdLabel = new Label("Communication Log ID *:");
         ComboBox<String> commIdComboBox = new ComboBox<>();
         ObservableList<String> commIdList = fetchCommIdsFromDatabase();
         commIdComboBox.setItems(commIdList);
@@ -80,10 +80,9 @@ public class Air {
         airIdBox.getChildren().addAll(
                 airIdText,
                 new Label("Auto Generated:"),
-                createAutoGenerateCheckBox(airIdText) // Membuat CheckBox untuk auto-generate
+                createAutoGenerateCheckBox(airIdText)
         );
         airIdBox.setSpacing(5);
-
 
         TableView<Air> tableView = new TableView<>();
         TableColumn<Air, String> airIdCol = new TableColumn<>("Air ID");
@@ -96,12 +95,20 @@ public class Air {
         commIdCol.setCellValueFactory(new PropertyValueFactory<>("communicationLogCommId"));
         tableView.getColumns().addAll(airIdCol, taskCol, locationCol, commIdCol);
 
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red");
+
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             String airId = airIdText.getText();
             String task = taskText.getText();
             String location = locationText.getText();
             String commId = commIdComboBox.getValue();
+
+            if (airId.isEmpty() || commId.isEmpty()) {
+                errorLabel.setText("Fields marked with * are required!");
+                return;
+            }
 
             if (!isAutoGenerateChecked(airIdText)) {
                 airId = airIdText.getText();
@@ -131,6 +138,7 @@ public class Air {
             taskText.clear();
             locationText.clear();
             commIdComboBox.setValue(null);
+            errorLabel.setText("");
         });
 
         Button editButton = new Button("Edit");
@@ -199,7 +207,7 @@ public class Air {
                 taskLabel, taskText,
                 locationLabel, locationText,
                 commIdLabel, commIdComboBox,
-                tableView, createButton);
+                errorLabel, tableView, buttonBox);
 
         return vbox;
     }
@@ -208,11 +216,9 @@ public class Air {
         CheckBox checkBox = new CheckBox();
         checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
             if (newValue) {
-                // Centang, nonaktifkan input manual
                 airIdText.setDisable(true);
-                airIdText.clear(); // Bersihkan nilai yang mungkin sudah diisi
+                airIdText.clear();
             } else {
-                // Tidak tercentang, aktifkan kembali input manual
                 airIdText.setDisable(false);
             }
         });
@@ -220,7 +226,7 @@ public class Air {
     }
 
     private static boolean isAutoGenerateChecked(TextField airIdText) {
-        CheckBox checkBox = (CheckBox) airIdText.getParent().getChildrenUnmodifiable().get(2); // Menyesuaikan indeks CheckBox
+        CheckBox checkBox = (CheckBox) airIdText.getParent().getChildrenUnmodifiable().get(2);
         return checkBox.isSelected();
     }
 
