@@ -119,14 +119,19 @@ public class Users {
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            String userId = autoGenerateIdCheckBox.isSelected() ? "AUTO_GENERATED" : userIdText.getText();
+            String userId = autoGenerateIdCheckBox.isSelected() ? generateUserId() : userIdText.getText();
             String name = nameText.getText();
             String role = roleText.getText();
             int accessLevel = accessLevelComboBox.getValue();
             java.time.LocalDate lastLoginDate = lastLoginPicker.getValue();
 
-            if (userId.isEmpty() || name.isEmpty() || role.isEmpty() || lastLoginDate == null) {
+            if (name.isEmpty() || role.isEmpty() || lastLoginDate == null || (!autoGenerateIdCheckBox.isSelected() && userId.isEmpty())) {
                 errorLabel.setText("Fields marked with * are required!");
+                return;
+            }
+
+            if (!autoGenerateIdCheckBox.isSelected() && userIdExists(userId)) {
+                errorLabel.setText("User ID already exists!");
                 return;
             }
 
@@ -134,21 +139,11 @@ public class Users {
 
             Users user = new Users(userId, name, role, accessLevel, lastLogin);
 
-            try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".USERS (USER_ID, NAME, ROLE, ACCESS_LEVEL, LAST_LOGIN) VALUES (?, ?, ?, ?, ?)";
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                pstmt.setString(1, userId);
-                pstmt.setString(2, name);
-                pstmt.setString(3, role);
-                pstmt.setInt(4, accessLevel);
-                pstmt.setDate(5, Date.valueOf(lastLoginDate));
-                pstmt.executeUpdate();
-                System.out.println("User saved to database.");
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
+            saveUserToDatabase(user);
 
             tableView.getItems().add(user);
+
+            showAlert(Alert.AlertType.INFORMATION, "Success", "User Created", "User has been created successfully.");
 
             userIdText.clear();
             nameText.clear();
@@ -162,39 +157,42 @@ public class Users {
         editButton.setOnAction(e -> {
             Users selectedUser = tableView.getSelectionModel().getSelectedItem();
             if (selectedUser != null) {
-                String userId = autoGenerateIdCheckBox.isSelected() ? "AUTO_GENERATED" : userIdText.getText();
+                String userId = selectedUser.getUserId();
                 String name = nameText.getText();
                 String role = roleText.getText();
                 int accessLevel = accessLevelComboBox.getValue();
                 java.time.LocalDate lastLoginDate = lastLoginPicker.getValue();
 
-                selectedUser.setUserId(userId);
+                // Validation
+                if (userId.isEmpty()) {
+                    errorLabel.setText("User ID is required!");
+                    return;
+                }
+
+                if (name.isEmpty() || role.isEmpty() || lastLoginDate == null) {
+                    errorLabel.setText("Fields marked with * are required!");
+                    return;
+                }
+
                 selectedUser.setName(name);
                 selectedUser.setRole(role);
                 selectedUser.setAccessLevel(accessLevel);
                 selectedUser.setLastLogin(lastLoginDate.toEpochDay());
 
-                try (Connection conn = OracleAPEXConnection.getConnection()) {
-                    String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".USERS SET NAME = ?, ROLE = ?, ACCESS_LEVEL = ?, LAST_LOGIN = ? WHERE USER_ID = ?";
-                    PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.setString(1, name);
-                    pstmt.setString(2, role);
-                    pstmt.setInt(3, accessLevel);
-                    pstmt.setDate(4, Date.valueOf(lastLoginDate));
-                    pstmt.setString(5, userId);
-                    pstmt.executeUpdate();
-                    System.out.println("User updated in database.");
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
+                updateUserInDatabase(selectedUser);
 
                 tableView.refresh();
+
+                showAlert(Alert.AlertType.INFORMATION, "Success", "User Updated", "User details have been updated successfully.");
 
                 userIdText.clear();
                 nameText.clear();
                 roleText.clear();
                 accessLevelComboBox.setValue(1);
                 lastLoginPicker.getEditor().clear();
+                errorLabel.setText("");
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No User Selected", "Please select a user to edit.");
             }
         });
 
@@ -204,20 +202,15 @@ public class Users {
             if (selectedUser != null) {
                 String userId = selectedUser.getUserId();
 
-                try (Connection conn = OracleAPEXConnection.getConnection()) {
-                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".USERS WHERE USER_ID = ?";
-                    PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.setString(1, userId);
-                    pstmt.executeUpdate();
-                    System.out.println("User deleted from database.");
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
+                deleteUserFromDatabase(selectedUser);
 
                 tableView.getItems().remove(selectedUser);
+
+                showAlert(Alert.AlertType.INFORMATION, "Success", "User Deleted", "User has been deleted successfully.");
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No User Selected", "Please select a user to delete.");
             }
         });
-
 
         HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
 
@@ -233,7 +226,88 @@ public class Users {
         return vbox;
     }
 
+    private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.showAndWait();
+    }
 
+    private static boolean userIdExists(String userId) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT COUNT(*) FROM \"C4ISR PROJECT (BASIC) V2\".USERS WHERE USER_ID = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, userId);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0;
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return false;
+    }
+
+    private static String generateUserId() {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT \"C4ISR PROJECT (BASIC) V2\".USER_SEQ.NEXTVAL FROM dual";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getString(1);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return "AUTO_GENERATED";
+    }
+
+    private static void saveUserToDatabase(Users user) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".USERS (USER_ID, NAME, ROLE, ACCESS_LEVEL, LAST_LOGIN) VALUES (?, ?, ?, ?, ?)";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, user.getUserId());
+            pstmt.setString(2, user.getName());
+            pstmt.setString(3, user.getRole());
+            pstmt.setInt(4, user.getAccessLevel());
+            pstmt.setDate(5, new Date(user.getLastLogin()));
+            pstmt.executeUpdate();
+            System.out.println("User saved to database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private static void updateUserInDatabase(Users user) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".USERS " +
+                    "SET NAME = ?, ROLE = ?, ACCESS_LEVEL = ?, LAST_LOGIN = ? " +
+                    "WHERE USER_ID = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, user.getName());
+            pstmt.setString(2, user.getRole());
+            pstmt.setInt(3, user.getAccessLevel());
+            pstmt.setDate(4, new Date(user.getLastLogin()));
+            pstmt.setString(5, user.getUserId());
+            pstmt.executeUpdate();
+            System.out.println("User updated in database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private static void deleteUserFromDatabase(Users user) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".USERS WHERE USER_ID = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, user.getUserId());
+            pstmt.executeUpdate();
+            System.out.println("User deleted from database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
 
     private static ObservableList<Users> fetchUsersFromDatabase() {
         ObservableList<Users> usersList = FXCollections.observableArrayList();
@@ -248,7 +322,7 @@ public class Users {
                 String name = rs.getString("NAME");
                 String role = rs.getString("ROLE");
                 int accessLevel = rs.getInt("ACCESS_LEVEL");
-                long lastLogin = rs.getDate("LAST_LOGIN").toLocalDate().toEpochDay();
+                long lastLogin = rs.getDate("LAST_LOGIN").getTime();
 
                 Users user = new Users(userId, name, role, accessLevel, lastLogin);
                 usersList.add(user);

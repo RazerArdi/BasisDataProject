@@ -17,14 +17,42 @@
   </component>
   <component name="DBNavigator.Project.DatabaseConsoleManager">
     <connection id="ecc496e3-5be9-4f65-90a3-75cee657f7c2">
-      <console name="Connection" type="STANDARD" schema="C4ISR PROJECT (BASIC) V2" session="Main"><![CDATA[select * from personnels]]></console>
+      <console name="Connection" type="STANDARD" schema="C4ISR PROJECT (BASIC) V2" session="Main"><![CDATA[create sequence rel_10_seq
+    start with 1
+    increment by 1;
+
+create or replace trigger rel_10_maintenance_trigger
+before insert on MAINTENANCE_LOGS
+for each row
+begin
+    if :new.maintenance_id is null then
+        select rel_10_seq.nextval
+        into :new.maintenance_id
+        from dual;
+    end if;
+end;
+
+
+ALTER TABLE maintenance_logs
+ADD DATE_MAINTENANCE DATE NOT NULL;
+
+select * from "C4ISR PROJECT (BASIC) V2"."contractors";
+
+
+SELECT * FROM equipment
+
+SELECT * FROM MAINTENANCE_LOGS
+
+SELECT * FROM LAND]]></console>
     </connection>
   </component>
   <component name="DBNavigator.Project.DatabaseEditorStateManager">
     <last-used-providers />
   </component>
   <component name="DBNavigator.Project.DatabaseFileManager">
-    <open-files />
+    <open-files>
+      <object connection-id="ecc496e3-5be9-4f65-90a3-75cee657f7c2" object-ref="consoles/Connection" />
+    </open-files>
   </component>
   <component name="DBNavigator.Project.DatabaseSessionManager">
     <connection id="ecc496e3-5be9-4f65-90a3-75cee657f7c2" />

@@ -8,21 +8,19 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.time.LocalDateTime;
 
 public class Data {
 
     private int dataId;
-    private String timestamp;
+    private java.sql.Timestamp timestamp;
     private String dataType;
     private String rawData;
     private String processedData;
     private int sensorsSensorId;
 
-    public Data(int dataId, String timestamp, String dataType, String rawData, String processedData, int sensorsSensorId) {
+    public Data(int dataId, java.sql.Timestamp timestamp, String dataType, String rawData, String processedData, int sensorsSensorId) {
         this.dataId = dataId;
         this.timestamp = timestamp;
         this.dataType = dataType;
@@ -39,11 +37,11 @@ public class Data {
         this.dataId = dataId;
     }
 
-    public String getTimestamp() {
+    public java.sql.Timestamp getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(String timestamp) {
+    public void setTimestamp(java.sql.Timestamp timestamp) {
         this.timestamp = timestamp;
     }
 
@@ -86,8 +84,6 @@ public class Data {
 
         Label dataIdLabel = new Label("Data ID *:");
         TextField dataIdText = new TextField();
-        Label timestampLabel = new Label("Timestamp *:");
-        TextField timestampText = new TextField();
         Label dataTypeLabel = new Label("Data Type *:");
         TextField dataTypeText = new TextField();
         Label rawDataLabel = new Label("Raw Data:");
@@ -101,18 +97,21 @@ public class Data {
 
         CheckBox autoIncrementCheckBox = new CheckBox("Auto Increment");
         autoIncrementCheckBox.setSelected(true);
-        HBox dataIdBox = new HBox();
-        dataIdBox.getChildren().addAll(
-                dataIdText,
-                new Label("Auto Generated:"),
-                createAutoGenerateCheckBox(dataIdText)
-        );
-        dataIdBox.setSpacing(5);
+        autoIncrementCheckBox.setOnAction(e -> {
+            if (autoIncrementCheckBox.isSelected()) {
+                dataIdText.setDisable(true);
+                dataIdText.clear();
+            } else {
+                dataIdText.setDisable(false);
+            }
+        });
+
+        HBox dataIdBox = new HBox(5, dataIdText, autoIncrementCheckBox);
 
         TableView<Data> tableView = new TableView<>();
         TableColumn<Data, Integer> dataIdCol = new TableColumn<>("Data ID");
         dataIdCol.setCellValueFactory(new PropertyValueFactory<>("dataId"));
-        TableColumn<Data, String> timestampCol = new TableColumn<>("Timestamp");
+        TableColumn<Data, java.sql.Timestamp> timestampCol = new TableColumn<>("Timestamp");
         timestampCol.setCellValueFactory(new PropertyValueFactory<>("timestamp"));
         TableColumn<Data, String> dataTypeCol = new TableColumn<>("Data Type");
         dataTypeCol.setCellValueFactory(new PropertyValueFactory<>("dataType"));
@@ -132,59 +131,41 @@ public class Data {
         createButton.setOnAction(e -> {
             try {
                 int dataId;
-                if (!isAutoGenerateChecked(dataIdText)) {
-                    String dataIdStr = dataIdText.getText().trim();  // Trim to remove any leading/trailing whitespace
+                if (!autoIncrementCheckBox.isSelected()) {
+                    String dataIdStr = dataIdText.getText().trim();
                     if (dataIdStr.isEmpty()) {
-                        // Handle case where Data ID is empty
                         errorLabel.setText("Data ID is required!");
                         return;
                     }
                     try {
                         dataId = Integer.parseInt(dataIdStr);
                     } catch (NumberFormatException ex) {
-                        ex.printStackTrace();
-                        Alert alert = new Alert(Alert.AlertType.ERROR);
-                        alert.setContentText("Invalid input data ID.");
-                        alert.show();
+                        showAlert(Alert.AlertType.ERROR, "Invalid Input", "Invalid Data ID", "Data ID must be a valid number!");
                         return;
                     }
                 } else {
-                    // Auto generate mode, set as a placeholder
-                    dataId = -1; // Replace with your auto-generation logic
+                    dataId = getNextDataId();
                 }
-                String timestamp = timestampText.getText();
+
+                java.sql.Timestamp timestamp = getCurrentTimestamp();
                 String dataType = dataTypeText.getText();
                 String rawData = rawDataText.getText();
                 String processedData = processedDataText.getText();
-                int sensorsSensorId = sensorsSensorIdComboBox.getValue();
+                Integer sensorsSensorId = sensorsSensorIdComboBox.getValue();
 
-                if (dataIdText.getText().isEmpty() || timestampText.getText().isEmpty() || dataTypeText.getText().isEmpty() || sensorsSensorIdComboBox.getValue() == null) {
-                    errorLabel.setText("Fields marked with * are required!");
+                if (dataType.isEmpty() || sensorsSensorId == null) {
+                    showAlert(Alert.AlertType.ERROR, "Missing Fields", "Required Fields", "Fields marked with * are required!");
                     return;
                 }
 
                 Data data = new Data(dataId, timestamp, dataType, rawData, processedData, sensorsSensorId);
-                System.out.println("Data Created: " + data.getDataId());
 
-                try (Connection conn = OracleAPEXConnection.getConnection()) {
-                    String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".DATA (DATA_ID, TIMESTAMP, DATA_TYPE, RAW_DATA, PROCESSED_DATA, SENSORS_SENSOR_ID) VALUES (?, ?, ?, ?, ?, ?)";
-                    PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.setInt(1, dataId);
-                    pstmt.setString(2, timestamp);
-                    pstmt.setString(3, dataType);
-                    pstmt.setString(4, rawData);
-                    pstmt.setString(5, processedData);
-                    pstmt.setInt(6, sensorsSensorId);
-                    pstmt.executeUpdate();
-                    System.out.println("Data saved to database.");
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-
+                saveDataToDatabase(data);
                 tableView.getItems().add(data);
 
+                showAlert(Alert.AlertType.INFORMATION, "Data Created", "Success", "Data has been created successfully.");
+
                 dataIdText.clear();
-                timestampText.clear();
                 dataTypeText.clear();
                 rawDataText.clear();
                 processedDataText.clear();
@@ -192,9 +173,7 @@ public class Data {
                 errorLabel.setText("");
             } catch (NumberFormatException ex) {
                 ex.printStackTrace();
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setContentText("Invalid input data.");
-                alert.show();
+                showAlert(Alert.AlertType.ERROR, "Invalid Input", "Invalid Data", "Please enter valid data.");
             }
         });
 
@@ -204,17 +183,17 @@ public class Data {
             if (selectedData != null) {
                 try {
                     int dataId;
-                    if (!isAutoGenerateChecked(dataIdText)) {
+                    if (!autoIncrementCheckBox.isSelected()) {
                         dataId = Integer.parseInt(dataIdText.getText());
                     } else {
-                        // Auto generate mode, set as a placeholder
-                        dataId = -1; // Replace with your auto-generation logic
+                        dataId = selectedData.getDataId();
                     }
-                    String timestamp = timestampText.getText();
+
+                    java.sql.Timestamp timestamp = getCurrentTimestamp();
                     String dataType = dataTypeText.getText();
                     String rawData = rawDataText.getText();
                     String processedData = processedDataText.getText();
-                    int sensorsSensorId = sensorsSensorIdComboBox.getValue();
+                    Integer sensorsSensorId = sensorsSensorIdComboBox.getValue();
 
                     selectedData.setDataId(dataId);
                     selectedData.setTimestamp(timestamp);
@@ -223,35 +202,21 @@ public class Data {
                     selectedData.setProcessedData(processedData);
                     selectedData.setSensorsSensorId(sensorsSensorId);
 
-                    try (Connection conn = OracleAPEXConnection.getConnection()) {
-                        String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".DATA SET TIMESTAMP = ?, DATA_TYPE = ?, RAW_DATA = ?, PROCESSED_DATA = ?, SENSORS_SENSOR_ID = ? WHERE DATA_ID = ?";
-                        PreparedStatement pstmt = conn.prepareStatement(sql);
-                        pstmt.setString(1, timestamp);
-                        pstmt.setString(2, dataType);
-                        pstmt.setString(3, rawData);
-                        pstmt.setString(4, processedData);
-                        pstmt.setInt(5, sensorsSensorId);
-                        pstmt.setInt(6, dataId);
-                        pstmt.executeUpdate();
-                        System.out.println("Data updated in database.");
-                    } catch (SQLException ex) {
-                        ex.printStackTrace();
-                    }
+                    updateDataInDatabase(selectedData);
 
                     tableView.refresh();
 
                     dataIdText.clear();
-                    timestampText.clear();
                     dataTypeText.clear();
                     rawDataText.clear();
                     processedDataText.clear();
                     sensorsSensorIdComboBox.setValue(null);
                 } catch (NumberFormatException ex) {
                     ex.printStackTrace();
-                    Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setContentText("Invalid input data.");
-                    alert.show();
+                    showAlert(Alert.AlertType.ERROR, "Invalid Input", "Invalid Data", "Please enter valid data.");
                 }
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Data Selected", "Please select a data to edit.");
             }
         });
 
@@ -259,19 +224,12 @@ public class Data {
         deleteButton.setOnAction(e -> {
             Data selectedData = tableView.getSelectionModel().getSelectedItem();
             if (selectedData != null) {
-                int dataId = selectedData.getDataId();
-
-                try (Connection conn = OracleAPEXConnection.getConnection()) {
-                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".DATA WHERE DATA_ID = ?";
-                    PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.setInt(1, dataId);
-                    pstmt.executeUpdate();
-                    System.out.println("Data deleted from database.");
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
+                deleteDataFromDatabase(selectedData);
 
                 tableView.getItems().remove(selectedData);
+                showAlert(Alert.AlertType.INFORMATION, "Data Deleted", "Success", "Data has been deleted successfully.");
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Data Selected", "Please select a data to delete.");
             }
         });
 
@@ -282,11 +240,11 @@ public class Data {
 
         vbox.getChildren().addAll(
                 dataIdLabel, dataIdBox,
-                timestampLabel, timestampText,
                 dataTypeLabel, dataTypeText,
                 rawDataLabel, rawDataText,
                 processedDataLabel, processedDataText,
-                sensorsSensorIdLabel, sensorsSensorIdComboBox,errorLabel,
+                sensorsSensorIdLabel, sensorsSensorIdComboBox,
+                errorLabel,
                 buttonBox, tableView
         );
 
@@ -304,6 +262,7 @@ public class Data {
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Fetch Error", "Fetch Operation Failed", "Failed to fetch sensor IDs from database.");
         }
         return sensorIds;
     }
@@ -316,7 +275,7 @@ public class Data {
             ResultSet rs = pstmt.executeQuery();
             while (rs.next()) {
                 int dataId = rs.getInt("DATA_ID");
-                String timestamp = rs.getString("TIMESTAMP");
+                java.sql.Timestamp timestamp = rs.getTimestamp("TIMESTAMP");
                 String dataType = rs.getString("DATA_TYPE");
                 String rawData = rs.getString("RAW_DATA");
                 String processedData = rs.getString("PROCESSED_DATA");
@@ -326,25 +285,85 @@ public class Data {
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Fetch Error", "Fetch Operation Failed", "Failed to fetch data from database.");
         }
         return dataList;
     }
 
-    private static CheckBox createAutoGenerateCheckBox(TextField dataIdText) {
-        CheckBox autoGenerateCheckBox = new CheckBox();
-        autoGenerateCheckBox.setOnAction(e -> {
-            if (autoGenerateCheckBox.isSelected()) {
-                dataIdText.setEditable(false);
-                dataIdText.setText("");
-            } else {
-                dataIdText.setEditable(true);
-            }
-        });
-        return autoGenerateCheckBox;
+    private static void saveDataToDatabase(Data data) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".DATA (DATA_ID, TIMESTAMP, DATA_TYPE, RAW_DATA, PROCESSED_DATA, SENSORS_SENSOR_ID) VALUES (?, ?, ?, ?, ?, ?)";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, data.getDataId());
+            pstmt.setTimestamp(2, data.getTimestamp());
+            pstmt.setString(3, data.getDataType());
+            pstmt.setString(4, data.getRawData());
+            pstmt.setString(5, data.getProcessedData());
+            pstmt.setInt(6, data.getSensorsSensorId());
+            pstmt.executeUpdate();
+            System.out.println("Data saved to database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Save Error", "Save Operation Failed", "Failed to save data to database.");
+        }
     }
 
-    private static boolean isAutoGenerateChecked(TextField dataIdText) {
-        CheckBox checkBox = (CheckBox) dataIdText.getParent().getChildrenUnmodifiable().get(2);
-        return checkBox.isSelected();
+    private static void updateDataInDatabase(Data data) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".DATA SET TIMESTAMP = ?, DATA_TYPE = ?, RAW_DATA = ?, PROCESSED_DATA = ?, SENSORS_SENSOR_ID = ? WHERE DATA_ID = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setTimestamp(1, data.getTimestamp());
+            pstmt.setString(2, data.getDataType());
+            pstmt.setString(3, data.getRawData());
+            pstmt.setString(4, data.getProcessedData());
+            pstmt.setInt(5, data.getSensorsSensorId());
+            pstmt.setInt(6, data.getDataId());
+            pstmt.executeUpdate();
+            System.out.println("Data updated in database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Update Error", "Update Operation Failed", "Failed to update data in database.");
+        }
+    }
+
+    private static void deleteDataFromDatabase(Data data) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".DATA WHERE DATA_ID = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, data.getDataId());
+            pstmt.executeUpdate();
+            System.out.println("Data deleted from database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Delete Error", "Delete Operation Failed", "Failed to delete data from database.");
+        }
+    }
+
+    private static void showAlert(Alert.AlertType type, String title, String headerText, String contentText) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.showAndWait();
+    }
+
+    private static java.sql.Timestamp getCurrentTimestamp() {
+        LocalDateTime now = LocalDateTime.now();
+        return java.sql.Timestamp.valueOf(now);
+    }
+
+    private static int getNextDataId() {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT \"C4ISR PROJECT (BASIC) V2\".DATA_SEQ.NEXTVAL FROM dual";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "ID Generation Error", "Failed to Generate ID", "Failed to generate next data ID.");
+        }
+        return -1;
     }
 }

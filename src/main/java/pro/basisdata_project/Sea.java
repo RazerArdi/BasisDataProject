@@ -80,11 +80,8 @@ public class Sea {
         TextField locationText = new TextField();
         Label commIdLabel = new Label("Communication Log ID *:");
         ComboBox<String> commIdComboBox = new ComboBox<>();
-        ObservableList<String> commLogIds = fetchCommunicationLogIdsFromDatabase();
-        commIdComboBox.setItems(commLogIds);
 
-        Label errorLabel = new Label();
-        errorLabel.setStyle("-fx-text-fill: red");
+        loadCommIdsIntoComboBox(commIdComboBox);
 
         TableView<Sea> tableView = new TableView<>();
         TableColumn<Sea, String> platformIdCol = new TableColumn<>("Platform ID");
@@ -98,47 +95,14 @@ public class Sea {
 
         tableView.getColumns().addAll(platformIdCol, taskCol, locationCol, commIdCol);
 
-        Button editButton = new Button("Edit");
-        editButton.setOnAction(e -> {
-            Sea selectedSea = tableView.getSelectionModel().getSelectedItem();
-            if (selectedSea != null) {
-                platformIdText.setText(selectedSea.getSeaPlatformId());
-                taskText.setText(selectedSea.getTask());
-                locationText.setText(selectedSea.getLocation());
-                commIdComboBox.setValue(selectedSea.getCommunicationLogCommId());
-            } else {
-                showAlert(Alert.AlertType.WARNING, "No Selection", "No Sea Platform Selected", "Please select a sea platform to edit.");
-            }
-        });
-
-        Button deleteButton = new Button("Delete");
-        deleteButton.setOnAction(e -> {
-            Sea selectedSea = tableView.getSelectionModel().getSelectedItem();
-            if (selectedSea != null) {
-                try (Connection conn = OracleAPEXConnection.getConnection()) {
-                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".SEA WHERE SEA_PLATFORM_ID = ?";
-                    PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.setString(1, selectedSea.getSeaPlatformId());
-                    int affected = pstmt.executeUpdate();
-                    if (affected > 0) {
-                        showAlert(Alert.AlertType.INFORMATION, "Delete Successful", "Sea Platform Deleted", "Sea Platform with ID " + selectedSea.getSeaPlatformId() + " has been deleted.");
-                        tableView.getItems().remove(selectedSea);
-                    } else {
-                        showAlert(Alert.AlertType.ERROR, "Delete Failed", "Delete Operation Failed", "Failed to delete sea platform from database.");
-                    }
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-            } else {
-                showAlert(Alert.AlertType.WARNING, "No Selection", "No Sea Platform Selected", "Please select a sea platform to delete.");
-            }
-        });
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red");
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
             String platformId;
             if (autoGenerateCheckbox.isSelected()) {
-                platformId = "AUTO_GENERATED";
+                platformId = getNextSeaPlatformIdFromSequence();
             } else {
                 platformId = platformIdText.getText();
             }
@@ -146,13 +110,12 @@ public class Sea {
             String location = locationText.getText();
             String commId = commIdComboBox.getValue();
 
-            if (platformId.isEmpty() || task.isEmpty() || commId.isEmpty()) {
+            if (task.isEmpty() || commId.isEmpty() || (!autoGenerateCheckbox.isSelected() && platformId.isEmpty())) {
                 errorLabel.setText("Fields marked with * are required!");
                 return;
             }
 
             Sea sea = new Sea(platformId, task, location, commId);
-            System.out.println("Sea Platform Created: " + sea.getSeaPlatformId());
 
             saveSeaPlatformToDatabase(sea);
 
@@ -165,7 +128,78 @@ public class Sea {
             errorLabel.setText("");
         });
 
-        HBox buttonBox = new HBox(10, editButton, deleteButton, createButton);
+        Button editButton = new Button("Edit");
+        editButton.setOnAction(e -> {
+            Sea selectedSea = tableView.getSelectionModel().getSelectedItem();
+            if (selectedSea != null) {
+                String platformId = selectedSea.getSeaPlatformId();
+                String task = taskText.getText();
+                String location = locationText.getText();
+                String commId = commIdComboBox.getValue();
+
+                if (task.isEmpty() || commId.isEmpty()) {
+                    errorLabel.setText("Fields marked with * are required!");
+                    return;
+                }
+
+                selectedSea.setTask(task);
+                selectedSea.setLocation(location);
+                selectedSea.setCommunicationLogCommId(commId);
+
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".SEA SET TASK = ?, LOCATION = ?, COMMUNICATION_LOG_COMM_ID = ? WHERE SEA_PLATFORM_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, task);
+                    pstmt.setString(2, location);
+                    pstmt.setString(3, commId);
+                    pstmt.setString(4, platformId);
+                    pstmt.executeUpdate();
+                    System.out.println("Sea platform updated in database.");
+                    showAlert(Alert.AlertType.INFORMATION, "Success", "Sea Platform Updated", "Sea Platform with ID " + platformId + " has been updated.");
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                    showAlert(Alert.AlertType.ERROR, "Error", "Database Error", "Failed to update sea platform in database.");
+                }
+
+                tableView.refresh();
+
+                taskText.clear();
+                locationText.clear();
+                commIdComboBox.setValue(null);
+                errorLabel.setText("");
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Sea Platform Selected", "Please select a sea platform to edit.");
+            }
+        });
+
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(e -> {
+            Sea selectedSea = tableView.getSelectionModel().getSelectedItem();
+            if (selectedSea != null) {
+                String platformId = selectedSea.getSeaPlatformId();
+
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".SEA WHERE SEA_PLATFORM_ID = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, platformId);
+                    int affected = pstmt.executeUpdate();
+                    if (affected > 0) {
+                        showAlert(Alert.AlertType.INFORMATION, "Delete Successful", "Sea Platform Deleted", "Sea Platform with ID " + platformId + " has been deleted.");
+                        tableView.getItems().remove(selectedSea);
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Delete Failed", "Delete Operation Failed", "Failed to delete sea platform from database.");
+                    }
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                    showAlert(Alert.AlertType.ERROR, "Error", "Database Error", "Failed to delete sea platform from database.");
+                }
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Sea Platform Selected", "Please select a sea platform to delete.");
+            }
+        });
+
+        HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
 
         ObservableList<Sea> seaList = fetchSeaPlatformsFromDatabase();
         tableView.setItems(seaList);
@@ -200,6 +234,7 @@ public class Sea {
             System.out.println("Sea platform saved to database.");
         } catch (SQLException ex) {
             ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Error", "Database Error", "Failed to save sea platform to database.");
         }
     }
 
@@ -227,8 +262,8 @@ public class Sea {
         return seaList;
     }
 
-    private static ObservableList<String> fetchCommunicationLogIdsFromDatabase() {
-        ObservableList<String> commLogIds = FXCollections.observableArrayList();
+    private static void loadCommIdsIntoComboBox(ComboBox<String> commIdComboBox) {
+        ObservableList<String> commIds = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
             String sql = "SELECT COMM_ID FROM \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG";
@@ -237,12 +272,27 @@ public class Sea {
 
             while (rs.next()) {
                 String commId = rs.getString("COMM_ID");
-                commLogIds.add(commId);
+                commIds.add(commId);
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
 
-        return commLogIds;
+        commIdComboBox.setItems(commIds);
+    }
+
+    private static String getNextSeaPlatformIdFromSequence() {
+        String seaPlatformId = null;
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT \"C4ISR PROJECT (BASIC) V2\".SEA_SEQ.NEXTVAL FROM dual";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                seaPlatformId = "SEA-" + rs.getInt(1);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return seaPlatformId;
     }
 }

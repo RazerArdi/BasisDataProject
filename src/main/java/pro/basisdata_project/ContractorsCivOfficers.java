@@ -19,14 +19,16 @@ public class ContractorsCivOfficers {
     private String officerId;
     private String personnelName;
     private String rank;
+    private String contractDate;
     private String activeDate;
-    private String personnelType; // New field for personnel type
+    private String personnelType;
 
-    public ContractorsCivOfficers(String personnelId, String officerId, String personnelName, String rank, String activeDate, String personnelType) {
+    public ContractorsCivOfficers(String personnelId, String officerId, String personnelName, String rank, String contractDate, String activeDate, String personnelType) {
         this.personnelId = personnelId;
         this.officerId = officerId;
         this.personnelName = personnelName;
         this.rank = rank;
+        this.contractDate = contractDate;
         this.activeDate = activeDate;
         this.personnelType = personnelType;
     }
@@ -63,6 +65,14 @@ public class ContractorsCivOfficers {
         this.rank = rank;
     }
 
+    public String getContractDate() {
+        return contractDate;
+    }
+
+    public void setContractDate(String contractDate) {
+        this.contractDate = contractDate;
+    }
+
     public String getActiveDate() {
         return activeDate;
     }
@@ -95,8 +105,36 @@ public class ContractorsCivOfficers {
         TextField personnelNameText = new TextField();
         Label rankLabel = new Label("Rank:");
         TextField rankText = new TextField();
+        Label contractDateLabel = new Label("Contract Date:");
+        DatePicker contractDatePicker = new DatePicker();
         Label activeDateLabel = new Label("Active Date:");
-        TextField activeDateText = new TextField();
+        DatePicker activeDateDatePicker = new DatePicker();
+
+        typeChoiceBox.setOnAction(e -> {
+            String selectedType = typeChoiceBox.getValue();
+            if ("Contractors".equals(selectedType)) {
+                personnelIdLabel.setText("Personnel ID:");
+                officerIdLabel.setText("Officer ID:");
+                personnelNameLabel.setText("Personnel Name:");
+                rankLabel.setText("Rank:");
+                contractDateLabel.setText("Contract Date:");
+                activeDateLabel.setText("Active Date:");
+            } else if ("Officer".equals(selectedType)) {
+                personnelIdLabel.setText("Personnel ID:");
+                officerIdLabel.setText("Officer ID:");
+                personnelNameLabel.setText("Personnel Name:");
+                rankLabel.setText("Rank:");
+                contractDateLabel.setText("Contract Date:");
+                activeDateLabel.setText("Active Date:");
+            } else if ("Enlisted".equals(selectedType)) {
+                personnelIdLabel.setText("Personnel ID:");
+                officerIdLabel.setText("Enlist ID:");
+                personnelNameLabel.setText("Personnel Name:");
+                rankLabel.setText("Rank:");
+                contractDateLabel.setText("Contract Date:");
+                activeDateLabel.setText("Active Date:");
+            }
+        });
 
         TableView<ContractorsCivOfficers> tableView = new TableView<>();
         TableColumn<ContractorsCivOfficers, String> personnelIdCol = new TableColumn<>("Personnel ID");
@@ -107,10 +145,12 @@ public class ContractorsCivOfficers {
         personnelNameCol.setCellValueFactory(new PropertyValueFactory<>("personnelName"));
         TableColumn<ContractorsCivOfficers, String> rankCol = new TableColumn<>("Rank");
         rankCol.setCellValueFactory(new PropertyValueFactory<>("rank"));
+        TableColumn<ContractorsCivOfficers, String> contractDateCol = new TableColumn<>("Contract Date");
+        contractDateCol.setCellValueFactory(new PropertyValueFactory<>("contractDate"));
         TableColumn<ContractorsCivOfficers, String> activeDateCol = new TableColumn<>("Active Date");
         activeDateCol.setCellValueFactory(new PropertyValueFactory<>("activeDate"));
 
-        tableView.getColumns().addAll(personnelIdCol, officerIdCol, personnelNameCol, rankCol, activeDateCol);
+        tableView.getColumns().addAll(personnelIdCol, officerIdCol, personnelNameCol, rankCol, contractDateCol, activeDateCol);
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
@@ -118,33 +158,19 @@ public class ContractorsCivOfficers {
             String officerId = officerIdText.getText();
             String personnelName = personnelNameText.getText();
             String rank = rankText.getText();
-            String activeDate = activeDateText.getText();
-            String personnelType = typeChoiceBox.getValue(); // Get selected personnel type
+            String contractDate = contractDatePicker.getValue().toString();
+            String activeDate = activeDateDatePicker.getValue().toString();
+            String personnelType = typeChoiceBox.getValue();
 
-            ContractorsCivOfficers personnel = new ContractorsCivOfficers(personnelId, officerId, personnelName, rank, activeDate, personnelType);
+            ContractorsCivOfficers personnel = new ContractorsCivOfficers(personnelId, officerId, personnelName, rank, contractDate, activeDate, personnelType);
 
-            try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql;
-                if ("Contractors".equals(personnelType)) {
-                    sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".\"contractors\" (PERSONNEL_ID, OFFICER_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE) VALUES (?, ?, ?, ?, ?)";
-                } else if ("Officer".equals(personnelType)) {
-                    sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".officer (PERSONNEL_ID, OFFICER_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE) VALUES (?, ?, ?, ?, ?)";
-                } else { // Enlisted
-                    sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".enlisted (PERSONNEL_ID, ENLIST_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE) VALUES (?, ?, ?, ?, ?)";
-                }
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                pstmt.setString(1, personnelId);
-                pstmt.setString(2, officerId);
-                pstmt.setString(3, personnelName);
-                pstmt.setString(4, rank);
-                pstmt.setString(5, activeDate);
-                pstmt.executeUpdate();
-                System.out.println("Personnel saved to database.");
-            } catch (SQLException ex) {
-                ex.printStackTrace();
+            if (personnelId.isEmpty() || personnelName.isEmpty() || rank.isEmpty() || contractDate.isEmpty() || activeDate.isEmpty()) {
+                showAlert(Alert.AlertType.WARNING, "Incomplete Data", "Incomplete Personnel Data", "Please fill in all fields.");
+                return;
             }
 
-            // Update the table view based on the selected personnel type
+            savePersonnelToDatabase(personnel);
+
             ObservableList<ContractorsCivOfficers> updatedList = fetchPersonnelByTypeFromDatabase(personnelType);
             tableView.setItems(updatedList);
 
@@ -152,7 +178,8 @@ public class ContractorsCivOfficers {
             officerIdText.clear();
             personnelNameText.clear();
             rankText.clear();
-            activeDateText.clear();
+            contractDatePicker.getEditor().clear();
+            activeDateDatePicker.getEditor().clear();
         });
 
         Button editButton = new Button("Edit");
@@ -163,38 +190,19 @@ public class ContractorsCivOfficers {
                 String officerId = officerIdText.getText();
                 String personnelName = personnelNameText.getText();
                 String rank = rankText.getText();
-                String activeDate = activeDateText.getText();
-                String personnelType = typeChoiceBox.getValue(); // Get selected personnel type
+                String contractDate = contractDatePicker.getValue().toString();
+                String activeDate = activeDateDatePicker.getValue().toString();
+                String personnelType = selectedPersonnel.getPersonnelType();
 
                 selectedPersonnel.setPersonnelId(personnelId);
                 selectedPersonnel.setOfficerId(officerId);
                 selectedPersonnel.setPersonnelName(personnelName);
                 selectedPersonnel.setRank(rank);
+                selectedPersonnel.setContractDate(contractDate);
                 selectedPersonnel.setActiveDate(activeDate);
-                selectedPersonnel.setPersonnelType(personnelType);
 
-                try (Connection conn = OracleAPEXConnection.getConnection()) {
-                    String sql;
-                    if ("Contractors".equals(personnelType)) {
-                        sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".\"contractors\" SET OFFICER_ID = ?, PERSONNEL_NAME = ?, RANK = ?, ACTIVE_DATE = ? WHERE PERSONNEL_ID = ?";
-                    } else if ("Officer".equals(personnelType)) {
-                        sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".officer SET OFFICER_ID = ?, PERSONNEL_NAME = ?, RANK = ?, ACTIVE_DATE = ? WHERE PERSONNEL_ID = ?";
-                    } else { // Enlisted
-                        sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".enlisted SET ENLIST_ID = ?, PERSONNEL_NAME = ?, RANK = ?, ACTIVE_DATE = ? WHERE PERSONNEL_ID = ?";
-                    }
-                    PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.setString(1, officerId);
-                    pstmt.setString(2, personnelName);
-                    pstmt.setString(3, rank);
-                    pstmt.setString(4, activeDate);
-                    pstmt.setString(5, personnelId);
-                    pstmt.executeUpdate();
-                    System.out.println("Personnel updated in database.");
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
+                updatePersonnelInDatabase(selectedPersonnel);
 
-                // Update the table view based on the selected personnel type
                 ObservableList<ContractorsCivOfficers> updatedList = fetchPersonnelByTypeFromDatabase(personnelType);
                 tableView.setItems(updatedList);
 
@@ -202,7 +210,8 @@ public class ContractorsCivOfficers {
                 officerIdText.clear();
                 personnelNameText.clear();
                 rankText.clear();
-                activeDateText.clear();
+                contractDatePicker.getEditor().clear();
+                activeDateDatePicker.getEditor().clear();
             }
         });
 
@@ -210,26 +219,11 @@ public class ContractorsCivOfficers {
         deleteButton.setOnAction(e -> {
             ContractorsCivOfficers selectedPersonnel = tableView.getSelectionModel().getSelectedItem();
             if (selectedPersonnel != null) {
-                String personnelId = selectedPersonnel.getPersonnelId();
-                String personnelType = selectedPersonnel.getPersonnelType();
+                deletePersonnelFromDatabase(selectedPersonnel);
 
-                try (Connection conn = OracleAPEXConnection.getConnection()) {
-                    String sql;
-                    if ("Contractors".equals(personnelType)) {
-                        sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".\"contractors\" WHERE PERSONNEL_ID = ?";
-                    } else if ("Officer".equals(personnelType)) {
-                        sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".officer WHERE PERSONNEL_ID = ?";
-                    } else { // Enlisted
-                        sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".enlisted WHERE PERSONNEL_ID = ?";
-                    }
-                    PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.setString(1, personnelId);
-                    pstmt.executeUpdate();
-                    System.out.println("Personnel deleted from database.");
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-                tableView.getItems().remove(selectedPersonnel);
+                String personnelType = selectedPersonnel.getPersonnelType();
+                ObservableList<ContractorsCivOfficers> updatedList = fetchPersonnelByTypeFromDatabase(personnelType);
+                tableView.setItems(updatedList);
             }
         });
 
@@ -237,39 +231,175 @@ public class ContractorsCivOfficers {
 
         vbox.getChildren().addAll(
                 typeLabel, typeChoiceBox,
-                personnelIdLabel, personnelIdText, officerIdLabel, officerIdText,
-                personnelNameLabel, personnelNameText, rankLabel, rankText,
-                activeDateLabel, activeDateText,
-                tableView, buttonBox);
+                personnelIdLabel, personnelIdText,
+                officerIdLabel, officerIdText,
+                personnelNameLabel, personnelNameText,
+                rankLabel, rankText,
+                contractDateLabel, contractDatePicker,
+                activeDateLabel, activeDateDatePicker,
+                buttonBox,
+                tableView
+        );
 
         return vbox;
+    }
+
+    private static void showAlert(Alert.AlertType alertType, String title, String header, String content) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+        alert.showAndWait();
+    }
+
+    private static void savePersonnelToDatabase(ContractorsCivOfficers personnel) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String tableName;
+            String insertColumns;
+            String sequenceName;
+            if ("Contractors".equals(personnel.getPersonnelType())) {
+                tableName = "\"C4ISR PROJECT (BASIC) V2\".\"contractors\"";
+                insertColumns = "(PERSONNEL_ID, OFFICER_ID, PERSONNEL_NAME, RANK, ContractDate, ACTIVE_DATE)";
+                sequenceName = "contractors_seq";
+            } else if ("Officer".equals(personnel.getPersonnelType())) {
+                tableName = "\"C4ISR PROJECT (BASIC) V2\".officer";
+                insertColumns = "(PERSONNEL_ID, OFFICER_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE)";
+                sequenceName = "officer_seq";
+            } else {
+                tableName = "\"C4ISR PROJECT (BASIC) V2\".enlisted";
+                insertColumns = "(PERSONNEL_ID, ENLIST_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE)";
+                sequenceName = "enlisted_seq";
+            }
+
+            String sql = "INSERT INTO " + tableName + insertColumns + " VALUES (" +
+                    "?, ?, ?, ?, ?, ?)";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, personnel.getPersonnelId());
+
+            if ("Contractors".equals(personnel.getPersonnelType())) {
+                pstmt.setString(2, personnel.getOfficerId());
+            } else {
+                pstmt.setString(2, personnel.getPersonnelId());
+            }
+
+            pstmt.setString(3, personnel.getPersonnelName());
+            pstmt.setString(4, personnel.getRank());
+
+            if ("Contractors".equals(personnel.getPersonnelType())) {
+                pstmt.setString(5, personnel.getContractDate());
+            } else {
+                pstmt.setString(5, personnel.getActiveDate());
+            }
+
+            pstmt.setString(6, personnel.getActiveDate());
+
+            pstmt.executeUpdate();
+            System.out.println("Personnel saved to database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private static void updatePersonnelInDatabase(ContractorsCivOfficers personnel) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String tableName;
+            String updateColumns;
+            if ("Contractors".equals(personnel.getPersonnelType())) {
+                tableName = "\"C4ISR PROJECT (BASIC) V2\".\"contractors\"";
+                updateColumns = "OFFICER_ID = ?, PERSONNEL_NAME = ?, RANK = ?, ContractDate = ?, ACTIVE_DATE = ?";
+            } else if ("Officer".equals(personnel.getPersonnelType())) {
+                tableName = "\"C4ISR PROJECT (BASIC) V2\".officer";
+                updateColumns = "OFFICER_ID = ?, PERSONNEL_NAME = ?, RANK = ?, ACTIVE_DATE = ?";
+            } else {
+                tableName = "\"C4ISR PROJECT (BASIC) V2\".enlisted";
+                updateColumns = "ENLIST_ID = ?, PERSONNEL_NAME = ?, RANK = ?, ACTIVE_DATE = ?";
+            }
+
+            String sql = "UPDATE " + tableName + " SET " + updateColumns + " WHERE PERSONNEL_ID = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, personnel.getOfficerId());
+            pstmt.setString(2, personnel.getPersonnelName());
+            pstmt.setString(3, personnel.getRank());
+
+            if ("Contractors".equals(personnel.getPersonnelType())) {
+                pstmt.setString(4, personnel.getContractDate());
+            } else {
+                pstmt.setString(4, personnel.getActiveDate());
+            }
+
+            pstmt.setString(5, personnel.getActiveDate());
+            pstmt.setString(6, personnel.getPersonnelId());
+
+            pstmt.executeUpdate();
+            System.out.println("Personnel updated in database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private static void deletePersonnelFromDatabase(ContractorsCivOfficers personnel) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String tableName;
+            if ("Contractors".equals(personnel.getPersonnelType())) {
+                tableName = "\"C4ISR PROJECT (BASIC) V2\".\"contractors\"";
+            } else if ("Officer".equals(personnel.getPersonnelType())) {
+                tableName = "\"C4ISR PROJECT (BASIC) V2\".officer";
+            } else {
+                tableName = "\"C4ISR PROJECT (BASIC) V2\".enlisted";
+            }
+
+            String sql = "DELETE FROM " + tableName + " WHERE PERSONNEL_ID = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, personnel.getPersonnelId());
+            pstmt.executeUpdate();
+            System.out.println("Personnel deleted from database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
     }
 
     private static ObservableList<ContractorsCivOfficers> fetchPersonnelByTypeFromDatabase(String personnelType) {
         ObservableList<ContractorsCivOfficers> personnelList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql;
+            String tableName;
+            String idColumn;
+            String officerIdColumn = "";
             if ("Contractors".equals(personnelType)) {
-                sql = "SELECT PERSONNEL_ID, OFFICER_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE FROM \"C4ISR PROJECT (BASIC) V2\".\"contractors\"";
+                tableName = "\"C4ISR PROJECT (BASIC) V2\".\"contractors\"";
+                idColumn = "PERSONNEL_ID";
+                officerIdColumn = "OFFICER_ID";
             } else if ("Officer".equals(personnelType)) {
-                sql = "SELECT PERSONNEL_ID, OFFICER_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE FROM \"C4ISR PROJECT (BASIC) V2\".officer";
-            } else { // Enlisted
-                sql = "SELECT PERSONNEL_ID, ENLIST_ID, PERSONNEL_NAME, RANK, ACTIVE_DATE FROM \"C4ISR PROJECT (BASIC) V2\".enlisted";
+                tableName = "\"C4ISR PROJECT (BASIC) V2\".officer";
+                idColumn = "PERSONNEL_ID";
+            } else {
+                tableName = "\"C4ISR PROJECT (BASIC) V2\".enlisted";
+                idColumn = "PERSONNEL_ID";
+                officerIdColumn = "ENLIST_ID";
             }
+
+            String sql = "SELECT * FROM " + tableName;
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
 
             while (rs.next()) {
-                String personnelId = rs.getString("PERSONNEL_ID");
-                String officerId = rs.getString("OFFICER_ID");
+                String personnelId = rs.getString(idColumn);
+                String officerId = "";
+                if (!officerIdColumn.isEmpty()) {
+                    officerId = rs.getString(officerIdColumn);
+                }
                 String personnelName = rs.getString("PERSONNEL_NAME");
                 String rank = rs.getString("RANK");
+                String contractDate = "";
+                if ("Contractors".equals(personnelType)) {
+                    contractDate = rs.getString("ContractDate");
+                }
                 String activeDate = rs.getString("ACTIVE_DATE");
 
-                ContractorsCivOfficers personnel = new ContractorsCivOfficers(personnelId, officerId, personnelName, rank, activeDate, personnelType);
+                ContractorsCivOfficers personnel = new ContractorsCivOfficers(personnelId, officerId, personnelName, rank, contractDate, activeDate, personnelType);
                 personnelList.add(personnel);
             }
+
         } catch (SQLException ex) {
             ex.printStackTrace();
         }

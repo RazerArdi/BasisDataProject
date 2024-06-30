@@ -56,6 +56,15 @@ public class CommunicationLog {
 
         Label commIdLabel = new Label("Communication ID *:");
         TextField commIdText = new TextField();
+        CheckBox autoGenerateCheckbox = new CheckBox("Auto Generate");
+        autoGenerateCheckbox.setSelected(true);
+        autoGenerateCheckbox.setOnAction(e -> {
+            commIdText.setDisable(autoGenerateCheckbox.isSelected());
+            if (autoGenerateCheckbox.isSelected()) {
+                commIdText.clear();
+            }
+        });
+
         Label messageLabel = new Label("Message *:");
         TextField messageText = new TextField();
         Label platformsPlatformIdLabel = new Label("Platform ID *:");
@@ -63,16 +72,8 @@ public class CommunicationLog {
         ObservableList<String> platformIds = fetchPlatformIdsFromDatabase();
         platformsPlatformIdComboBox.setItems(platformIds);
 
-        CheckBox autoIncrementCheckBox = new CheckBox("Auto Increment");
-        autoIncrementCheckBox.setSelected(true);
-
-        HBox commIdBox = new HBox();
-        commIdBox.getChildren().addAll(
-                commIdText,
-                new Label("Auto Generated:"),
-                createAutoGenerateCheckBox(commIdText)
-        );
-        commIdBox.setSpacing(5);
+        Label errorLabel = new Label();
+        errorLabel.setStyle("-fx-text-fill: red");
 
         TableView<CommunicationLog> tableView = new TableView<>();
         TableColumn<CommunicationLog, String> commIdCol = new TableColumn<>("Communication ID");
@@ -83,8 +84,62 @@ public class CommunicationLog {
         platformsPlatformIdCol.setCellValueFactory(new PropertyValueFactory<>("platformsPlatformId"));
         tableView.getColumns().addAll(commIdCol, messageCol, platformsPlatformIdCol);
 
-        Label errorLabel = new Label();
-        errorLabel.setStyle("-fx-text-fill: red");
+        Button editButton = new Button("Edit");
+        editButton.setOnAction(e -> {
+            CommunicationLog selectedLog = tableView.getSelectionModel().getSelectedItem();
+            if (selectedLog != null) {
+                String commId = selectedLog.getCommId();
+                String message = messageText.getText();
+                String platformsPlatformId = platformsPlatformIdComboBox.getValue();
+
+                if (message.isEmpty() || platformsPlatformId == null) {
+                    errorLabel.setText("Fields marked with * are required!");
+                    return;
+                }
+
+                selectedLog.setMessage(message);
+                selectedLog.setPlatformsPlatformId(platformsPlatformId);
+
+                updateCommunicationLogInDatabase(selectedLog);
+                refreshTableView(tableView);
+
+                showAlert(Alert.AlertType.INFORMATION, "Success", "Communication Log Updated", "Communication log details have been updated successfully.");
+
+                commIdText.clear();
+                messageText.clear();
+                platformsPlatformIdComboBox.setValue(null);
+                errorLabel.setText("");
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Communication Log Selected", "Please select a communication log to edit.");
+            }
+        });
+
+
+
+        Button deleteButton = new Button("Delete");
+        deleteButton.setOnAction(e -> {
+            CommunicationLog selectedLog = tableView.getSelectionModel().getSelectedItem();
+            if (selectedLog != null) {
+                try (Connection conn = OracleAPEXConnection.getConnection()) {
+                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG WHERE comm_id = ?";
+                    PreparedStatement pstmt = conn.prepareStatement(sql);
+                    pstmt.setString(1, selectedLog.getCommId());
+                    int affected = pstmt.executeUpdate();
+                    if (affected > 0) {
+                        showAlert(Alert.AlertType.INFORMATION, "Delete Successful", "Communication Log Deleted", "Communication Log with ID " + selectedLog.getCommId() + " has been deleted.");
+                        refreshTableView(tableView);
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Delete Failed", "Delete Operation Failed", "Failed to delete communication log from database.");
+                    }
+                } catch (SQLException ex) {
+                    ex.printStackTrace();
+                }
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Communication Log Selected", "Please select a communication log to delete.");
+            }
+        });
+
+
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
@@ -92,99 +147,28 @@ public class CommunicationLog {
             String message = messageText.getText();
             String platformsPlatformId = platformsPlatformIdComboBox.getValue();
 
-            if (commId.isEmpty() || message.isEmpty() || platformsPlatformId == null) {
+            if (message.isEmpty() || platformsPlatformId == null || (!autoGenerateCheckbox.isSelected() && commId.isEmpty())) {
                 errorLabel.setText("Fields marked with * are required!");
                 return;
             }
 
-            if (!isAutoGenerateChecked(commIdText)) {
-                commId = commIdText.getText();
-            } else {
-                commId = "AUTO_GENERATED";
-            }
-
             CommunicationLog log = new CommunicationLog(commId, message, platformsPlatformId);
-
-            // Save to Oracle database
-            try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG (comm_id, message, platforms_platform_id) VALUES (?, ?, ?)";
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                pstmt.setString(1, commId);
-                pstmt.setString(2, message);
-                pstmt.setString(3, platformsPlatformId);
-                pstmt.executeUpdate();
-                System.out.println("Communication Log saved to database.");
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
-
-            tableView.getItems().add(log);
+            saveCommunicationLogToDatabase(log, autoGenerateCheckbox.isSelected());
+            refreshTableView(tableView);
 
             commIdText.clear();
             messageText.clear();
-            platformsPlatformIdComboBox.setValue(null); // Clear ComboBox selection
+            platformsPlatformIdComboBox.setValue(null);
             errorLabel.setText("");
         });
 
-        Button editButton = new Button("Edit");
-        editButton.setOnAction(e -> {
-            CommunicationLog selectedLog = tableView.getSelectionModel().getSelectedItem();
-            if (selectedLog != null) {
-                String commId = commIdText.getText();
-                String message = messageText.getText();
-                String platformsPlatformId = platformsPlatformIdComboBox.getValue();
-
-                selectedLog.setCommId(commId);
-                selectedLog.setMessage(message);
-                selectedLog.setPlatformsPlatformId(platformsPlatformId);
-
-                try (Connection conn = OracleAPEXConnection.getConnection()) {
-                    String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG SET message = ?, platforms_platform_id = ? WHERE comm_id = ?";
-                    PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.setString(1, message);
-                    pstmt.setString(2, platformsPlatformId);
-                    pstmt.setString(3, commId);
-                    pstmt.executeUpdate();
-                    System.out.println("Communication Log updated in database.");
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-
-                tableView.refresh();
-
-                commIdText.clear();
-                messageText.clear();
-                platformsPlatformIdComboBox.setValue(null); // Clear ComboBox selection
-            }
-        });
-
-        Button deleteButton = new Button("Delete");
-        deleteButton.setOnAction(e -> {
-            CommunicationLog selectedLog = tableView.getSelectionModel().getSelectedItem();
-            if (selectedLog != null) {
-                String commId = selectedLog.getCommId();
-
-                try (Connection conn = OracleAPEXConnection.getConnection()) {
-                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG WHERE comm_id = ?";
-                    PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.setString(1, commId);
-                    pstmt.executeUpdate();
-                    System.out.println("Communication Log deleted from database.");
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
-
-                tableView.getItems().remove(selectedLog);
-            }
-        });
+        HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
 
         ObservableList<CommunicationLog> commLogList = fetchCommunicationLogsFromDatabase();
         tableView.setItems(commLogList);
 
-        HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
-
         vbox.getChildren().addAll(
-                commIdLabel, commIdBox, // Add commIdBox instead of commIdText
+                commIdLabel, new HBox(10, commIdText, autoGenerateCheckbox),
                 messageLabel, messageText,
                 platformsPlatformIdLabel, platformsPlatformIdComboBox,
                 errorLabel, tableView, buttonBox);
@@ -192,65 +176,83 @@ public class CommunicationLog {
         return vbox;
     }
 
-    private static CheckBox createAutoGenerateCheckBox(TextField commIdText) {
-        CheckBox checkBox = new CheckBox();
-        checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue) {
-                // Checkbox checked, disable manual input
-                commIdText.setDisable(true);
-                commIdText.clear(); // Clear any possibly entered value
-            } else {
-                // Checkbox unchecked, enable manual input
-                commIdText.setDisable(false);
-            }
-        });
-        return checkBox;
+    private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.showAndWait();
     }
 
-    private static boolean isAutoGenerateChecked(TextField commIdText) {
-        CheckBox checkBox = (CheckBox) commIdText.getParent().getChildrenUnmodifiable().get(2); // Adjust CheckBox index
-        return checkBox.isSelected();
-    }
-
-    private static ObservableList<String> fetchPlatformIdsFromDatabase() {
-        ObservableList<String> platformIds = FXCollections.observableArrayList();
-
+    private static void saveCommunicationLogToDatabase(CommunicationLog log, boolean autoGenerate) {
         try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT PLATFORM_ID FROM \"C4ISR PROJECT (BASIC) V2\".PLATFORMS";
+            String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG (comm_id, message, platforms_platform_id) VALUES (?, ?, ?)";
             PreparedStatement pstmt = conn.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                String platformId = rs.getString("PLATFORM_ID");
-                platformIds.add(platformId);
+            if (autoGenerate) {
+                pstmt.setNull(1, java.sql.Types.VARCHAR);
+            } else {
+                pstmt.setString(1, log.getCommId());
             }
+            pstmt.setString(2, log.getMessage());
+            pstmt.setString(3, log.getPlatformsPlatformId());
+            pstmt.executeUpdate();
+            System.out.println("Communication Log saved to database.");
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
+    }
 
-        return platformIds;
+    private static void refreshTableView(TableView<CommunicationLog> tableView) {
+        tableView.getItems().clear();
+        tableView.setItems(fetchCommunicationLogsFromDatabase());
     }
 
     private static ObservableList<CommunicationLog> fetchCommunicationLogsFromDatabase() {
         ObservableList<CommunicationLog> commLogList = FXCollections.observableArrayList();
-
         try (Connection conn = OracleAPEXConnection.getConnection()) {
             String sql = "SELECT comm_id, message, platforms_platform_id FROM \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
-
             while (rs.next()) {
                 String commId = rs.getString("comm_id");
                 String message = rs.getString("message");
-                String platformsPlatformId = rs.getString("platforms_platform_id");
-
-                CommunicationLog log = new CommunicationLog(commId, message, platformsPlatformId);
+                String platformId = rs.getString("platforms_platform_id");
+                CommunicationLog log = new CommunicationLog(commId, message, platformId);
                 commLogList.add(log);
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
-
         return commLogList;
+    }
+
+    private static ObservableList<String> fetchPlatformIdsFromDatabase() {
+        ObservableList<String> platformIds = FXCollections.observableArrayList();
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT platform_id FROM \"C4ISR PROJECT (BASIC) V2\".PLATFORMS";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                String platformId = rs.getString("platform_id");
+                platformIds.add(platformId);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return platformIds;
+    }
+
+    public static void updateCommunicationLogInDatabase(CommunicationLog log) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG SET message = ?, platforms_platform_id = ? WHERE comm_id = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, log.getMessage());
+            pstmt.setString(2, log.getPlatformsPlatformId());
+            pstmt.setString(3, log.getCommId());
+            pstmt.executeUpdate();
+            System.out.println("Communication Log updated in database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
     }
 }

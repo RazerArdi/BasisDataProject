@@ -7,66 +7,68 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
-import pro.basisdata_project.OracleAPEXConnection;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
+import java.time.LocalDateTime;
 
 public class Analysis {
-    private String analysisId;
-    private String analysisType;
-    private String results;
-    private String usersUserId;
-    private int dataDataId;
 
-    public Analysis(String analysisId, String analysisType, String results, String usersUserId, int dataDataId) {
+    private int analysisId;
+    private String analysisType;
+    private String result;
+    private int dataId;
+    private int usersUserId;
+
+    public Analysis(int analysisId, String analysisType, String result, int dataId, int usersUserId) {
         this.analysisId = analysisId;
         this.analysisType = analysisType;
-        this.results = results;
+        this.result = result;
+        this.dataId = dataId;
         this.usersUserId = usersUserId;
-        this.dataDataId = dataDataId;
     }
 
-    public String getAnalysisId() {
+
+
+
+    public int getUsersUserId() {
+        return usersUserId;
+    }
+
+    public void setUsersUserId(int usersUserId) {
+        this.usersUserId = usersUserId;
+    }
+
+
+    public int getAnalysisId() {
         return analysisId;
+    }
+
+    public void setAnalysisId(int analysisId) {
+        this.analysisId = analysisId;
     }
 
     public String getAnalysisType() {
         return analysisType;
     }
 
-    public String getResults() {
-        return results;
-    }
-
-    public String getUsersUserId() {
-        return usersUserId;
-    }
-
-    public int getDataDataId() {
-        return dataDataId;
-    }
-
-    public void setAnalysisId(String analysisId) {
-        this.analysisId = analysisId;
-    }
-
     public void setAnalysisType(String analysisType) {
         this.analysisType = analysisType;
     }
 
-    public void setResults(String results) {
-        this.results = results;
+    public String getResult() {
+        return result;
     }
 
-    public void setUsersUserId(String usersUserId) {
-        this.usersUserId = usersUserId;
+    public void setResult(String result) {
+        this.result = result;
     }
 
-    public void setDataDataId(int dataDataId) {
-        this.dataDataId = dataDataId;
+    public int getDataId() {
+        return dataId;
+    }
+
+    public void setDataId(int dataId) {
+        this.dataId = dataId;
     }
 
     public static VBox getAnalysisUI() {
@@ -76,128 +78,134 @@ public class Analysis {
 
         Label analysisIdLabel = new Label("Analysis ID *:");
         TextField analysisIdText = new TextField();
-        Label analysisTypeLabel = new Label("Analysis Type:");
+        Label analysisTypeLabel = new Label("Analysis Type *:");
         TextField analysisTypeText = new TextField();
-        Label resultsLabel = new Label("Results:");
-        TextField resultsText = new TextField();
-        Label usersUserIdLabel = new Label("Users User ID *:");
-        ComboBox<String> usersUserIdComboBox = new ComboBox<>();
-        ObservableList<String> usersUserIdList = fetchUserIdsFromDatabase();
+        Label resultLabel = new Label("Result:");
+        TextArea resultText = new TextArea();
+        Label dataIdLabel = new Label("Data ID *:");
+        ComboBox<Integer> dataIdComboBox = new ComboBox<>();
+        ObservableList<Integer> dataIdList = fetchAvailableDataIds();
+        dataIdComboBox.setItems(dataIdList);
+        Label usersUserIdLabel = new Label("User ID *:");
+        ComboBox<Integer> usersUserIdComboBox = new ComboBox<>();
+        ObservableList<Integer> usersUserIdList = fetchAvailableUserIds();
         usersUserIdComboBox.setItems(usersUserIdList);
-        Label dataDataIdLabel = new Label("Data ID *:");
-        ComboBox<Integer> dataDataIdComboBox = new ComboBox<>();
-        ObservableList<Integer> dataDataIdList = fetchDataIdsFromDatabase();
-        dataDataIdComboBox.setItems(dataDataIdList);
 
-        CheckBox autoIncrementCheckBox = new CheckBox("Auto Increment");
-        autoIncrementCheckBox.setSelected(true);
-        HBox analysisIdBox = new HBox();
-        analysisIdBox.getChildren().addAll(
-                analysisIdText,
-                new Label("Auto Generated:"),
-                createAutoGenerateCheckBox(analysisIdText)
-        );
-        analysisIdBox.setSpacing(5);
+        CheckBox autoGenerateCheckBox = new CheckBox("Auto Generate");
+        autoGenerateCheckBox.setSelected(true);
+        autoGenerateCheckBox.setOnAction(e -> {
+            if (autoGenerateCheckBox.isSelected()) {
+                analysisIdText.setDisable(true);
+                analysisIdText.clear();
+            } else {
+                analysisIdText.setDisable(false);
+            }
+        });
+
+        HBox analysisIdBox = new HBox(5, analysisIdText, autoGenerateCheckBox);
 
         TableView<Analysis> tableView = new TableView<>();
-        TableColumn<Analysis, String> analysisIdCol = new TableColumn<>("Analysis ID");
+        TableColumn<Analysis, Integer> analysisIdCol = new TableColumn<>("Analysis ID");
         analysisIdCol.setCellValueFactory(new PropertyValueFactory<>("analysisId"));
         TableColumn<Analysis, String> analysisTypeCol = new TableColumn<>("Analysis Type");
         analysisTypeCol.setCellValueFactory(new PropertyValueFactory<>("analysisType"));
-        TableColumn<Analysis, String> resultsCol = new TableColumn<>("Results");
-        resultsCol.setCellValueFactory(new PropertyValueFactory<>("results"));
-        TableColumn<Analysis, String> usersUserIdCol = new TableColumn<>("Users User ID");
+        TableColumn<Analysis, String> resultCol = new TableColumn<>("Result");
+        resultCol.setCellValueFactory(new PropertyValueFactory<>("result"));
+        TableColumn<Analysis, Integer> dataIdCol = new TableColumn<>("Data ID");
+        dataIdCol.setCellValueFactory(new PropertyValueFactory<>("dataId"));
+        TableColumn<Analysis, Integer> usersUserIdCol = new TableColumn<>("User ID");
         usersUserIdCol.setCellValueFactory(new PropertyValueFactory<>("usersUserId"));
-        TableColumn<Analysis, Integer> dataDataIdCol = new TableColumn<>("Data ID");
-        dataDataIdCol.setCellValueFactory(new PropertyValueFactory<>("dataDataId"));
-        tableView.getColumns().addAll(analysisIdCol, analysisTypeCol, resultsCol, usersUserIdCol, dataDataIdCol);
+
+        tableView.getColumns().addAll(analysisIdCol, analysisTypeCol, resultCol, dataIdCol, usersUserIdCol);
 
         Label errorLabel = new Label();
         errorLabel.setStyle("-fx-text-fill: red");
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            String analysisId = analysisIdText.getText();
-            String analysisType = analysisTypeText.getText();
-            String results = resultsText.getText();
-            String usersUserId = usersUserIdComboBox.getValue();
-            Integer dataDataId = dataDataIdComboBox.getValue();
+            try {
+                int analysisId;
+                if (!autoGenerateCheckBox.isSelected()) {
+                    String analysisIdStr = analysisIdText.getText().trim();
+                    if (analysisIdStr.isEmpty()) {
+                        errorLabel.setText("Analysis ID is required!");
+                        return;
+                    }
+                    try {
+                        analysisId = Integer.parseInt(analysisIdStr);
+                    } catch (NumberFormatException ex) {
+                        showAlert(Alert.AlertType.ERROR, "Invalid Input", "Invalid Analysis ID", "Analysis ID must be a valid number!");
+                        return;
+                    }
+                } else {
+                    analysisId = getNextAnalysisIdFromDatabase();
+                }
 
-            if (analysisId.isEmpty() || usersUserId.isEmpty() || dataDataId == null) {
-                errorLabel.setText("Fields marked with * are required!");
-                return;
-            }
+                String analysisType = analysisTypeText.getText();
+                String result = resultText.getText();
+                Integer dataId = dataIdComboBox.getValue();
+                Integer usersUserId = usersUserIdComboBox.getValue();
 
-            if (!isAutoGenerateChecked(analysisIdText)) {
-                analysisId = analysisIdText.getText();
-            } else {
-                // Mode auto-generate, tandai sebagai "AUTO_GENERATED"
-                analysisId = "AUTO_GENERATED";
-            }
+                if (analysisType.isEmpty() || dataId == null || usersUserId == null) {
+                    showAlert(Alert.AlertType.ERROR, "Missing Fields", "Required Fields", "Fields marked with * are required!");
+                    return;
+                }
 
-            Analysis analysis = new Analysis(analysisId, analysisType, results, usersUserId, dataDataId);
+                Analysis analysis = new Analysis(analysisId, analysisType, result, dataId, usersUserId);
 
-            try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".ANALYSIS (ANALYSIS_ID, ANALYSIS_TYPE, RESULTS, USERS_USER_ID, DATA_DATA_ID) VALUES (?, ?, ?, ?, ?)";
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                pstmt.setString(1, analysisId);
-                pstmt.setString(2, analysisType);
-                pstmt.setString(3, results);
-                pstmt.setString(4, usersUserId);
-                pstmt.setInt(5, dataDataId);
-                pstmt.executeUpdate();
-                System.out.println("Analysis saved to database.");
-            } catch (SQLException ex) {
+                saveAnalysisToDatabase(analysis);
+                tableView.getItems().add(analysis);
+
+                showAlert(Alert.AlertType.INFORMATION, "Analysis Created", "Success", "Analysis has been created successfully.");
+
+                analysisIdText.clear();
+                analysisTypeText.clear();
+                resultText.clear();
+                dataIdComboBox.setValue(null);
+                usersUserIdComboBox.setValue(null);
+                errorLabel.setText("");
+            } catch (NumberFormatException ex) {
                 ex.printStackTrace();
+                showAlert(Alert.AlertType.ERROR, "Invalid Input", "Invalid Analysis Data", "Please enter valid data.");
             }
-
-            tableView.getItems().add(analysis);
-
-            analysisIdText.clear();
-            analysisTypeText.clear();
-            resultsText.clear();
-            usersUserIdComboBox.setValue(null);
-            dataDataIdComboBox.setValue(null);
-            errorLabel.setText("");
         });
+
 
         Button editButton = new Button("Edit");
         editButton.setOnAction(e -> {
             Analysis selectedAnalysis = tableView.getSelectionModel().getSelectedItem();
             if (selectedAnalysis != null) {
-                String analysisId = analysisIdText.getText();
-                String analysisType = analysisTypeText.getText();
-                String results = resultsText.getText();
-                String usersUserId = usersUserIdComboBox.getValue();
-                int dataDataId = dataDataIdComboBox.getValue();
+                try {
+                    int analysisId;
+                    if (!autoGenerateCheckBox.isSelected()) {
+                        analysisId = Integer.parseInt(analysisIdText.getText());
+                    } else {
+                        analysisId = selectedAnalysis.getAnalysisId();
+                    }
 
-                selectedAnalysis.setAnalysisId(analysisId);
-                selectedAnalysis.setAnalysisType(analysisType);
-                selectedAnalysis.setResults(results);
-                selectedAnalysis.setUsersUserId(usersUserId);
-                selectedAnalysis.setDataDataId(dataDataId);
+                    String analysisType = analysisTypeText.getText();
+                    String result = resultText.getText();
+                    Integer dataId = dataIdComboBox.getValue();
 
-                try (Connection conn = OracleAPEXConnection.getConnection()) {
-                    String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".ANALYSIS SET ANALYSIS_TYPE = ?, RESULTS = ?, USERS_USER_ID = ?, DATA_DATA_ID = ? WHERE ANALYSIS_ID = ?";
-                    PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.setString(1, analysisType);
-                    pstmt.setString(2, results);
-                    pstmt.setString(3, usersUserId);
-                    pstmt.setInt(4, dataDataId);
-                    pstmt.setString(5, analysisId);
-                    pstmt.executeUpdate();
-                    System.out.println("Analysis updated in database.");
-                } catch (SQLException ex) {
+                    selectedAnalysis.setAnalysisId(analysisId);
+                    selectedAnalysis.setAnalysisType(analysisType);
+                    selectedAnalysis.setResult(result);
+                    selectedAnalysis.setDataId(dataId);
+
+                    updateAnalysisInDatabase(selectedAnalysis);
+
+                    tableView.refresh();
+
+                    analysisIdText.clear();
+                    analysisTypeText.clear();
+                    resultText.clear();
+                    dataIdComboBox.setValue(null);
+                } catch (NumberFormatException ex) {
                     ex.printStackTrace();
+                    showAlert(Alert.AlertType.ERROR, "Invalid Input", "Invalid Analysis Data", "Please enter valid data.");
                 }
-
-                tableView.refresh();
-
-                analysisIdText.clear();
-                analysisTypeText.clear();
-                resultsText.clear();
-                usersUserIdComboBox.setValue(null);
-                dataDataIdComboBox.setValue(null);
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Analysis Selected", "Please select an analysis to edit.");
             }
         });
 
@@ -205,19 +213,12 @@ public class Analysis {
         deleteButton.setOnAction(e -> {
             Analysis selectedAnalysis = tableView.getSelectionModel().getSelectedItem();
             if (selectedAnalysis != null) {
-                String analysisId = selectedAnalysis.getAnalysisId();
-
-                try (Connection conn = OracleAPEXConnection.getConnection()) {
-                    String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".ANALYSIS WHERE ANALYSIS_ID = ?";
-                    PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.setString(1, analysisId);
-                    pstmt.executeUpdate();
-                    System.out.println("Analysis deleted from database.");
-                } catch (SQLException ex) {
-                    ex.printStackTrace();
-                }
+                deleteAnalysisFromDatabase(selectedAnalysis);
 
                 tableView.getItems().remove(selectedAnalysis);
+                showAlert(Alert.AlertType.INFORMATION, "Analysis Deleted", "Success", "Analysis has been deleted successfully.");
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Analysis Selected", "Please select an analysis to delete.");
             }
         });
 
@@ -229,92 +230,138 @@ public class Analysis {
         vbox.getChildren().addAll(
                 analysisIdLabel, analysisIdBox,
                 analysisTypeLabel, analysisTypeText,
-                resultsLabel, resultsText,
-                usersUserIdLabel, usersUserIdComboBox,
-                dataDataIdLabel, dataDataIdComboBox,
-                errorLabel, tableView, buttonBox);
+                resultLabel, resultText,
+                dataIdLabel, dataIdComboBox, usersUserIdLabel, usersUserIdComboBox,
+                errorLabel, buttonBox, tableView
+        );
 
         return vbox;
     }
 
-    private static CheckBox createAutoGenerateCheckBox(TextField analysisIdText) {
-        CheckBox checkBox = new CheckBox();
-        checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue) {
-                analysisIdText.setDisable(true);
-                analysisIdText.clear();
-            } else {
-                analysisIdText.setDisable(false);
-            }
-        });
-        return checkBox;
-    }
-
-    private static boolean isAutoGenerateChecked(TextField analysisIdText) {
-        CheckBox checkBox = (CheckBox) analysisIdText.getParent().getChildrenUnmodifiable().get(2);
-        return checkBox.isSelected();
-    }
-
-    private static ObservableList<Analysis> fetchAnalysisFromDatabase() {
-        ObservableList<Analysis> analysisList = FXCollections.observableArrayList();
-
-        try (Connection conn = OracleAPEXConnection.getConnection()) {
-            String sql = "SELECT ANALYSIS_ID, ANALYSIS_TYPE, RESULTS, USERS_USER_ID, DATA_DATA_ID FROM \"C4ISR PROJECT (BASIC) V2\".ANALYSIS";
-            PreparedStatement pstmt = conn.prepareStatement(sql);
-            ResultSet rs = pstmt.executeQuery();
-
-            while (rs.next()) {
-                String analysisId = rs.getString("ANALYSIS_ID");
-                String analysisType = rs.getString("ANALYSIS_TYPE");
-                String results = rs.getString("RESULTS");
-                String usersUserId = rs.getString("USERS_USER_ID");
-                int dataDataId = rs.getInt("DATA_DATA_ID");
-
-                Analysis analysis = new Analysis(analysisId, analysisType, results, usersUserId, dataDataId);
-                analysisList.add(analysis);
-            }
-        } catch (SQLException ex) {
-            ex.printStackTrace();
-        }
-
-        return analysisList;
-    }
-
-    private static ObservableList<String> fetchUserIdsFromDatabase() {
-        ObservableList<String> usersUserIdList = FXCollections.observableArrayList();
-
+    private static ObservableList<Integer> fetchAvailableUserIds() {
+        ObservableList<Integer> userIds = FXCollections.observableArrayList();
         try (Connection conn = OracleAPEXConnection.getConnection()) {
             String sql = "SELECT USER_ID FROM \"C4ISR PROJECT (BASIC) V2\".USERS";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
-
             while (rs.next()) {
-                String userId = rs.getString("USER_ID");
-                usersUserIdList.add(userId);
+                userIds.add(rs.getInt("USER_ID"));
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Fetch Error", "Fetch Operation Failed", "Failed to fetch user IDs from database.");
         }
-
-        return usersUserIdList;
+        return userIds;
     }
 
-    private static ObservableList<Integer> fetchDataIdsFromDatabase() {
-        ObservableList<Integer> dataDataIdList = FXCollections.observableArrayList();
 
+    private static ObservableList<Integer> fetchAvailableDataIds() {
+        ObservableList<Integer> dataIds = FXCollections.observableArrayList();
         try (Connection conn = OracleAPEXConnection.getConnection()) {
             String sql = "SELECT DATA_ID FROM \"C4ISR PROJECT (BASIC) V2\".DATA";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
-
             while (rs.next()) {
-                int dataId = rs.getInt("DATA_ID");
-                dataDataIdList.add(dataId);
+                dataIds.add(rs.getInt("DATA_ID"));
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Fetch Error", "Fetch Operation Failed", "Failed to fetch data IDs from database.");
         }
+        return dataIds;
+    }
 
-        return dataDataIdList;
+    private static ObservableList<Analysis> fetchAnalysisFromDatabase() {
+        ObservableList<Analysis> analysisList = FXCollections.observableArrayList();
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT ANALYSIS_ID, ANALYSIS_TYPE, RESULTS, DATA_DATA_ID, USERS_USER_ID FROM \"C4ISR PROJECT (BASIC) V2\".ANALYSIS";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            while (rs.next()) {
+                int analysisId = rs.getInt("ANALYSIS_ID");
+                String analysisType = rs.getString("ANALYSIS_TYPE");
+                String result = rs.getString("RESULTS");
+                int dataId = rs.getInt("DATA_DATA_ID");
+                int usersUserId = rs.getInt("USERS_USER_ID");
+                Analysis analysis = new Analysis(analysisId, analysisType, result, dataId, usersUserId);
+                analysisList.add(analysis);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Fetch Error", "Fetch Operation Failed", "Failed to fetch analysis data from database.");
+        }
+        return analysisList;
+    }
+
+
+    private static void saveAnalysisToDatabase(Analysis analysis) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".ANALYSIS (ANALYSIS_ID, ANALYSIS_TYPE, RESULTS, DATA_DATA_ID, USERS_USER_ID) VALUES (?, ?, ?, ?, ?)";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, analysis.getAnalysisId());
+            pstmt.setString(2, analysis.getAnalysisType());
+            pstmt.setString(3, analysis.getResult());
+            pstmt.setInt(4, analysis.getDataId());
+            pstmt.setInt(5, analysis.getUsersUserId());
+            pstmt.executeUpdate();
+            System.out.println("Analysis saved to database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Save Error", "Save Operation Failed", "Failed to save analysis data to database.");
+        }
+    }
+
+    private static void updateAnalysisInDatabase(Analysis analysis) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".ANALYSIS SET ANALYSIS_TYPE = ?, RESULTS = ?, DATA_DATA_ID = ?, USERS_USER_ID = ? WHERE ANALYSIS_ID = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, analysis.getAnalysisType());
+            pstmt.setString(2, analysis.getResult());
+            pstmt.setInt(3, analysis.getDataId());
+            pstmt.setInt(4, analysis.getUsersUserId());
+            pstmt.setInt(5, analysis.getAnalysisId());
+            pstmt.executeUpdate();
+            System.out.println("Analysis updated in database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Update Error", "Update Operation Failed", "Failed to update analysis data in database.");
+        }
+    }
+
+
+    private static void deleteAnalysisFromDatabase(Analysis analysis) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".ANALYSIS WHERE ANALYSIS_ID = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setInt(1, analysis.getAnalysisId());
+            pstmt.executeUpdate();
+            System.out.println("Analysis deleted from database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "Delete Error", "Delete Operation Failed", "Failed to delete analysis data from database.");
+        }
+    }
+
+    private static void showAlert(Alert.AlertType type, String title, String headerText, String contentText) {
+        Alert alert = new Alert(type);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.showAndWait();
+    }
+
+    private static int getNextAnalysisIdFromDatabase() {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT \"C4ISR PROJECT (BASIC) V2\".ANALYSIS_SEQ.NEXTVAL FROM dual";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            showAlert(Alert.AlertType.ERROR, "ID Generation Error", "Failed to Generate ID", "Failed to generate next analysis ID.");
+        }
+        return -1;
     }
 }

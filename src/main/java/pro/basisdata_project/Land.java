@@ -66,7 +66,7 @@ public class Land {
         Label landIdLabel = new Label("Land ID *:");
         TextField landIdText = new TextField();
         CheckBox autoGenerateCheckbox = new CheckBox("Auto Generate");
-        autoGenerateCheckbox.setSelected(true); // Default to auto generate
+        autoGenerateCheckbox.setSelected(true);
         autoGenerateCheckbox.setOnAction(e -> {
             landIdText.setDisable(autoGenerateCheckbox.isSelected());
             if (autoGenerateCheckbox.isSelected()) {
@@ -81,7 +81,6 @@ public class Land {
         Label commIdLabel = new Label("Communication Log ID *:");
         ComboBox<String> commIdComboBox = new ComboBox<>();
 
-        // Populate the ComboBox with COMM_IDs from the Communication Log table
         loadCommIdsIntoComboBox(commIdComboBox);
 
         TableView<Land> tableView = new TableView<>();
@@ -103,7 +102,7 @@ public class Land {
         createButton.setOnAction(e -> {
             String landId;
             if (autoGenerateCheckbox.isSelected()) {
-                landId = "AUTO_GENERATED";
+                landId = getNextLandIdFromSequence();
             } else {
                 landId = landIdText.getText();
             }
@@ -127,8 +126,10 @@ public class Land {
                 pstmt.setString(4, commId);
                 pstmt.executeUpdate();
                 System.out.println("Land saved to database.");
+                showAlert(Alert.AlertType.INFORMATION, "Success", "Land Created", "Land with ID " + landId + " has been created.");
             } catch (SQLException ex) {
                 ex.printStackTrace();
+                showAlert(Alert.AlertType.ERROR, "Error", "Database Error", "Failed to save land to database.");
             }
 
             tableView.getItems().add(land);
@@ -168,8 +169,10 @@ public class Land {
                     pstmt.setString(4, landId);
                     pstmt.executeUpdate();
                     System.out.println("Land updated in database.");
+                    showAlert(Alert.AlertType.INFORMATION, "Success", "Land Updated", "Land with ID " + landId + " has been updated.");
                 } catch (SQLException ex) {
                     ex.printStackTrace();
+                    showAlert(Alert.AlertType.ERROR, "Error", "Database Error", "Failed to update land in database.");
                 }
 
                 tableView.refresh();
@@ -179,6 +182,8 @@ public class Land {
                 locationText.clear();
                 commIdComboBox.setValue(null);
                 errorLabel.setText("");
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Land Selected", "Please select a land to edit.");
             }
         });
 
@@ -194,11 +199,15 @@ public class Land {
                     pstmt.setString(1, landId);
                     pstmt.executeUpdate();
                     System.out.println("Land deleted from database.");
+                    showAlert(Alert.AlertType.INFORMATION, "Success", "Land Deleted", "Land with ID " + landId + " has been deleted.");
                 } catch (SQLException ex) {
                     ex.printStackTrace();
+                    showAlert(Alert.AlertType.ERROR, "Error", "Database Error", "Failed to delete land from database.");
                 }
 
                 tableView.getItems().remove(selectedLand);
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Land Selected", "Please select a land to delete.");
             }
         });
 
@@ -266,5 +275,20 @@ public class Land {
         }
 
         commIdComboBox.setItems(commIds);
+    }
+
+    private static String getNextLandIdFromSequence() {
+        String landId = null;
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT \"C4ISR PROJECT (BASIC) V2\".LAND_SEQ.NEXTVAL FROM dual";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                landId = "LAND-" +rs.getString(1);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return landId;
     }
 }

@@ -30,28 +30,28 @@ public class Air {
         return airId;
     }
 
-    public String getTask() {
-        return task;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public String getCommunicationLogCommId() {
-        return communicationLogCommId;
-    }
-
     public void setAirId(String airId) {
         this.airId = airId;
+    }
+
+    public String getTask() {
+        return task;
     }
 
     public void setTask(String task) {
         this.task = task;
     }
 
+    public String getLocation() {
+        return location;
+    }
+
     public void setLocation(String location) {
         this.location = location;
+    }
+
+    public String getCommunicationLogCommId() {
+        return communicationLogCommId;
     }
 
     public void setCommunicationLogCommId(String communicationLogCommId) {
@@ -65,24 +65,23 @@ public class Air {
 
         Label airIdLabel = new Label("Air ID *:");
         TextField airIdText = new TextField();
-        Label taskLabel = new Label("Task:");
+        CheckBox autoGenerateCheckbox = new CheckBox("Auto Generate");
+        autoGenerateCheckbox.setSelected(true);
+        autoGenerateCheckbox.setOnAction(e -> {
+            airIdText.setDisable(autoGenerateCheckbox.isSelected());
+            if (autoGenerateCheckbox.isSelected()) {
+                airIdText.clear();
+            }
+        });
+
+        Label taskLabel = new Label("Task *:");
         TextField taskText = new TextField();
         Label locationLabel = new Label("Location:");
         TextField locationText = new TextField();
         Label commIdLabel = new Label("Communication Log ID *:");
         ComboBox<String> commIdComboBox = new ComboBox<>();
-        ObservableList<String> commIdList = fetchCommIdsFromDatabase();
-        commIdComboBox.setItems(commIdList);
 
-        CheckBox autoIncrementCheckBox = new CheckBox("Auto Increment");
-        autoIncrementCheckBox.setSelected(true);
-        HBox airIdBox = new HBox();
-        airIdBox.getChildren().addAll(
-                airIdText,
-                new Label("Auto Generated:"),
-                createAutoGenerateCheckBox(airIdText)
-        );
-        airIdBox.setSpacing(5);
+        loadCommIdsIntoComboBox(commIdComboBox);
 
         TableView<Air> tableView = new TableView<>();
         TableColumn<Air, String> airIdCol = new TableColumn<>("Air ID");
@@ -93,6 +92,7 @@ public class Air {
         locationCol.setCellValueFactory(new PropertyValueFactory<>("location"));
         TableColumn<Air, String> commIdCol = new TableColumn<>("Communication Log ID");
         commIdCol.setCellValueFactory(new PropertyValueFactory<>("communicationLogCommId"));
+
         tableView.getColumns().addAll(airIdCol, taskCol, locationCol, commIdCol);
 
         Label errorLabel = new Label();
@@ -100,37 +100,24 @@ public class Air {
 
         Button createButton = new Button("Create");
         createButton.setOnAction(e -> {
-            String airId = airIdText.getText();
+            String airId;
+            if (autoGenerateCheckbox.isSelected()) {
+                airId = getNextAirIdFromSequence();
+            } else {
+                airId = airIdText.getText();
+            }
             String task = taskText.getText();
             String location = locationText.getText();
             String commId = commIdComboBox.getValue();
 
-            if (airId.isEmpty() || commId.isEmpty()) {
+            if (task.isEmpty() || commId.isEmpty() || (!autoGenerateCheckbox.isSelected() && airId.isEmpty())) {
                 errorLabel.setText("Fields marked with * are required!");
                 return;
             }
 
-            if (!isAutoGenerateChecked(airIdText)) {
-                airId = airIdText.getText();
-            } else {
-                // Mode auto-generate, tandai sebagai "AUTO_GENERATED"
-                airId = "AUTO_GENERATED";
-            }
-
             Air air = new Air(airId, task, location, commId);
 
-            try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".AIR (AIR_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID) VALUES (?, ?, ?, ?)";
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                pstmt.setString(1, airId);
-                pstmt.setString(2, task);
-                pstmt.setString(3, location);
-                pstmt.setString(4, commId);
-                pstmt.executeUpdate();
-                System.out.println("Air saved to database.");
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
+            saveAirToDatabase(air);
 
             tableView.getItems().add(air);
 
@@ -145,12 +132,16 @@ public class Air {
         editButton.setOnAction(e -> {
             Air selectedAir = tableView.getSelectionModel().getSelectedItem();
             if (selectedAir != null) {
-                String airId = airIdText.getText();
+                String airId = selectedAir.getAirId();
                 String task = taskText.getText();
                 String location = locationText.getText();
                 String commId = commIdComboBox.getValue();
 
-                selectedAir.setAirId(airId);
+                if (task.isEmpty() || commId.isEmpty()) {
+                    errorLabel.setText("Fields marked with * are required!");
+                    return;
+                }
+
                 selectedAir.setTask(task);
                 selectedAir.setLocation(location);
                 selectedAir.setCommunicationLogCommId(commId);
@@ -164,8 +155,10 @@ public class Air {
                     pstmt.setString(4, airId);
                     pstmt.executeUpdate();
                     System.out.println("Air updated in database.");
+                    showAlert(Alert.AlertType.INFORMATION, "Success", "Air Updated", "Air with ID " + airId + " has been updated.");
                 } catch (SQLException ex) {
                     ex.printStackTrace();
+                    showAlert(Alert.AlertType.ERROR, "Error", "Database Error", "Failed to update air in database.");
                 }
 
                 tableView.refresh();
@@ -174,36 +167,44 @@ public class Air {
                 taskText.clear();
                 locationText.clear();
                 commIdComboBox.setValue(null);
+                errorLabel.setText("");
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Air Selected", "Please select an air platform to edit.");
             }
         });
+
 
         Button deleteButton = new Button("Delete");
         deleteButton.setOnAction(e -> {
             Air selectedAir = tableView.getSelectionModel().getSelectedItem();
             if (selectedAir != null) {
-                String airId = selectedAir.getAirId();
-
                 try (Connection conn = OracleAPEXConnection.getConnection()) {
                     String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".AIR WHERE AIR_ID = ?";
                     PreparedStatement pstmt = conn.prepareStatement(sql);
-                    pstmt.setString(1, airId);
-                    pstmt.executeUpdate();
-                    System.out.println("Air deleted from database.");
+                    pstmt.setString(1, selectedAir.getAirId());
+                    int affected = pstmt.executeUpdate();
+                    if (affected > 0) {
+                        showAlert(Alert.AlertType.INFORMATION, "Delete Successful", "Air Deleted", "Air with ID " + selectedAir.getAirId() + " has been deleted.");
+                        tableView.getItems().remove(selectedAir);
+                    } else {
+                        showAlert(Alert.AlertType.ERROR, "Delete Failed", "Delete Operation Failed", "Failed to delete air platform from database.");
+                    }
                 } catch (SQLException ex) {
                     ex.printStackTrace();
+                    showAlert(Alert.AlertType.ERROR, "Delete Failed", "Delete Operation Failed", "Failed to delete air platform from database.");
                 }
-
-                tableView.getItems().remove(selectedAir);
+            } else {
+                showAlert(Alert.AlertType.WARNING, "No Selection", "No Air Selected", "Please select an air platform to delete.");
             }
         });
 
-        ObservableList<Air> airList = fetchAirFromDatabase();
-        tableView.setItems(airList);
-
         HBox buttonBox = new HBox(10, createButton, editButton, deleteButton);
 
+        ObservableList<Air> airList = fetchAirPlatformsFromDatabase();
+        tableView.setItems(airList);
+
         vbox.getChildren().addAll(
-                airIdLabel, airIdBox,
+                airIdLabel, new HBox(10, airIdText, autoGenerateCheckbox),
                 taskLabel, taskText,
                 locationLabel, locationText,
                 commIdLabel, commIdComboBox,
@@ -212,25 +213,30 @@ public class Air {
         return vbox;
     }
 
-    private static CheckBox createAutoGenerateCheckBox(TextField airIdText) {
-        CheckBox checkBox = new CheckBox();
-        checkBox.selectedProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue) {
-                airIdText.setDisable(true);
-                airIdText.clear();
-            } else {
-                airIdText.setDisable(false);
-            }
-        });
-        return checkBox;
+    private static void showAlert(Alert.AlertType alertType, String title, String headerText, String contentText) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(headerText);
+        alert.setContentText(contentText);
+        alert.showAndWait();
     }
 
-    private static boolean isAutoGenerateChecked(TextField airIdText) {
-        CheckBox checkBox = (CheckBox) airIdText.getParent().getChildrenUnmodifiable().get(2);
-        return checkBox.isSelected();
+    private static void saveAirToDatabase(Air air) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".AIR (AIR_ID, TASK, LOCATION, COMMUNICATION_LOG_COMM_ID) VALUES (?, ?, ?, ?)";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, air.getAirId());
+            pstmt.setString(2, air.getTask());
+            pstmt.setString(3, air.getLocation());
+            pstmt.setString(4, air.getCommunicationLogCommId());
+            pstmt.executeUpdate();
+            System.out.println("Air platform saved to database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
     }
 
-    private static ObservableList<Air> fetchAirFromDatabase() {
+    private static ObservableList<Air> fetchAirPlatformsFromDatabase() {
         ObservableList<Air> airList = FXCollections.observableArrayList();
 
         try (Connection conn = OracleAPEXConnection.getConnection()) {
@@ -254,22 +260,33 @@ public class Air {
         return airList;
     }
 
-    private static ObservableList<String> fetchCommIdsFromDatabase() {
-        ObservableList<String> commIdList = FXCollections.observableArrayList();
-
+    private static void loadCommIdsIntoComboBox(ComboBox<String> comboBox) {
+        comboBox.getItems().clear();
         try (Connection conn = OracleAPEXConnection.getConnection()) {
             String sql = "SELECT COMM_ID FROM \"C4ISR PROJECT (BASIC) V2\".COMMUNICATION_LOG";
             PreparedStatement pstmt = conn.prepareStatement(sql);
             ResultSet rs = pstmt.executeQuery();
-
             while (rs.next()) {
                 String commId = rs.getString("COMM_ID");
-                commIdList.add(commId);
+                comboBox.getItems().add(commId);
             }
         } catch (SQLException ex) {
             ex.printStackTrace();
         }
+    }
 
-        return commIdList;
+    private static String getNextAirIdFromSequence() {
+        String airId = null;
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT \"C4ISR PROJECT (BASIC) V2\".AIR_SEQ.NEXTVAL FROM dual";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                airId = "AIR-" + rs.getString(1);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return airId;
     }
 }

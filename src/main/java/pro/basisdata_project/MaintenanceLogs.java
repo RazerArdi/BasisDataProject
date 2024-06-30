@@ -87,15 +87,16 @@ public class MaintenanceLogs {
         Label maintenanceIdLabel = new Label("Maintenance ID *:");
         TextField maintenanceIdText = new TextField();
         CheckBox autoGenerateCheckbox = new CheckBox("Auto Generate");
-        autoGenerateCheckbox.setSelected(true); // Default auto-generate is checked
+        autoGenerateCheckbox.setSelected(true);
+        HBox maintenanceIdBox = new HBox(10);
+        maintenanceIdBox.getChildren().addAll(maintenanceIdText, autoGenerateCheckbox);
         autoGenerateCheckbox.setOnAction(e -> {
             maintenanceIdText.setDisable(autoGenerateCheckbox.isSelected());
             if (autoGenerateCheckbox.isSelected()) {
-                maintenanceIdText.setText(""); // Clear text field if auto-generate is checked
+                maintenanceIdText.setText("");
             }
         });
-
-        Label dateLabel = new Label("Date *:");
+        Label dateLabel = new Label("DATE MAINTENANCE *:");
         DatePicker dateText = new DatePicker();
         Label descriptionLabel = new Label("Description:");
         TextArea descriptionText = new TextArea();
@@ -120,7 +121,7 @@ public class MaintenanceLogs {
         TableView<MaintenanceLogs> tableView = new TableView<>();
         TableColumn<MaintenanceLogs, String> maintenanceIdCol = new TableColumn<>("Maintenance ID");
         maintenanceIdCol.setCellValueFactory(new PropertyValueFactory<>("maintenanceId"));
-        TableColumn<MaintenanceLogs, LocalDate> dateCol = new TableColumn<>("Date");
+        TableColumn<MaintenanceLogs, LocalDate> dateCol = new TableColumn<>("DATE MAINTENANCE");
         dateCol.setCellValueFactory(new PropertyValueFactory<>("date"));
         TableColumn<MaintenanceLogs, String> descriptionCol = new TableColumn<>("Description");
         descriptionCol.setCellValueFactory(new PropertyValueFactory<>("description"));
@@ -132,6 +133,7 @@ public class MaintenanceLogs {
         personnelIdCol.setCellValueFactory(new PropertyValueFactory<>("personnelId"));
 
         tableView.getColumns().addAll(maintenanceIdCol, dateCol, descriptionCol, equipmentIdCol, platformIdCol, personnelIdCol);
+        tableView.setItems(MaintenanceLogs.fetchAllMaintenanceLogs());
 
         Label errorLabel = new Label();
         errorLabel.setStyle("-fx-text-fill: red");
@@ -145,33 +147,19 @@ public class MaintenanceLogs {
             String platformId = platformIdCombo.getValue();
             String personnelId = personnelIdCombo.getValue();
 
+            if (autoGenerateCheckbox.isSelected()) {
+                maintenanceId = getNextMaintenanceId();
+            }
+
             if (maintenanceId.isEmpty() || date == null || equipmentId.isEmpty() || platformId.isEmpty() || personnelId.isEmpty()) {
                 errorLabel.setText("Fields marked with * are required!");
                 return;
             }
 
-            if (autoGenerateCheckbox.isSelected()) {
-                maintenanceId = "AUTO_GENERATED"; // Set to AUTO_GENERATED for auto-generation
-            }
-
             MaintenanceLogs maintenanceLog = new MaintenanceLogs(maintenanceId, date, description, equipmentId, platformId, personnelId);
             System.out.println("Maintenance Log Created: " + maintenanceLog.getMaintenanceId());
 
-            try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".MAINTENANCE_LOGS (MAINTENANCE_ID, \"DATE\", DESCRIPTION, EQUIPMENT_EQUIPMENT_ID, PLATFORMS_PLATFORM_ID, PERSONNEL_PERSONNEL_ID) " +
-                        "VALUES (?, ?, ?, ?, ?, ?)";
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                pstmt.setString(1, maintenanceId);
-                pstmt.setDate(2, java.sql.Date.valueOf(date));
-                pstmt.setString(3, description);
-                pstmt.setString(4, equipmentId);
-                pstmt.setString(5, platformId);
-                pstmt.setString(6, personnelId);
-                pstmt.executeUpdate();
-                System.out.println("Maintenance log saved to database.");
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
+            saveMaintenanceLogToDatabase(maintenanceLog);
 
             tableView.getItems().add(maintenanceLog);
 
@@ -183,6 +171,7 @@ public class MaintenanceLogs {
             personnelIdCombo.getSelectionModel().clearSelection();
             errorLabel.setText("");
         });
+
 
         Button editButton = new Button("Edit");
         editButton.setOnAction(e -> {
@@ -200,38 +189,19 @@ public class MaintenanceLogs {
             String newPersonnelId = personnelIdCombo.getValue();
 
             if (autoGenerateCheckbox.isSelected()) {
-                newMaintenanceId = "AUTO_GENERATED"; // Set to AUTO_GENERATED for auto-generation
+                newMaintenanceId = getNextMaintenanceId();
             }
 
-            try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".MAINTENANCE_LOGS SET MAINTENANCE_ID = ?, \"DATE\" = ?, " +
-                        "DESCRIPTION = ?, EQUIPMENT_EQUIPMENT_ID = ?, PLATFORMS_PLATFORM_ID = ?, PERSONNEL_PERSONNEL_ID = ? " +
-                        "WHERE MAINTENANCE_ID = ?";
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                pstmt.setString(1, newMaintenanceId);
-                pstmt.setDate(2, java.sql.Date.valueOf(newDate));
-                pstmt.setString(3, newDescription);
-                pstmt.setString(4, newEquipmentId);
-                pstmt.setString(5, newPlatformId);
-                pstmt.setString(6, newPersonnelId);
-                pstmt.setString(7, selectedMaintenanceLog.getMaintenanceId());
-                int updated = pstmt.executeUpdate();
+            updateMaintenanceLogInDatabase(selectedMaintenanceLog, newMaintenanceId, newDate, newDescription, newEquipmentId, newPlatformId, newPersonnelId);
 
-                if (updated > 0) {
-                    selectedMaintenanceLog.setMaintenanceId(newMaintenanceId);
-                    selectedMaintenanceLog.setDate(newDate);
-                    selectedMaintenanceLog.setDescription(newDescription);
-                    selectedMaintenanceLog.setEquipmentId(newEquipmentId);
-                    selectedMaintenanceLog.setPlatformId(newPlatformId);
-                    selectedMaintenanceLog.setPersonnelId(newPersonnelId);
-                    tableView.refresh();
-                    System.out.println("Maintenance log updated: " + selectedMaintenanceLog.getMaintenanceId());
-                } else {
-                    System.out.println("Failed to update maintenance log.");
-                }
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
+            selectedMaintenanceLog.setMaintenanceId(newMaintenanceId);
+            selectedMaintenanceLog.setDate(newDate);
+            selectedMaintenanceLog.setDescription(newDescription);
+            selectedMaintenanceLog.setEquipmentId(newEquipmentId);
+            selectedMaintenanceLog.setPlatformId(newPlatformId);
+            selectedMaintenanceLog.setPersonnelId(newPersonnelId);
+
+            tableView.refresh();
 
             maintenanceIdText.clear();
             dateText.getEditor().clear();
@@ -250,21 +220,9 @@ public class MaintenanceLogs {
                 return;
             }
 
-            try (Connection conn = OracleAPEXConnection.getConnection()) {
-                String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".MAINTENANCE_LOGS WHERE MAINTENANCE_ID = ?";
-                PreparedStatement pstmt = conn.prepareStatement(sql);
-                pstmt.setString(1, selectedMaintenanceLog.getMaintenanceId());
-                int deleted = pstmt.executeUpdate();
+            deleteMaintenanceLogFromDatabase(selectedMaintenanceLog);
 
-                if (deleted > 0) {
-                    tableView.getItems().remove(selectedMaintenanceLog);
-                    System.out.println("Maintenance log deleted: " + selectedMaintenanceLog.getMaintenanceId());
-                } else {
-                    System.out.println("Failed to delete maintenance log.");
-                }
-            } catch (SQLException ex) {
-                ex.printStackTrace();
-            }
+            tableView.getItems().remove(selectedMaintenanceLog);
 
             maintenanceIdText.clear();
             dateText.getEditor().clear();
@@ -278,12 +236,88 @@ public class MaintenanceLogs {
         HBox buttonBox = new HBox(10);
         buttonBox.getChildren().addAll(createButton, editButton, deleteButton);
 
-        vbox.getChildren().addAll(maintenanceIdLabel, new HBox(maintenanceIdText, autoGenerateCheckbox),
+        vbox.getChildren().addAll(maintenanceIdLabel, maintenanceIdBox,
                 dateLabel, dateText, descriptionLabel, descriptionText,
                 equipmentIdLabel, equipmentIdCombo, platformIdLabel, platformIdCombo,
                 personnelIdLabel, personnelIdCombo, errorLabel, buttonBox, tableView);
 
         return vbox;
+    }
+
+    private static String getNextMaintenanceId() {
+        String maintenanceId = null;
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT \"C4ISR PROJECT (BASIC) V2\".rel_10_seq.NEXTVAL FROM dual";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                maintenanceId = rs.getString(1);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+        return maintenanceId;
+    }
+
+    private static void saveMaintenanceLogToDatabase(MaintenanceLogs maintenanceLog) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "INSERT INTO \"C4ISR PROJECT (BASIC) V2\".MAINTENANCE_LOGS (MAINTENANCE_ID, DATE_MAINTENANCE, DESCRIPTION, EQUIPMENT_EQUIPMENT_ID, PLATFORMS_PLATFORM_ID, PERSONNEL_PERSONNEL_ID) " +
+                    "VALUES (?, ?, ?, ?, ?, ?)";
+
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, maintenanceLog.getMaintenanceId());
+            pstmt.setDate(2, java.sql.Date.valueOf(maintenanceLog.getDate()));
+            pstmt.setString(3, maintenanceLog.getDescription());
+            pstmt.setString(4, maintenanceLog.getEquipmentId());
+            pstmt.setString(5, maintenanceLog.getPlatformId());
+            pstmt.setString(6, maintenanceLog.getPersonnelId());
+            pstmt.executeUpdate();
+            System.out.println("Maintenance log saved to database.");
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private static void updateMaintenanceLogInDatabase(MaintenanceLogs selectedMaintenanceLog, String newMaintenanceId, LocalDate newDate, String newDescription, String newEquipmentId, String newPlatformId, String newPersonnelId) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "UPDATE \"C4ISR PROJECT (BASIC) V2\".MAINTENANCE_LOGS SET MAINTENANCE_ID = ?, DATE_MAINTENANCE = ?, " +
+                    "DESCRIPTION = ?, EQUIPMENT_EQUIPMENT_ID = ?, PLATFORMS_PLATFORM_ID = ?, PERSONNEL_PERSONNEL_ID = ? " +
+                    "WHERE MAINTENANCE_ID = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, newMaintenanceId);
+            pstmt.setDate(2, java.sql.Date.valueOf(newDate));
+            pstmt.setString(3, newDescription);
+            pstmt.setString(4, newEquipmentId);
+            pstmt.setString(5, newPlatformId);
+            pstmt.setString(6, newPersonnelId);
+            pstmt.setString(7, selectedMaintenanceLog.getMaintenanceId());
+            int updated = pstmt.executeUpdate();
+
+            if (updated > 0) {
+                System.out.println("Maintenance log updated: " + selectedMaintenanceLog.getMaintenanceId());
+            } else {
+                System.out.println("Failed to update maintenance log.");
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+    }
+
+    private static void deleteMaintenanceLogFromDatabase(MaintenanceLogs selectedMaintenanceLog) {
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "DELETE FROM \"C4ISR PROJECT (BASIC) V2\".MAINTENANCE_LOGS WHERE MAINTENANCE_ID = ?";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            pstmt.setString(1, selectedMaintenanceLog.getMaintenanceId());
+            int deleted = pstmt.executeUpdate();
+
+            if (deleted > 0) {
+                System.out.println("Maintenance log deleted: " + selectedMaintenanceLog.getMaintenanceId());
+            } else {
+                System.out.println("Failed to delete maintenance log.");
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
     }
 
     private static ObservableList<String> fetchEquipmentIds() {
@@ -337,5 +371,32 @@ public class MaintenanceLogs {
         alert.setHeaderText(headerText);
         alert.setContentText(contentText);
         alert.showAndWait();
+    }
+
+    public static ObservableList<MaintenanceLogs> fetchAllMaintenanceLogs() {
+        ObservableList<MaintenanceLogs> maintenanceLogsList = FXCollections.observableArrayList();
+
+        try (Connection conn = OracleAPEXConnection.getConnection()) {
+            String sql = "SELECT MAINTENANCE_ID, DATE_MAINTENANCE, DESCRIPTION, EQUIPMENT_EQUIPMENT_ID, PLATFORMS_PLATFORM_ID, PERSONNEL_PERSONNEL_ID " +
+                    "FROM \"C4ISR PROJECT (BASIC) V2\".MAINTENANCE_LOGS";
+            PreparedStatement pstmt = conn.prepareStatement(sql);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String maintenanceId = rs.getString("MAINTENANCE_ID");
+                LocalDate date = rs.getDate("DATE_MAINTENANCE").toLocalDate();
+                String description = rs.getString("DESCRIPTION");
+                String equipmentId = rs.getString("EQUIPMENT_EQUIPMENT_ID");
+                String platformId = rs.getString("PLATFORMS_PLATFORM_ID");
+                String personnelId = rs.getString("PERSONNEL_PERSONNEL_ID");
+
+                MaintenanceLogs maintenanceLog = new MaintenanceLogs(maintenanceId, date, description, equipmentId, platformId, personnelId);
+                maintenanceLogsList.add(maintenanceLog);
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+        }
+
+        return maintenanceLogsList;
     }
 }
