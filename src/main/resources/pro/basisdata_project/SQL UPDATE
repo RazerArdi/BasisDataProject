@@ -63,7 +63,7 @@ CREATE UNIQUE INDEX communication_log__idx ON
 ALTER TABLE communication_log ADD CONSTRAINT communication_log_pk PRIMARY KEY ( comm_id );
 
 CREATE TABLE "contractors" (
-    personnel_id   NUMBER(22) NOT NULL,
+    personnel_id   VARCHAR2(30) NOT NULL,
     officer_id     VARCHAR2(30) NOT NULL,
     personnel_name VARCHAR2(4000) NOT NULL,
     rank           VARCHAR2(30) NOT NULL,
@@ -87,7 +87,7 @@ CREATE TABLE data (
 ALTER TABLE data ADD CONSTRAINT data_pk PRIMARY KEY ( data_id );
 
 CREATE TABLE enlisted (
-    personnel_id   NUMBER(22) NOT NULL,
+    personnel_id   VARCHAR2(30) NOT NULL,
     enlist_id      VARCHAR2(30) NOT NULL,
     personnel_name VARCHAR2(4000) NOT NULL,
     rank           VARCHAR2(30) NOT NULL,
@@ -143,7 +143,7 @@ CREATE TABLE missions (
 ALTER TABLE missions ADD CONSTRAINT missions_pk PRIMARY KEY ( mission_id );
 
 CREATE TABLE officer (
-    personnel_id   NUMBER(22) NOT NULL,
+    personnel_id   VARCHAR2(30) NOT NULL,
     officer_id     VARCHAR2(30) NOT NULL,
     personnel_name VARCHAR2(4000) NOT NULL,
     rank           VARCHAR2(30) NOT NULL,
@@ -409,7 +409,7 @@ CREATE SEQUENCE contractors_seq
     INCREMENT BY 1;
 
 CREATE OR REPLACE TRIGGER contractors_trigger
-BEFORE INSERT ON contractors
+BEFORE INSERT ON "contractors"
 FOR EACH ROW
 BEGIN
     IF :new.personnel_id IS NULL THEN
@@ -648,6 +648,9 @@ BEGIN
 END;
 
 
+
+CATATAN:
+
 -- Error bagian ini
 -- ORA-00942: table or view does not exist
 -- ORA-00942: table or view does not exist
@@ -682,3 +685,61 @@ END;
 SELECT table_name
 FROM all_tables
 WHERE table_name = 'RELATION_10';
+
+
+dan
+
+CREATE TABLE relation_10 (
+    users_user_id                   VARCHAR2(30) NOT NULL,
+
+    maintenance_logs_maintenance_id VARCHAR2(30) NOT NULL,
+    maintenance_logs_platform_id    VARCHAR2(30) NOT NULL
+);
+
+ALTER TABLE relation_10
+    ADD CONSTRAINT relation_10_pk PRIMARY KEY ( users_user_id,
+                                                maintenance_logs_maintenance_id,
+                                                maintenance_logs_platform_id );
+
+
+
+diganti
+
+
+CREATE TABLE relation_10 (
+    users_user_id                   VARCHAR2(30) NOT NULL,
+
+    maintenance_logs_maintenance_id VARCHAR2(30) NOT NULL,
+    maintenance_logs_platform_id    VARCHAR2(30) NOT NULL
+);
+
+ALTER TABLE relation_10
+    ADD CONSTRAINT relation_10_pk PRIMARY KEY ( users_user_id,
+                                                maintenance_logs_maintenance_id,
+                                                maintenance_logs_platform_id );
+
+CREATE TABLE relation_10 (
+    users_user_id                   VARCHAR2(30) NOT NULL,
+
+    maintenance_logs_maintenance_id VARCHAR2(30) NOT NULL,
+    maintenance_logs_platform_id    VARCHAR2(30) NOT NULL
+);
+
+ALTER TABLE relation_10
+    ADD CONSTRAINT relation_10_pk PRIMARY KEY ( users_user_id,
+                                                maintenance_logs_maintenance_id,
+                                                maintenance_logs_platform_id );
+
+
+ALTER TABLE relation_10
+    ADD CONSTRAINT relation_10_fk FOREIGN KEY ( MAINTENANCE_LOGS_MT_ID,
+                                                                 maintenance_logs_platform_id )
+        REFERENCES maintenance_logs ( maintenance_id,
+                                      platforms_platform_id );
+
+
+
+
+
+
+
